@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain, step-06-innovation, step-07-project-type, step-08-scoping]
+stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain, step-06-innovation, step-07-project-type, step-08-scoping, step-09-functional]
 inputDocuments: ['_bmad-output/brainstorming/brainstorming-session-2026-02-08.md']
 workflowType: 'prd'
 documentCounts:
@@ -254,4 +254,76 @@ Wouter wants to onboard a complex app where he's not sure where the settings liv
 **Resource Risks:**
 - Solo developer — if blocked, the new machine doesn't get set up. Mitigation: scope 1 is deliberately minimal, can be completed in focused sessions
 - AI-written code needs review — Mitigation: strong test suite in scope 2 catches regressions
+
+## Functional Requirements
+
+### Manifest & Module Management
+
+- **FR1:** User can define an app module by creating a named folder containing a manifest file and config files [Scope 1]
+- **FR2:** System can discover all app modules automatically by scanning for manifest files in the config repo (no central registration) [Scope 1]
+- **FR3:** User can specify in a manifest where an app's config files should be symlinked to, using environment variable paths (`%AppData%`, `%UserProfile%`, etc.) [Scope 1]
+- **FR4:** System can resolve pattern-based/glob config paths for apps that store settings in dynamic locations (e.g., paths containing hashes) [Scope 2]
+- **FR5:** User can specify version-range-aware symlink paths in a manifest (different paths for different app versions) [Scope 3]
+- **FR6:** User can pull manifest templates from an external repository/gallery [Scope 3]
+
+### Symlink Engine
+
+- **FR7:** System can create symlinks and junctions from config repo files to their target locations on the filesystem [Scope 1]
+- **FR8:** System can re-run deploy without affecting existing symlinks — only new/changed modules are processed [Scope 1]
+- **FR9:** System can detect that a target file is locked by a running application and report it [Scope 2]
+- **FR10:** System can detect drift between expected and actual symlink state [Scope 2]
+- **FR11:** System can perform a dry-run showing what would change without modifying the filesystem [Scope 2]
+- **FR12:** System can back up existing files before creating symlinks that would overwrite them [Scope 2]
+- **FR13:** User can restore files from a pre-deploy backup [Scope 3]
+
+### CLI Interface
+
+- **FR14:** User can run a deploy command that processes all discovered modules [Scope 1]
+- **FR15:** System streams each action to the console in real-time with colored status indicators as it executes [Scope 1]
+- **FR16:** System returns clean exit codes indicating success or specific failure types [Scope 1]
+- **FR17:** User can abort execution mid-deploy via Ctrl+C [Scope 1]
+- **FR18:** System can output structured JSON results for machine consumption [Scope 2]
+- **FR19:** System can display a live-updating progress table alongside action streaming [Scope 2]
+- **FR20:** User can run deploy in interactive mode with step-level and command-level confirmation [Scope 3]
+- **FR21:** User can tab-complete Perch commands in the shell [Scope 3]
+
+### Package Management
+
+- **FR22:** User can define all managed packages in a single manifest file [Scope 2]
+- **FR23:** System can detect installed apps and cross-reference against managed modules [Scope 2]
+- **FR24:** System can report apps that are installed but have no config module [Scope 2]
+
+### Git Integration
+
+- **FR25:** System can register per-app git clean filters to suppress noisy config diffs [Scope 2]
+- **FR26:** System can perform before/after filesystem diffing to discover which files an app changed [Scope 2]
+
+### App Discovery & Onboarding
+
+- **FR27:** User can scan the system for installed apps and see which ones have config modules [Scope 2]
+- **FR28:** System can look up known config file locations for popular apps via AI [Scope 3]
+- **FR29:** System can launch an app in Windows Sandbox to discover its config locations [Scope 3]
+- **FR30:** User can generate a new module manifest via an interactive onboarding workflow (CLI or MAUI) [Scope 3]
+
+### Machine Configuration
+
+- **FR31:** User can define base config values with per-machine overrides [Scope 3]
+- **FR32:** User can specify which modules apply to which machines [Scope 3]
+- **FR33:** User can manage Windows registry settings declaratively [Scope 3]
+- **FR34:** System can apply and report on registry state (context menus, default programs, power settings, etc.) [Scope 3]
+
+### MAUI UI
+
+- **FR35:** User can view sync status of all managed modules in a visual dashboard [Scope 3]
+- **FR36:** User can interactively explore an app's filesystem to find config locations [Scope 3]
+- **FR37:** User can generate and edit module manifests via a visual interface [Scope 3]
+
+### Plugin Lifecycle
+
+- **FR38:** User can define pre-deploy and post-deploy hooks per module [Scope 2]
+
+### Engine Configuration
+
+- **FR39:** User can specify the config repo location as a CLI argument [Scope 1]
+- **FR40:** System can persist the config repo location (e.g., settings file) so it doesn't need to be specified on subsequent runs [Scope 1]
 
