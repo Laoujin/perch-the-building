@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain, step-06-innovation, step-07-project-type, step-08-scoping, step-09-functional]
+stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain, step-06-innovation, step-07-project-type, step-08-scoping, step-09-functional, step-10-nonfunctional]
 inputDocuments: ['_bmad-output/brainstorming/brainstorming-session-2026-02-08.md']
 workflowType: 'prd'
 documentCounts:
@@ -326,4 +326,24 @@ Wouter wants to onboard a complex app where he's not sure where the settings liv
 
 - **FR39:** User can specify the config repo location as a CLI argument [Scope 1]
 - **FR40:** System can persist the config repo location (e.g., settings file) so it doesn't need to be specified on subsequent runs [Scope 1]
+
+## Non-Functional Requirements
+
+### Reliability
+
+- Deploy must be safe to interrupt (`Ctrl+C`) at any point without leaving the system in a corrupted state — partially completed deploys are valid (some modules linked, others not yet)
+- Failed symlink operations for one module must not prevent other modules from being processed
+- System must handle missing target directories gracefully (report, don't crash)
+
+### Maintainability
+
+- Engine codebase must be understandable enough for AI-assisted development — clear separation of concerns, well-named types
+- Scope 2: NUnit test coverage on core engine logic (symlink creation, manifest parsing, module discovery)
+- Scope 2: GitHub Actions CI ensures no regressions on push
+
+### Portability
+
+- Engine must run on any Windows 10+ machine with .NET 10 runtime
+- No dependency on specific shell (works from PowerShell, cmd, Windows Terminal, etc.)
+- Config repo format must be plain files + JSON manifests — no binary formats, no database, no proprietary encoding
 
