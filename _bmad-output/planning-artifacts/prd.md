@@ -38,10 +38,11 @@ classification:
 - **Scope 3:** New users onboard with minimal friction via UI. Registry management tames Windows chaos. Machine-specific overrides make multi-machine setups painless
 
 ### Technical Success
-- Pester test suite covering core engine logic
+- C# / .NET core engine — shared library between CLI and future MAUI UI
+- Distributed as .NET tool (`dotnet tool install perch -g`)
+- NUnit + NSubstitute test suite covering core engine logic
 - GitHub Actions CI on Windows runners
 - Engine/config separation is clean — no personal config in engine repo
-- PowerShell 7+ only
 
 ### Measurable Outcomes
 - Scope 1: new PC fully configured via Perch in a single session
@@ -59,6 +60,7 @@ classification:
 - Re-runnable: adding a new app module and running again creates only the new symlinks
 - Manages: PowerShell profile, git config, program settings (JSON/YAML files via symlinks)
 - Engine/config repo split (already started)
+- Built in C# / .NET, distributed via `dotnet tool install perch -g`
 
 ### Growth — Scope 2: Rock Solid
 - Idempotent bootstrap with drift reporting
@@ -68,14 +70,14 @@ classification:
 - Git clean filters for noisy configs
 - Before/after diffing for settings discovery
 - Installed app detection + missing config detection
-- Pester test suite + GitHub Actions CI
+- NUnit + NSubstitute test suite + GitHub Actions CI
 - Lifecycle hooks per plugin
 
 ### Vision — Scope 3: Accessible & Complete
 - **Registry management** — context menus, default programs, power settings, mouse settings, and more. Requires dedicated brainstorm session to map the full space
 - **Machine-specific overrides** — layered config system: base defaults with per-machine overrides for both settings values and which programs are managed
-- MAUI onboarding app (scan installed software, generate manifests)
-- MAUI drift dashboard (sync status, one-click fixes)
+- MAUI onboarding app (scan installed software, generate manifests) — shares core engine library with CLI
+- MAUI drift dashboard (sync status, one-click fixes) — shares core engine library with CLI
 - Interactive scaffold wizard for adding new apps
 - Community config path database
 
