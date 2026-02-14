@@ -4,8 +4,8 @@ validationDate: '2026-02-14'
 inputDocuments: ['_bmad-output/brainstorming/brainstorming-session-2026-02-08.md', '_bmad-output/planning-artifacts/competitive-research.md', '_bmad-output/planning-artifacts/chezmoi-comparison.md']
 validationStepsCompleted: [step-v-01-discovery, step-v-02-format-detection, step-v-03-density-validation, step-v-04-brief-coverage-validation, step-v-05-measurability-validation, step-v-06-traceability-validation, step-v-07-implementation-leakage-validation, step-v-08-domain-compliance-validation, step-v-09-project-type-validation, step-v-10-smart-validation, step-v-11-holistic-quality-validation, step-v-12-completeness-validation]
 validationStatus: COMPLETE
-holisticQualityRating: 3.5
-overallStatus: Warning
+holisticQualityRating: 4.0
+overallStatus: Pass
 ---
 
 # PRD Validation Report
@@ -479,3 +479,48 @@ No template variables remaining ✓
 **Severity:** Pass
 
 **Recommendation:** PRD is structurally complete with all required sections and content present. No template variables remain. The minor gaps (missing error reporting FR, NFR specificity) were already flagged in prior validation steps.
+
+### Post-Validation Fixes Applied
+
+The following fixes were applied to the PRD during validation review:
+
+**NFRs Rewritten (7):**
+- NFR-R1: Ctrl+C completes current module, then halts. No partial state. Verification method added.
+- NFR-R2: Failed symlink generates error, logged and displayed, other modules continue. Verification method added.
+- NFR-R3: Missing directories logged to context and displayed, module skipped. Verification method added.
+- NFR-M1: Rewritten as human-readable code, KISS/YAGNI, max cyclomatic complexity, selective XML docs, TDD, README with dev/user instructions.
+- NFR-M2: Interface-based platform abstraction, separate implementations, NSubstitute mocks for non-platform tests. Verification method added.
+- NFR-M3: 100% unit test coverage, all branches/flows. Coverage gate in CI.
+- NFR-M4: CI fails on any test failure or analyzer warning. Roslynator + Microsoft.CodeAnalysis.Analyzers. Warnings as errors.
+
+**Implementation Leakage Fixed (6):**
+- FR17: Removed "CancellationToken" — now "graceful shutdown"
+- FR28: Removed "via AI"
+- FR43: Changed "1Password CLI" to "supported password manager"
+- FR44: Changed "from 1Password" to "from a configured password manager"
+- NFR-M3: Removed "NUnit" — now "unit test coverage"
+- NFR-M4: Removed "GitHub Actions" — now "CI pipeline"
+
+**Format Fixes (2):**
+- FR41: Actor changed from "Manifests" to "System"
+- FR42: Rewritten with explicit actors (User/System)
+
+**Vague Quantifiers Fixed (3):**
+- FR22: Split into chocolatey/winget (Scope 2) + new FR48 for cross-platform package managers (Scope 3)
+- FR45: Replaced "and similar" with mechanism-bounded definition
+- FR47: Replaced "other popular...etc." with explicit Dotbot/Dotter + two-way migration
+
+**Scope Changes:**
+- FR46 (chezmoi import): Moved from Scope 3 to Scope 4
+- FR47 (other format migration): Moved from Scope 3 to Scope 4, rewritten as two-way
+- FR48 (new): Cross-platform package managers (apt, brew, VS Code extensions, npm/bun) added as Scope 3
+
+**Journeys Added (4):**
+- J6: Multi-Machine Configuration (Scope 3) — covers FR31-34
+- J7: Secrets and Credentials (Scope 3) — covers FR43-45
+- J8: Package Audit and App Onboarding (Scope 2) — covers FR22-26, FR38
+- J9: Migration from Another Tool (Scope 4) — covers FR46-47
+
+**Remaining Orphan FRs (5):** FR6, FR13, FR35, FR37, FR48 — Scope 3 features accepted without journey coverage.
+
+**Revised Assessment:** With fixes applied, the PRD moves from 3.5/5 to approximately 4/5 (Good). Measurability, implementation leakage, and traceability gaps have been substantially addressed. MVP (Scope 1) remains clean and ready for implementation.

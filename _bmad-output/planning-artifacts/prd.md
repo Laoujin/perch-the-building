@@ -101,23 +101,62 @@ Wouter sets up a Linux dev server. He installs .NET 10, runs `dotnet tool instal
 
 **Capabilities revealed:** Platform-aware manifests, cross-platform path resolution, platform-specific module filtering.
 
+### Journey 6: Multi-Machine Configuration (Scope 3)
+
+Wouter's laptop needs different settings than his desktop — smaller font sizes in the terminal, a different git email for work projects, and only a subset of modules (no gaming tools on the work laptop). He creates a machine profile in perch-config: `machines/laptop.json` defines the machine name, which modules to include, and override values. He runs `perch deploy` on the laptop — Perch identifies the machine by hostname, applies the base config with laptop-specific overrides, skips excluded modules, and symlinks `laptop.gitconfig` instead of the default. On Windows, he also manages registry settings declaratively: dark mode, specific context menu entries, power settings. Perch applies the desired registry state and reports what changed.
+
+**Capabilities revealed:** Per-machine overrides, machine identification, module-to-machine filtering, declarative registry management, registry state reporting.
+
+### Journey 7: Secrets and Credentials (Scope 3)
+
+Wouter sets up a new machine and needs his NuGet registry credentials, npm tokens, and SSH config populated — but these contain secrets that can't live in git. In perch-config, these files are stored as templates with placeholders like `{{secret:op://Personal/nuget-token/password}}`. During `perch deploy`, Perch detects the placeholders, resolves them from his password manager, and writes the result as a regular file (not a symlink) at the target location. The generated files are git-ignored. On his other machine he pulls and runs deploy — same templates, same password manager, same credentials appear. No secrets ever touch the repo.
+
+**Capabilities revealed:** Secret placeholder syntax, password manager integration, generated (non-symlinked) file output, template-based config for secret-containing files.
+
+### Journey 8: Package Audit and App Onboarding (Scope 2)
+
+Wouter has been using his machine for a few weeks and has installed several new tools via chocolatey and winget. He runs `perch status` — Perch cross-references installed packages against his package manifest and config modules. It reports: "3 installed apps have no config module (Obsidian, Fiddler, Postman)." He picks Obsidian, tweaks its settings the way he likes, and uses `perch diff` to capture what changed on the filesystem. The diff shows exactly which files Obsidian touched. He creates the module folder, adds the manifest, and registers a git clean filter to strip the noisy `lastOpenedTimestamp` field from Obsidian's config. He also adds a post-deploy hook that runs a script to import his Obsidian plugins list. On next deploy, the clean filter keeps his git diffs meaningful and the hook handles the plugin setup automatically.
+
+**Capabilities revealed:** Installed app detection, missing config module reporting, before/after filesystem diffing, per-app git clean filters, pre/post-deploy lifecycle hooks, package manifest (chocolatey/winget).
+
+### Journey 9: Migration from Another Tool (Scope 4)
+
+Wouter's colleague uses chezmoi and wants to try Perch. He runs `perch import chezmoi ~/dotfiles` — Perch scans the chezmoi source directory, converts `dot_` prefixed files into Perch module folders with manifests, resolves templates into plain config files where possible, and flags templates with complex logic for manual review. The colleague runs `perch deploy` and verifies his configs are in place. If he decides to switch back, `perch export chezmoi` reverses the process.
+
+**Capabilities revealed:** Chezmoi import/conversion, dotfiles format export (two-way migration), template resolution to plain files.
+
 ### Journey Requirements Summary
 
-| Capability | J1 | J2 | J3 | J4 | J5 | Scope |
-|---|---|---|---|---|---|---|
-| Symlink creation engine | x | x | | | x | 1 |
-| Manifest discovery (convention-over-config) | x | x | | | x | 1 |
-| Deploy command | x | x | | | x | 1 |
-| Engine/config repo split | x | x | x | | x | 1 |
-| Re-runnable, additive deploy | | x | | | | 1 |
-| Platform-aware manifest paths | | | | | x | 2 |
-| Platform-specific module filtering | | | | | x | 2 |
-| Cross-platform path resolution | | | | | x | 2 |
-| Version-range manifest paths | | | | x | | 3 |
-| AI config path lookup | | | | x | | 3 |
-| Windows Sandbox integration | | | | x | | 3 |
-| MAUI interactive explorer | | | | x | | 3 |
-| CLI onboarding fallback | | | | x | | 3 |
+| Capability | J1 | J2 | J3 | J4 | J5 | J6 | J7 | J8 | J9 | Scope |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Symlink creation engine | x | x | | | x | | | | | 1 |
+| Manifest discovery (convention-over-config) | x | x | | | x | | | | | 1 |
+| Deploy command | x | x | | | x | | | | | 1 |
+| Engine/config repo split | x | x | x | | x | | | | | 1 |
+| Re-runnable, additive deploy | | x | | | | | | | | 1 |
+| Platform-aware manifest paths | | | | | x | | | | | 2 |
+| Platform-specific module filtering | | | | | x | | | | | 2 |
+| Cross-platform path resolution | | | | | x | | | | | 2 |
+| Package manifest (chocolatey/winget) | | | | | | | | x | | 2 |
+| Installed app detection | | | | | | | | x | | 2 |
+| Missing config module reporting | | | | | | | | x | | 2 |
+| Before/after filesystem diffing | | | | | | | | x | | 2 |
+| Per-app git clean filters | | | | | | | | x | | 2 |
+| Pre/post-deploy lifecycle hooks | | | | | | | | x | | 2 |
+| Per-machine overrides | | | | | | x | | | | 3 |
+| Module-to-machine filtering | | | | | | x | | | | 3 |
+| Declarative registry management | | | | | | x | | | | 3 |
+| Registry state reporting | | | | | | x | | | | 3 |
+| Secret placeholder resolution | | | | | | | x | | | 3 |
+| Password manager integration | | | | | | | x | | | 3 |
+| Generated (non-symlinked) files | | | | | | | x | | | 3 |
+| Version-range manifest paths | | | | x | | | | | | 3 |
+| AI config path lookup | | | | x | | | | | | 3 |
+| Windows Sandbox integration | | | | x | | | | | | 3 |
+| MAUI interactive explorer | | | | x | | | | | | 3 |
+| CLI onboarding fallback | | | | x | | | | | | 3 |
+| Chezmoi import/conversion | | | | | | | | | x | 4 |
+| Dotfiles format export (two-way) | | | | | | | | | x | 4 |
 
 ## Domain-Specific Requirements
 
@@ -274,8 +313,8 @@ Wouter sets up a Linux dev server. He installs .NET 10, runs `dotnet tool instal
 - **FR4:** System resolves pattern-based/glob config paths for apps with dynamic settings locations [Scope 2]
 - **FR5:** User can specify version-range-aware symlink paths in a manifest [Scope 3]
 - **FR6:** User can pull manifest templates from an external repository/gallery [Scope 3]
-- **FR41:** Manifests support platform-aware target paths — different target locations per OS from a single module [Scope 2]
-- **FR42:** Modules can be marked as platform-specific — only processed on matching OS [Scope 2]
+- **FR41:** System supports platform-aware target paths in manifests — different target locations per OS from a single module [Scope 2]
+- **FR42:** User can mark modules as platform-specific — system only processes them on matching OS [Scope 2]
 
 ### Symlink Engine
 
@@ -292,7 +331,7 @@ Wouter sets up a Linux dev server. He installs .NET 10, runs `dotnet tool instal
 - **FR14:** User can run a deploy command that processes all discovered modules [Scope 1]
 - **FR15:** System streams each action to the console in real-time with colored status indicators [Scope 1]
 - **FR16:** System returns clean exit codes indicating success or specific failure types [Scope 1]
-- **FR17:** User can abort execution mid-deploy via Ctrl+C (graceful shutdown via CancellationToken) [Scope 1]
+- **FR17:** User can abort execution mid-deploy via Ctrl+C (graceful shutdown — current module completes, then deploy halts) [Scope 1]
 - **FR18:** System outputs structured JSON results for machine consumption [Scope 2]
 - **FR19:** System displays a live-updating progress table alongside action streaming [Scope 2]
 - **FR20:** User can run deploy in interactive mode with step-level and command-level confirmation [Scope 3]
@@ -300,7 +339,8 @@ Wouter sets up a Linux dev server. He installs .NET 10, runs `dotnet tool instal
 
 ### Package Management
 
-- **FR22:** User can define all managed packages in a single manifest file, supporting multiple package managers (chocolatey, winget, apt, brew, etc.) with per-package manager specification [Scope 2]
+- **FR22:** User can define all managed packages in a single manifest file, supporting chocolatey and winget with per-package manager specification [Scope 2]
+- **FR48:** User can define packages for cross-platform package managers (apt, brew, and others such as VS Code extensions, npm/bun global packages) using the same manifest format [Scope 3]
 - **FR23:** System detects installed apps and cross-references against managed modules [Scope 2]
 - **FR24:** System reports apps installed but without a config module [Scope 2]
 
@@ -312,7 +352,7 @@ Wouter sets up a Linux dev server. He installs .NET 10, runs `dotnet tool instal
 ### App Discovery & Onboarding
 
 - **FR27:** User can scan the system for installed apps and see which have config modules [Scope 2]
-- **FR28:** System looks up known config file locations for popular apps via AI [Scope 3]
+- **FR28:** System looks up known config file locations for popular apps [Scope 3]
 - **FR29:** System launches an app in Windows Sandbox to discover its config locations [Scope 3]
 - **FR30:** User can generate a new module manifest via interactive onboarding workflow (CLI or MAUI) [Scope 3]
 
@@ -325,9 +365,9 @@ Wouter sets up a Linux dev server. He installs .NET 10, runs `dotnet tool instal
 
 ### Secrets Management
 
-- **FR43:** System can inject secrets from a password manager (1Password CLI) into config files at deploy time, producing generated (non-symlinked) files [Scope 3]
-- **FR44:** User can define secret placeholders in config templates that are resolved from 1Password during deploy [Scope 3]
-- **FR45:** System manages secret-containing configs: NuGet registry credentials, npm tokens, SSH config (Synology, GitHub), API keys, and similar [Scope 3]
+- **FR43:** System can inject secrets from a supported password manager into config files at deploy time, producing generated (non-symlinked) files [Scope 3]
+- **FR44:** User can define secret placeholders in config templates that are resolved from a configured password manager during deploy [Scope 3]
+- **FR45:** System manages any config file containing secret placeholders as a generated (non-symlinked) file. Examples: NuGet registry credentials, npm tokens, SSH config, API keys [Scope 3]
 
 ### MAUI UI
 
@@ -346,23 +386,23 @@ Wouter sets up a Linux dev server. He installs .NET 10, runs `dotnet tool instal
 
 ### Migration & Compatibility
 
-- **FR46:** System can import/convert a chezmoi-managed dotfiles repo into Perch format [Scope 3]
-- **FR47:** System can import/convert other popular dotfiles formats (Dotbot, Dotter, etc.) into Perch format [Scope 3]
+- **FR46:** System can import/convert a chezmoi-managed dotfiles repo into Perch format (manifests + plain config files) [Scope 4]
+- **FR47:** System can import/convert Dotbot and Dotter repos into Perch format, and export Perch format to those tools (two-way migration) [Scope 4]
 
 ## Non-Functional Requirements
 
 ### Reliability
 
-- Deploy safe to interrupt (`Ctrl+C`) at any point — partially completed deploys are valid
-- Failed symlink operations for one module must not prevent other modules from processing
-- Missing target directories handled gracefully (report, don't crash)
+- On Ctrl+C, the in-progress module completes fully (backup + symlink creation), then deploy halts. No module is ever left in a partial state. Verified by: test that sends SIGINT mid-deploy and confirms all completed modules have valid symlinks and the interrupted module either completed or was not started
+- Failed symlink operations for one module generate an error (logged and displayed), but do not prevent other modules from processing. Verified by: test that injects a failure into one module and confirms all other modules complete successfully
+- Missing target directories are logged to the deploy context and displayed to the user. The affected module is skipped, deploy continues. Verified by: test with non-existent target path confirming log output and continued processing
 
 ### Maintainability
 
-- Codebase understandable for AI-assisted development — clear separation of concerns, well-named types
-- Platform-specific logic isolated behind abstractions — core engine is OS-agnostic
-- NUnit test coverage on core engine logic: symlink creation, manifest parsing, module discovery [Scope 2]
-- GitHub Actions CI ensures no regressions on push (Windows + Linux runners) [Scope 2]
+- Human-readable codebase following KISS and YAGNI principles. Max cyclomatic complexity enforced via analyzers. XML doc comments only where they add value beyond what is obvious from naming. TDD development approach. README documents dev setup instructions, user instructions, and available commands
+- Platform-specific logic abstracted behind interfaces with separate implementations per platform (Windows, Linux/macOS). Core engine depends only on interfaces, never on platform implementations directly. Platform-specific classes tested once with real filesystem operations; all other tests use NSubstitute mocks against the interfaces. Verified by: core engine project has zero direct references to platform-specific APIs
+- 100% unit test coverage on core engine logic (symlink creation, manifest parsing, module discovery). All branches and flows tested. Verified by: coverage gate in CI reporting line and branch coverage [Scope 2]
+- CI pipeline fails on any failing test, any analyzer warning, or any compiler warning. Static analysis via Roslynator and Microsoft.CodeAnalysis.Analyzers with warnings treated as errors. CI runs on Windows and Linux runners. Verified by: CI required status checks on push [Scope 2]
 
 ### Portability
 
