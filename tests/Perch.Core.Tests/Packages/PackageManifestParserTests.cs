@@ -46,7 +46,7 @@ public sealed class PackageManifestParserTests
               - name: git
                 manager: winget
               - name: bad-pkg
-                manager: apt
+                manager: pacman
             """;
 
         var result = _parser.Parse(yaml);
@@ -81,13 +81,13 @@ public sealed class PackageManifestParserTests
         string yaml = """
             packages:
               - name: git
-                manager: apt
+                manager: pacman
             """;
 
         var result = _parser.Parse(yaml);
 
         Assert.That(result.IsSuccess, Is.False);
-        Assert.That(result.Errors[0], Does.Contain("apt"));
+        Assert.That(result.Errors[0], Does.Contain("pacman"));
     }
 
     [Test]

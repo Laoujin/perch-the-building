@@ -25,6 +25,10 @@ public sealed class DeployCommand : AsyncCommand<DeployCommand.Settings>
         [CommandOption("--output")]
         [Description("Output format (Pretty or Json)")]
         public OutputFormat Output { get; init; } = OutputFormat.Pretty;
+
+        [CommandOption("--interactive|-i")]
+        [Description("Prompt before deploying each module")]
+        public bool Interactive { get; init; }
     }
 
     public DeployCommand(IDeployService deployService, ISettingsProvider settingsProvider, IAnsiConsole console)
@@ -55,10 +59,10 @@ public sealed class DeployCommand : AsyncCommand<DeployCommand.Settings>
             return await ExecuteJsonAsync(configPath, settings.DryRun, cancellationToken);
         }
 
-        return await ExecutePrettyAsync(configPath, settings.DryRun, cancellationToken);
+        return await ExecutePrettyAsync(configPath, settings.DryRun, settings.Interactive, cancellationToken);
     }
 
-    private async Task<int> ExecutePrettyAsync(string configPath, bool dryRun, CancellationToken cancellationToken)
+    private async Task<int> ExecutePrettyAsync(string configPath, bool dryRun, bool interactive, CancellationToken cancellationToken)
     {
         if (dryRun)
         {
@@ -68,48 +72,93 @@ public sealed class DeployCommand : AsyncCommand<DeployCommand.Settings>
         _console.MarkupLine($"[blue]Deploying from:[/] {configPath.EscapeMarkup()}");
         _console.WriteLine();
 
-        var table = new Table();
-        table.AddColumn("Module");
-        table.AddColumn("Status");
-        table.AddColumn("Details");
+        IDeployConfirmation? confirmation = interactive ? new SpectreDeployConfirmation(_console) : null;
 
-        int exitCode = 0;
-
-        await _console.Live(table)
-            .AutoClear(false)
-            .StartAsync(async ctx =>
+        if (interactive)
+        {
+            var progress = new SynchronousProgress<DeployResult>(result =>
             {
-                var progress = new SynchronousProgress<DeployResult>(result =>
+                string status = result.Level switch
                 {
-                    string status = result.Level switch
-                    {
-                        ResultLevel.Ok => "[green]OK[/]",
-                        ResultLevel.Warning => "[yellow]WARN[/]",
-                        ResultLevel.Error => "[red]FAIL[/]",
-                        _ => "[grey]??[/]",
-                    };
+                    ResultLevel.Ok => "[green]OK[/]",
+                    ResultLevel.Warning => "[yellow]WARN[/]",
+                    ResultLevel.Error => "[red]FAIL[/]",
+                    _ => "[grey]??[/]",
+                };
 
-                    table.AddRow(
-                        $"[{GetColor(result.Level)}]{result.ModuleName.EscapeMarkup()}[/]",
-                        status,
-                        result.Message.EscapeMarkup());
-                    ctx.Refresh();
-                });
-
-                exitCode = await _deployService.DeployAsync(configPath, dryRun, progress, cancellationToken);
+                _console.MarkupLine($"  {status} [{GetColor(result.Level)}]{result.ModuleName.EscapeMarkup()}[/] {result.Message.EscapeMarkup()}");
             });
 
-        _console.WriteLine();
-        if (exitCode == 0)
-        {
-            _console.MarkupLine("[green]Deploy complete.[/]");
+            int exitCode = await _deployService.DeployAsync(configPath, dryRun, progress, confirmation, cancellationToken);
+
+            _console.WriteLine();
+            _console.MarkupLine(exitCode == 0 ? "[green]Deploy complete.[/]" : "[red]Deploy finished with errors.[/]");
+            return exitCode;
         }
         else
         {
-            _console.MarkupLine("[red]Deploy finished with errors.[/]");
+            var table = new Table();
+            table.AddColumn("Module");
+            table.AddColumn("Status");
+            table.AddColumn("Details");
+
+            int exitCode = 0;
+
+            await _console.Live(table)
+                .AutoClear(false)
+                .StartAsync(async ctx =>
+                {
+                    var progress = new SynchronousProgress<DeployResult>(result =>
+                    {
+                        string status = result.Level switch
+                        {
+                            ResultLevel.Ok => "[green]OK[/]",
+                            ResultLevel.Warning => "[yellow]WARN[/]",
+                            ResultLevel.Error => "[red]FAIL[/]",
+                            _ => "[grey]??[/]",
+                        };
+
+                        table.AddRow(
+                            $"[{GetColor(result.Level)}]{result.ModuleName.EscapeMarkup()}[/]",
+                            status,
+                            result.Message.EscapeMarkup());
+                        ctx.Refresh();
+                    });
+
+                    exitCode = await _deployService.DeployAsync(configPath, dryRun, progress, cancellationToken: cancellationToken);
+                });
+
+            _console.WriteLine();
+            _console.MarkupLine(exitCode == 0 ? "[green]Deploy complete.[/]" : "[red]Deploy finished with errors.[/]");
+            return exitCode;
+        }
+    }
+
+    private sealed class SpectreDeployConfirmation : IDeployConfirmation
+    {
+        private readonly IAnsiConsole _console;
+
+        public SpectreDeployConfirmation(IAnsiConsole console)
+        {
+            _console = console;
         }
 
-        return exitCode;
+        public DeployConfirmationChoice Confirm(string moduleName)
+        {
+            var choice = _console.Prompt(
+                new SelectionPrompt<string>()
+                    .Title($"Deploy [blue]{moduleName.EscapeMarkup()}[/]?")
+                    .AddChoices("Yes", "No", "All", "Quit"));
+
+            return choice switch
+            {
+                "Yes" => DeployConfirmationChoice.Yes,
+                "No" => DeployConfirmationChoice.No,
+                "All" => DeployConfirmationChoice.All,
+                "Quit" => DeployConfirmationChoice.Quit,
+                _ => DeployConfirmationChoice.Yes,
+            };
+        }
     }
 
     private async Task<int> ExecuteJsonAsync(string configPath, bool dryRun, CancellationToken cancellationToken)
@@ -117,7 +166,7 @@ public sealed class DeployCommand : AsyncCommand<DeployCommand.Settings>
         var results = new List<DeployResult>();
         var progress = new SynchronousProgress<DeployResult>(results.Add);
 
-        int exitCode = await _deployService.DeployAsync(configPath, dryRun, progress, cancellationToken);
+        int exitCode = await _deployService.DeployAsync(configPath, dryRun, progress, cancellationToken: cancellationToken);
 
         var output = new
         {
