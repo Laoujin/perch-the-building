@@ -24,11 +24,9 @@ public sealed class DefaultProcessRunner : IProcessRunner
         var stdoutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
         var stderrTask = process.StandardError.ReadToEndAsync(cancellationToken);
 
+        await Task.WhenAll(stdoutTask, stderrTask).ConfigureAwait(false);
         await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
 
-        string stdout = await stdoutTask.ConfigureAwait(false);
-        string stderr = await stderrTask.ConfigureAwait(false);
-
-        return new ProcessRunResult(process.ExitCode, stdout, stderr);
+        return new ProcessRunResult(process.ExitCode, stdoutTask.Result, stderrTask.Result);
     }
 }
