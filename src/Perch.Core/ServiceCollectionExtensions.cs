@@ -55,6 +55,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IMachineProfileService, MachineProfileService>();
         services.AddSingleton<ICleanFilterService, CleanFilterService>();
         services.AddSingleton<IDiffSnapshotService, DiffSnapshotService>();
+        services.AddSingleton<ISystemPackageInstaller, SystemPackageInstaller>();
         services.AddSingleton<IDeployService, DeployService>();
         services.AddSingleton<IStatusService, StatusService>();
         services.AddSingleton<ISettingsProvider, YamlSettingsProvider>();

@@ -1,6 +1,7 @@
 using Perch.Core.Backup;
 using Perch.Core.Machines;
 using Perch.Core.Modules;
+using Perch.Core.Packages;
 using Perch.Core.Registry;
 using Perch.Core.Symlinks;
 
@@ -19,8 +20,10 @@ public sealed class DeployService : IDeployService
     private readonly IGlobalPackageInstaller _globalPackageInstaller;
     private readonly IVscodeExtensionInstaller _vscodeExtensionInstaller;
     private readonly IPsModuleInstaller _psModuleInstaller;
+    private readonly PackageManifestParser _packageManifestParser;
+    private readonly ISystemPackageInstaller _systemPackageInstaller;
 
-    public DeployService(IModuleDiscoveryService discoveryService, SymlinkOrchestrator orchestrator, IPlatformDetector platformDetector, IGlobResolver globResolver, ISnapshotProvider snapshotProvider, IHookRunner hookRunner, IMachineProfileService machineProfileService, IRegistryProvider registryProvider, IGlobalPackageInstaller globalPackageInstaller, IVscodeExtensionInstaller vscodeExtensionInstaller, IPsModuleInstaller psModuleInstaller)
+    public DeployService(IModuleDiscoveryService discoveryService, SymlinkOrchestrator orchestrator, IPlatformDetector platformDetector, IGlobResolver globResolver, ISnapshotProvider snapshotProvider, IHookRunner hookRunner, IMachineProfileService machineProfileService, IRegistryProvider registryProvider, IGlobalPackageInstaller globalPackageInstaller, IVscodeExtensionInstaller vscodeExtensionInstaller, IPsModuleInstaller psModuleInstaller, PackageManifestParser packageManifestParser, ISystemPackageInstaller systemPackageInstaller)
     {
         _discoveryService = discoveryService;
         _orchestrator = orchestrator;
@@ -33,6 +36,8 @@ public sealed class DeployService : IDeployService
         _globalPackageInstaller = globalPackageInstaller;
         _vscodeExtensionInstaller = vscodeExtensionInstaller;
         _psModuleInstaller = psModuleInstaller;
+        _packageManifestParser = packageManifestParser;
+        _systemPackageInstaller = systemPackageInstaller;
     }
 
     public async Task<int> DeployAsync(string configRepoPath, bool dryRun = false, IProgress<DeployResult>? progress = null, IDeployConfirmation? confirmation = null, CancellationToken cancellationToken = default)
@@ -87,6 +92,11 @@ public sealed class DeployService : IDeployService
             {
                 hasErrors = true;
             }
+        }
+
+        if (await ProcessSystemPackagesAsync(configRepoPath, currentPlatform, dryRun, progress, cancellationToken).ConfigureAwait(false))
+        {
+            hasErrors = true;
         }
 
         return hasErrors ? 1 : 0;
@@ -161,6 +171,54 @@ public sealed class DeployService : IDeployService
 
         return hasErrors;
     }
+
+    private async Task<bool> ProcessSystemPackagesAsync(string configRepoPath, Platform currentPlatform, bool dryRun, IProgress<DeployResult>? progress, CancellationToken cancellationToken)
+    {
+        string packagesPath = Path.Combine(configRepoPath, "packages.yaml");
+        if (!File.Exists(packagesPath))
+        {
+            return false;
+        }
+
+        string yaml = await File.ReadAllTextAsync(packagesPath, cancellationToken).ConfigureAwait(false);
+        PackageManifestParseResult parseResult = _packageManifestParser.Parse(yaml);
+
+        foreach (string error in parseResult.Errors)
+        {
+            progress?.Report(new DeployResult("system-packages", "", "", ResultLevel.Error, error));
+        }
+
+        bool hasErrors = parseResult.Errors.Length > 0;
+
+        foreach (PackageDefinition package in parseResult.Packages)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (!IsPlatformMatch(package.Manager, currentPlatform))
+            {
+                continue;
+            }
+
+            DeployResult result = await _systemPackageInstaller.InstallAsync(package.Name, package.Manager, dryRun, cancellationToken).ConfigureAwait(false);
+            progress?.Report(result);
+
+            if (result.Level == ResultLevel.Error)
+            {
+                hasErrors = true;
+            }
+        }
+
+        return hasErrors;
+    }
+
+    private static bool IsPlatformMatch(PackageManager manager, Platform platform) =>
+        manager switch
+        {
+            PackageManager.Chocolatey or PackageManager.Winget => platform == Platform.Windows,
+            PackageManager.Apt => platform == Platform.Linux,
+            PackageManager.Brew => platform == Platform.MacOS,
+            _ => false,
+        };
 
     private bool ProcessModuleLinks(AppModule module, Platform currentPlatform, bool dryRun, IProgress<DeployResult>? progress)
     {

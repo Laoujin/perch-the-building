@@ -4,6 +4,7 @@ using Perch.Core.Backup;
 using Perch.Core.Deploy;
 using Perch.Core.Machines;
 using Perch.Core.Modules;
+using Perch.Core.Packages;
 using Perch.Core.Registry;
 using Perch.Core.Symlinks;
 using NSubstitute.ReceivedExtensions;
@@ -30,6 +31,7 @@ public sealed class DeployServiceTests
     private IGlobalPackageInstaller _globalPackageInstaller = null!;
     private IVscodeExtensionInstaller _vscodeExtensionInstaller = null!;
     private IPsModuleInstaller _psModuleInstaller = null!;
+    private ISystemPackageInstaller _systemPackageInstaller = null!;
     private DeployService _deployService = null!;
     private List<DeployResult> _reported = null!;
     private IProgress<DeployResult> _progress = null!;
@@ -55,7 +57,10 @@ public sealed class DeployServiceTests
         _globalPackageInstaller = Substitute.For<IGlobalPackageInstaller>();
         _vscodeExtensionInstaller = Substitute.For<IVscodeExtensionInstaller>();
         _psModuleInstaller = Substitute.For<IPsModuleInstaller>();
-        _deployService = new DeployService(_discoveryService, orchestrator, _platformDetector, _globResolver, _snapshotProvider, _hookRunner, _machineProfileService, _registryProvider, _globalPackageInstaller, _vscodeExtensionInstaller, _psModuleInstaller);
+        _systemPackageInstaller = Substitute.For<ISystemPackageInstaller>();
+        _systemPackageInstaller.InstallAsync(Arg.Any<string>(), Arg.Any<PackageManager>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            .Returns(x => new DeployResult("system-packages", "", x.ArgAt<string>(0), ResultLevel.Ok, $"Installed {x.ArgAt<string>(0)}"));
+        _deployService = new DeployService(_discoveryService, orchestrator, _platformDetector, _globResolver, _snapshotProvider, _hookRunner, _machineProfileService, _registryProvider, _globalPackageInstaller, _vscodeExtensionInstaller, _psModuleInstaller, new PackageManifestParser(), _systemPackageInstaller);
         _reported = new List<DeployResult>();
         _progress = new SynchronousProgress<DeployResult>(r => _reported.Add(r));
     }
@@ -1227,6 +1232,101 @@ public sealed class DeployServiceTests
             await _deployService.DeployAsync(tempDir, progress: _progress, confirmation: confirmation);
 
             confirmation.DidNotReceive().Confirm(Arg.Any<string>());
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_PackagesYaml_InstallsChocolateyPackages()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(tempDir, "packages.yaml"),
+                "packages:\n  - name: 7zip\n    manager: chocolatey\n  - name: git\n    manager: chocolatey\n");
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(ImmutableArray<AppModule>.Empty, ImmutableArray<string>.Empty));
+
+            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
+
+            Assert.That(exitCode, Is.EqualTo(0));
+            await _systemPackageInstaller.Received(2).InstallAsync(Arg.Any<string>(), PackageManager.Chocolatey, false, Arg.Any<CancellationToken>());
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_PackagesYaml_DryRun_PassesDryRunFlag()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(tempDir, "packages.yaml"),
+                "packages:\n  - name: 7zip\n    manager: chocolatey\n");
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(ImmutableArray<AppModule>.Empty, ImmutableArray<string>.Empty));
+
+            await _deployService.DeployAsync(tempDir, dryRun: true, _progress);
+
+            await _systemPackageInstaller.Received(1).InstallAsync("7zip", PackageManager.Chocolatey, true, Arg.Any<CancellationToken>());
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_MissingPackagesYaml_NoError()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(ImmutableArray<AppModule>.Empty, ImmutableArray<string>.Empty));
+
+            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
+
+            Assert.That(exitCode, Is.EqualTo(0));
+            await _systemPackageInstaller.DidNotReceive().InstallAsync(Arg.Any<string>(), Arg.Any<PackageManager>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_PackagesYaml_NonPlatformPackages_Skipped()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            _platformDetector.CurrentPlatform.Returns(Platform.Windows);
+            await File.WriteAllTextAsync(Path.Combine(tempDir, "packages.yaml"),
+                "packages:\n  - name: curl\n    manager: apt\n  - name: wget\n    manager: brew\n  - name: 7zip\n    manager: chocolatey\n");
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(ImmutableArray<AppModule>.Empty, ImmutableArray<string>.Empty));
+
+            await _deployService.DeployAsync(tempDir, progress: _progress);
+
+            await _systemPackageInstaller.Received(1).InstallAsync("7zip", PackageManager.Chocolatey, false, Arg.Any<CancellationToken>());
+            await _systemPackageInstaller.DidNotReceive().InstallAsync("curl", Arg.Any<PackageManager>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
+            await _systemPackageInstaller.DidNotReceive().InstallAsync("wget", Arg.Any<PackageManager>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
         }
         finally
         {
