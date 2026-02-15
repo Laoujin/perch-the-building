@@ -32,6 +32,15 @@ app.Configure(config =>
         diff.AddCommand<DiffStopCommand>("stop")
             .WithDescription("Compare current state against the captured snapshot");
     });
+    config.AddBranch("restore", restore =>
+    {
+        restore.AddCommand<RestoreListCommand>("list")
+            .WithDescription("List available pre-deploy snapshots");
+        restore.AddCommand<RestoreApplyCommand>("apply")
+            .WithDescription("Restore files from a pre-deploy snapshot");
+    });
+    config.AddCommand<CompletionCommand>("completion")
+        .WithDescription("Output shell tab-completion script");
 });
 
 return app.Run(args);
