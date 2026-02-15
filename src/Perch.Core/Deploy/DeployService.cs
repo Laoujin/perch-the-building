@@ -35,8 +35,12 @@ public sealed class DeployService : IDeployService
         _psModuleInstaller = psModuleInstaller;
     }
 
-    public async Task<int> DeployAsync(string configRepoPath, bool dryRun = false, IProgress<DeployResult>? progress = null, CancellationToken cancellationToken = default)
+    public async Task<int> DeployAsync(string configRepoPath, DeployOptions? options = null, CancellationToken cancellationToken = default)
     {
+        bool dryRun = options?.DryRun ?? false;
+        IProgress<DeployResult>? progress = options?.Progress;
+        var beforeModule = options?.BeforeModule;
+
         DiscoveryResult discovery = await _discoveryService.DiscoverAsync(configRepoPath, cancellationToken).ConfigureAwait(false);
 
         foreach (string error in discovery.Errors)
@@ -48,48 +52,110 @@ public sealed class DeployService : IDeployService
         Platform currentPlatform = _platformDetector.CurrentPlatform;
         MachineProfile? machineProfile = await _machineProfileService.LoadAsync(configRepoPath, cancellationToken).ConfigureAwait(false);
 
+        var eligibleModules = new List<AppModule>();
+        foreach (AppModule module in discovery.Modules)
+        {
+            string? skipReason = GetSkipReason(module, currentPlatform, machineProfile);
+            if (skipReason != null)
+            {
+                progress?.Report(new DeployResult(module.DisplayName, "", "", ResultLevel.Ok, skipReason, DeployEventType.ModuleSkipped));
+            }
+            else
+            {
+                progress?.Report(new DeployResult(module.DisplayName, "", "", ResultLevel.Ok, "", DeployEventType.ModuleDiscovered));
+                eligibleModules.Add(module);
+            }
+        }
+
         if (!dryRun)
         {
             IReadOnlyList<string> allTargetPaths = CollectTargetPaths(discovery.Modules, currentPlatform);
             _snapshotProvider.CreateSnapshot(allTargetPaths, cancellationToken);
         }
 
-        foreach (AppModule module in discovery.Modules)
+        foreach (AppModule module in eligibleModules)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (!module.Enabled)
+            if (beforeModule != null)
             {
-                progress?.Report(new DeployResult(module.DisplayName, "", "", ResultLevel.Ok, "Skipped (disabled)"));
-                continue;
+                IReadOnlyList<DeployResult> preview = dryRun
+                    ? CollectModulePreview(module, currentPlatform)
+                    : await CollectModulePreviewAsync(module, currentPlatform, cancellationToken).ConfigureAwait(false);
+
+                ModuleAction action = await beforeModule(module, preview).ConfigureAwait(false);
+                if (action == ModuleAction.Skip)
+                {
+                    progress?.Report(new DeployResult(module.DisplayName, "", "", ResultLevel.Ok, "Skipped (user)", DeployEventType.ModuleSkipped));
+                    continue;
+                }
+
+                if (action == ModuleAction.Abort)
+                {
+                    break;
+                }
             }
 
-            if (module.Platforms.Length > 0 && !module.Platforms.Contains(currentPlatform))
-            {
-                progress?.Report(new DeployResult(module.DisplayName, "", "", ResultLevel.Ok,
-                    $"Skipped (not for {currentPlatform})"));
-                continue;
-            }
+            progress?.Report(new DeployResult(module.DisplayName, "", "", ResultLevel.Ok, "", DeployEventType.ModuleStarted));
 
-            if (machineProfile?.IncludeModules.Length > 0 && !machineProfile.IncludeModules.Contains(module.Name, StringComparer.OrdinalIgnoreCase))
-            {
-                progress?.Report(new DeployResult(module.DisplayName, "", "", ResultLevel.Ok, "Skipped (not in machine profile)"));
-                continue;
-            }
+            bool moduleHadErrors = await DeployModuleAsync(module, currentPlatform, dryRun, progress, cancellationToken).ConfigureAwait(false);
 
-            if (machineProfile?.ExcludeModules.Length > 0 && machineProfile.ExcludeModules.Contains(module.Name, StringComparer.OrdinalIgnoreCase))
-            {
-                progress?.Report(new DeployResult(module.DisplayName, "", "", ResultLevel.Ok, "Skipped (excluded by machine profile)"));
-                continue;
-            }
+            ResultLevel completionLevel = moduleHadErrors ? ResultLevel.Error : ResultLevel.Ok;
+            progress?.Report(new DeployResult(module.DisplayName, "", "", completionLevel, "", DeployEventType.ModuleCompleted));
 
-            if (await DeployModuleAsync(module, currentPlatform, dryRun, progress, cancellationToken).ConfigureAwait(false))
+            if (moduleHadErrors)
             {
                 hasErrors = true;
             }
         }
 
         return hasErrors ? 1 : 0;
+    }
+
+    private static string? GetSkipReason(AppModule module, Platform currentPlatform, MachineProfile? machineProfile)
+    {
+        if (!module.Enabled)
+        {
+            return "Skipped (disabled)";
+        }
+
+        if (module.Platforms.Length > 0 && !module.Platforms.Contains(currentPlatform))
+        {
+            return $"Skipped (not for {currentPlatform})";
+        }
+
+        if (machineProfile?.IncludeModules.Length > 0 && !machineProfile.IncludeModules.Contains(module.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            return "Skipped (not in machine profile)";
+        }
+
+        if (machineProfile?.ExcludeModules.Length > 0 && machineProfile.ExcludeModules.Contains(module.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            return "Skipped (excluded by machine profile)";
+        }
+
+        return null;
+    }
+
+    private IReadOnlyList<DeployResult> CollectModulePreview(AppModule module, Platform currentPlatform)
+    {
+        var results = new List<DeployResult>();
+        var previewProgress = new SynchronousProgress<DeployResult>(results.Add);
+        ProcessModuleLinks(module, currentPlatform, true, previewProgress);
+        ProcessModuleRegistry(module, true, previewProgress);
+        return results;
+    }
+
+    private async Task<IReadOnlyList<DeployResult>> CollectModulePreviewAsync(AppModule module, Platform currentPlatform, CancellationToken cancellationToken)
+    {
+        var results = new List<DeployResult>();
+        var previewProgress = new SynchronousProgress<DeployResult>(results.Add);
+        ProcessModuleLinks(module, currentPlatform, true, previewProgress);
+        ProcessModuleRegistry(module, true, previewProgress);
+        await ProcessModuleGlobalPackagesAsync(module, true, previewProgress, cancellationToken).ConfigureAwait(false);
+        await ProcessListAsync(module.VscodeExtensions, id => _vscodeExtensionInstaller.InstallAsync(module.DisplayName, id, true, cancellationToken), previewProgress, cancellationToken).ConfigureAwait(false);
+        await ProcessListAsync(module.PsModules, name => _psModuleInstaller.InstallAsync(module.DisplayName, name, true, cancellationToken), previewProgress, cancellationToken).ConfigureAwait(false);
+        return results;
     }
 
     private async Task<bool> DeployModuleAsync(AppModule module, Platform currentPlatform, bool dryRun, IProgress<DeployResult>? progress, CancellationToken cancellationToken)
@@ -276,5 +342,10 @@ public sealed class DeployService : IDeployService
         }
 
         return targets;
+    }
+
+    private sealed class SynchronousProgress<T>(Action<T> handler) : IProgress<T>
+    {
+        public void Report(T value) => handler(value);
     }
 }

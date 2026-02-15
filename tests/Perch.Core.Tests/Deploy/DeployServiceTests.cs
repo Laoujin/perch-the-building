@@ -82,12 +82,12 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
+            int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             Assert.Multiple(() =>
             {
                 Assert.That(exitCode, Is.EqualTo(0));
-                Assert.That(_reported.Count, Is.GreaterThanOrEqualTo(2));
+                Assert.That(_reported.Where(r => r.EventType == DeployEventType.Action).ToList(), Has.Count.GreaterThanOrEqualTo(2));
             });
             _symlinkProvider.Received(2).CreateSymlink(Arg.Any<string>(), Arg.Any<string>());
         }
@@ -114,7 +114,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
+            int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             Assert.That(exitCode, Is.EqualTo(1));
         }
@@ -142,7 +142,7 @@ public sealed class DeployServiceTests
             cts.Cancel();
 
             Assert.ThrowsAsync<OperationCanceledException>(
-                () => _deployService.DeployAsync(tempDir, progress: _progress, cancellationToken: cts.Token));
+                () => _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress }, cts.Token));
         }
         finally
         {
@@ -169,7 +169,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            await _deployService.DeployAsync(tempDir, progress: _progress);
+            await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             string expectedTarget = Path.Combine(targetDir, "output.txt");
             _symlinkProvider.Received(1).CreateSymlink(expectedTarget, Arg.Any<string>());
@@ -199,7 +199,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            await _deployService.DeployAsync(tempDir, progress: _progress);
+            await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             string expectedSource = Path.Combine(modulePath, "settings.json");
             _symlinkProvider.Received(1).CreateSymlink(Arg.Any<string>(), expectedSource);
@@ -225,7 +225,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
+            int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             Assert.Multiple(() =>
             {
@@ -260,7 +260,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            await _deployService.DeployAsync(tempDir, progress: _progress);
+            await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             _symlinkProvider.Received(1).CreateSymlink(Arg.Any<string>(), Arg.Any<string>());
         }
@@ -288,7 +288,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            await _deployService.DeployAsync(tempDir, progress: _progress);
+            await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             _symlinkProvider.Received(1).CreateSymlink(Arg.Any<string>(), Arg.Any<string>());
         }
@@ -322,7 +322,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            await _deployService.DeployAsync(tempDir, progress: _progress);
+            await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             _symlinkProvider.Received(1).CreateSymlink(Path.Combine(targetDir, "win.txt"), Arg.Any<string>());
         }
@@ -353,13 +353,14 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
+            int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
+            var actions = _reported.Where(r => r.EventType == DeployEventType.Action).ToList();
             Assert.Multiple(() =>
             {
                 Assert.That(exitCode, Is.EqualTo(0));
-                Assert.That(_reported, Has.Count.EqualTo(1));
-                Assert.That(_reported[0].Message, Does.Contain("Skipped"));
+                Assert.That(actions, Has.Count.EqualTo(1));
+                Assert.That(actions[0].Message, Does.Contain("Skipped"));
             });
             _symlinkProvider.DidNotReceive().CreateSymlink(Arg.Any<string>(), Arg.Any<string>());
         }
@@ -394,7 +395,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            await _deployService.DeployAsync(tempDir, progress: _progress);
+            await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             _symlinkProvider.Received(2).CreateSymlink(Arg.Any<string>(), Arg.Any<string>());
         }
@@ -422,13 +423,14 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            int exitCode = await _deployService.DeployAsync(tempDir, dryRun: true, _progress);
+            int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { DryRun = true, Progress = _progress });
 
+            var actions = _reported.Where(r => r.EventType == DeployEventType.Action).ToList();
             Assert.Multiple(() =>
             {
                 Assert.That(exitCode, Is.EqualTo(0));
-                Assert.That(_reported, Has.Count.EqualTo(1));
-                Assert.That(_reported[0].Message, Does.Contain("Would"));
+                Assert.That(actions, Has.Count.EqualTo(1));
+                Assert.That(actions[0].Message, Does.Contain("Would"));
             });
             _symlinkProvider.DidNotReceive().CreateSymlink(Arg.Any<string>(), Arg.Any<string>());
             _snapshotProvider.DidNotReceive().CreateSnapshot(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>());
@@ -457,7 +459,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            await _deployService.DeployAsync(tempDir, progress: _progress);
+            await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             _snapshotProvider.Received(1).CreateSnapshot(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>());
         }
@@ -485,7 +487,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            await _deployService.DeployAsync(tempDir, dryRun: true, _progress);
+            await _deployService.DeployAsync(tempDir, new DeployOptions { DryRun = true, Progress = _progress });
 
             _snapshotProvider.DidNotReceive().CreateSnapshot(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>());
         }
@@ -514,14 +516,15 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
+            int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
+            var actions = _reported.Where(r => r.EventType == DeployEventType.Action).ToList();
             Assert.Multiple(() =>
             {
                 Assert.That(exitCode, Is.EqualTo(0));
-                Assert.That(_reported, Has.Count.EqualTo(1));
-                Assert.That(_reported[0].Level, Is.EqualTo(ResultLevel.Warning));
-                Assert.That(_reported[0].Message, Does.Contain("glob"));
+                Assert.That(actions, Has.Count.EqualTo(1));
+                Assert.That(actions[0].Level, Is.EqualTo(ResultLevel.Warning));
+                Assert.That(actions[0].Message, Does.Contain("glob"));
             });
             _symlinkProvider.DidNotReceive().CreateSymlink(Arg.Any<string>(), Arg.Any<string>());
         }
@@ -552,7 +555,7 @@ public sealed class DeployServiceTests
             _hookRunner.RunAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DeployResult("Module", "", "", ResultLevel.Error, "Hook failed"));
 
-            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
+            int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             Assert.Multiple(() =>
             {
@@ -590,7 +593,7 @@ public sealed class DeployServiceTests
             _hookRunner.RunAsync("Module", postHookPath, modulePath, Arg.Any<CancellationToken>())
                 .Returns(new DeployResult("Module", "", "", ResultLevel.Error, "Post hook failed"));
 
-            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
+            int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             Assert.That(exitCode, Is.EqualTo(1));
             Assert.That(_reported.Any(r => r.Level == ResultLevel.Error && r.Message.Contains("Post hook")), Is.True);
@@ -620,7 +623,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            await _deployService.DeployAsync(tempDir, dryRun: true, _progress);
+            await _deployService.DeployAsync(tempDir, new DeployOptions { DryRun = true, Progress = _progress });
 
             await _hookRunner.DidNotReceive().RunAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
         }
@@ -648,7 +651,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
+            int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             Assert.That(exitCode, Is.EqualTo(0));
             await _hookRunner.DidNotReceive().RunAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
@@ -685,7 +688,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
+            int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             Assert.That(exitCode, Is.EqualTo(0));
             Assert.That(_reported.Any(r => r.Message.Contains("not in machine profile")), Is.True);
@@ -722,7 +725,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
+            int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             Assert.That(exitCode, Is.EqualTo(0));
             Assert.That(_reported.Any(r => r.Message.Contains("excluded by machine profile")), Is.True);
@@ -759,7 +762,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
+            int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             Assert.That(exitCode, Is.EqualTo(0));
             _symlinkProvider.Received(2).CreateSymlink(Arg.Any<string>(), Arg.Any<string>());
@@ -790,7 +793,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            await _deployService.DeployAsync(tempDir, progress: _progress);
+            await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             _registryProvider.Received(1).SetValue(@"HKCU\Software\Perch\Test", "Theme", 0, RegistryValueType.DWord);
         }
@@ -821,7 +824,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            await _deployService.DeployAsync(tempDir, progress: _progress);
+            await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             _registryProvider.DidNotReceive().SetValue(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<object>(), Arg.Any<RegistryValueType>());
             Assert.That(_reported.Any(r => r.Message.Contains("already set")), Is.True);
@@ -852,7 +855,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            await _deployService.DeployAsync(tempDir, dryRun: true, _progress);
+            await _deployService.DeployAsync(tempDir, new DeployOptions { DryRun = true, Progress = _progress });
 
             _registryProvider.DidNotReceive().SetValue(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<object>(), Arg.Any<RegistryValueType>());
             _registryProvider.DidNotReceive().GetValue(Arg.Any<string>(), Arg.Any<string>());
@@ -880,7 +883,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
+            int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             Assert.That(exitCode, Is.EqualTo(0));
             Assert.That(_reported.Any(r => r.Message.Contains("Skipped (disabled)")), Is.True);
@@ -911,7 +914,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
+            int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             Assert.That(exitCode, Is.EqualTo(0));
             await _globalPackageInstaller.Received(2).InstallAsync("Bun Packages", GlobalPackageManager.Bun, Arg.Any<string>(), false, Arg.Any<CancellationToken>());
@@ -941,7 +944,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            await _deployService.DeployAsync(tempDir, dryRun: true, _progress);
+            await _deployService.DeployAsync(tempDir, new DeployOptions { DryRun = true, Progress = _progress });
 
             await _globalPackageInstaller.Received(1).InstallAsync("Bun", GlobalPackageManager.Bun, "tsx", true, Arg.Any<CancellationToken>());
         }
@@ -970,7 +973,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
+            int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             Assert.That(exitCode, Is.EqualTo(0));
             await _vscodeExtensionInstaller.Received(2).InstallAsync("VS Code", Arg.Any<string>(), false, Arg.Any<CancellationToken>());
@@ -1000,7 +1003,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            await _deployService.DeployAsync(tempDir, dryRun: true, _progress);
+            await _deployService.DeployAsync(tempDir, new DeployOptions { DryRun = true, Progress = _progress });
 
             await _vscodeExtensionInstaller.Received(1).InstallAsync("VS Code", "ms-dotnettools.csharp", true, Arg.Any<CancellationToken>());
         }
@@ -1029,7 +1032,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
+            int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             Assert.That(exitCode, Is.EqualTo(0));
             await _psModuleInstaller.Received(2).InstallAsync("PowerShell", Arg.Any<string>(), false, Arg.Any<CancellationToken>());
@@ -1059,9 +1062,325 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            await _deployService.DeployAsync(tempDir, dryRun: true, _progress);
+            await _deployService.DeployAsync(tempDir, new DeployOptions { DryRun = true, Progress = _progress });
 
             await _psModuleInstaller.Received(1).InstallAsync("PowerShell", "posh-git", true, Arg.Any<CancellationToken>());
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_EmitsModuleDiscoveredForEligibleModules()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string modAPath = Path.Combine(tempDir, "a");
+        string modBPath = Path.Combine(tempDir, "b");
+        Directory.CreateDirectory(modAPath);
+        Directory.CreateDirectory(modBPath);
+
+        try
+        {
+            var modules = ImmutableArray.Create(
+                new AppModule("a", "Module A", true, modAPath, ImmutableArray<Platform>.Empty, ImmutableArray<LinkEntry>.Empty),
+                new AppModule("b", "Module B", true, modBPath, ImmutableArray<Platform>.Empty, ImmutableArray<LinkEntry>.Empty));
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
+
+            await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
+
+            var discovered = _reported.Where(r => r.EventType == DeployEventType.ModuleDiscovered).ToList();
+            Assert.That(discovered, Has.Count.EqualTo(2));
+            Assert.That(discovered[0].ModuleName, Is.EqualTo("Module A"));
+            Assert.That(discovered[1].ModuleName, Is.EqualTo("Module B"));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_EmitsModuleStartedAndCompletedPerModule()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string modulePath = Path.Combine(tempDir, "mod");
+        Directory.CreateDirectory(modulePath);
+        string targetDir = Path.Combine(tempDir, "target");
+        Directory.CreateDirectory(targetDir);
+
+        try
+        {
+            var modules = ImmutableArray.Create(
+                new AppModule("mod", "Module", true, modulePath, ImmutableArray<Platform>.Empty, ImmutableArray.Create(
+                    new LinkEntry("f.txt", Path.Combine(targetDir, "f.txt"), LinkType.Symlink))));
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
+
+            await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
+
+            var started = _reported.Where(r => r.EventType == DeployEventType.ModuleStarted).ToList();
+            var completed = _reported.Where(r => r.EventType == DeployEventType.ModuleCompleted).ToList();
+            Assert.Multiple(() =>
+            {
+                Assert.That(started, Has.Count.EqualTo(1));
+                Assert.That(completed, Has.Count.EqualTo(1));
+                Assert.That(completed[0].Level, Is.EqualTo(ResultLevel.Ok));
+            });
+
+            int startedIdx = _reported.IndexOf(started[0]);
+            int completedIdx = _reported.IndexOf(completed[0]);
+            var actionsBetween = _reported.Skip(startedIdx + 1).Take(completedIdx - startedIdx - 1)
+                .Where(r => r.EventType == DeployEventType.Action).ToList();
+            Assert.That(actionsBetween, Has.Count.GreaterThanOrEqualTo(1));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_EmitsModuleSkippedForFilteredModules()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            _platformDetector.CurrentPlatform.Returns(Platform.Windows);
+            var modules = ImmutableArray.Create(
+                new AppModule("disabled", "Disabled", false, Path.Combine(tempDir, "a"), ImmutableArray<Platform>.Empty, ImmutableArray<LinkEntry>.Empty),
+                new AppModule("linux", "Linux Only", true, Path.Combine(tempDir, "b"), ImmutableArray.Create(Platform.Linux), ImmutableArray<LinkEntry>.Empty));
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
+
+            await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
+
+            var skipped = _reported.Where(r => r.EventType == DeployEventType.ModuleSkipped).ToList();
+            Assert.That(skipped, Has.Count.EqualTo(2));
+            Assert.That(skipped[0].Message, Does.Contain("disabled"));
+            Assert.That(skipped[1].Message, Does.Contain("not for Windows"));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_ModuleCompletedCarriesErrorLevel_WhenModuleHadErrors()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string modulePath = Path.Combine(tempDir, "mod");
+        Directory.CreateDirectory(modulePath);
+
+        try
+        {
+            var modules = ImmutableArray.Create(
+                new AppModule("mod", "Module", true, modulePath, ImmutableArray<Platform>.Empty, ImmutableArray.Create(
+                    new LinkEntry("file.txt", Path.Combine(tempDir, "nonexistent", "sub", "a.txt"), LinkType.Symlink))));
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
+
+            await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
+
+            var completed = _reported.Where(r => r.EventType == DeployEventType.ModuleCompleted).ToList();
+            Assert.That(completed, Has.Count.EqualTo(1));
+            Assert.That(completed[0].Level, Is.EqualTo(ResultLevel.Error));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_BeforeModule_Skip_SkipsModule()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string modulePath = Path.Combine(tempDir, "mod");
+        Directory.CreateDirectory(modulePath);
+        string targetDir = Path.Combine(tempDir, "target");
+        Directory.CreateDirectory(targetDir);
+
+        try
+        {
+            var modules = ImmutableArray.Create(
+                new AppModule("mod", "Module", true, modulePath, ImmutableArray<Platform>.Empty, ImmutableArray.Create(
+                    new LinkEntry("f.txt", Path.Combine(targetDir, "f.txt"), LinkType.Symlink))));
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
+
+            var options = new DeployOptions
+            {
+                Progress = _progress,
+                BeforeModule = (_, _) => Task.FromResult(ModuleAction.Skip),
+            };
+
+            await _deployService.DeployAsync(tempDir, options);
+
+            Assert.That(_reported.Any(r => r.EventType == DeployEventType.ModuleSkipped && r.Message.Contains("user")), Is.True);
+            Assert.That(_reported.Any(r => r.EventType == DeployEventType.ModuleStarted), Is.False);
+            _symlinkProvider.DidNotReceive().CreateSymlink(Arg.Any<string>(), Arg.Any<string>());
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_BeforeModule_Abort_StopsRemainingModules()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string modAPath = Path.Combine(tempDir, "a");
+        string modBPath = Path.Combine(tempDir, "b");
+        Directory.CreateDirectory(modAPath);
+        Directory.CreateDirectory(modBPath);
+        string targetDir = Path.Combine(tempDir, "target");
+        Directory.CreateDirectory(targetDir);
+
+        try
+        {
+            var modules = ImmutableArray.Create(
+                new AppModule("a", "Module A", true, modAPath, ImmutableArray<Platform>.Empty, ImmutableArray.Create(
+                    new LinkEntry("f.txt", Path.Combine(targetDir, "a.txt"), LinkType.Symlink))),
+                new AppModule("b", "Module B", true, modBPath, ImmutableArray<Platform>.Empty, ImmutableArray.Create(
+                    new LinkEntry("f.txt", Path.Combine(targetDir, "b.txt"), LinkType.Symlink))));
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
+
+            var options = new DeployOptions
+            {
+                Progress = _progress,
+                BeforeModule = (_, _) => Task.FromResult(ModuleAction.Abort),
+            };
+
+            await _deployService.DeployAsync(tempDir, options);
+
+            Assert.That(_reported.Any(r => r.EventType == DeployEventType.ModuleStarted), Is.False);
+            _symlinkProvider.DidNotReceive().CreateSymlink(Arg.Any<string>(), Arg.Any<string>());
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_BeforeModule_Proceed_ExecutesModule()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string modulePath = Path.Combine(tempDir, "mod");
+        Directory.CreateDirectory(modulePath);
+        string targetDir = Path.Combine(tempDir, "target");
+        Directory.CreateDirectory(targetDir);
+
+        try
+        {
+            var modules = ImmutableArray.Create(
+                new AppModule("mod", "Module", true, modulePath, ImmutableArray<Platform>.Empty, ImmutableArray.Create(
+                    new LinkEntry("f.txt", Path.Combine(targetDir, "f.txt"), LinkType.Symlink))));
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
+
+            var options = new DeployOptions
+            {
+                Progress = _progress,
+                BeforeModule = (_, _) => Task.FromResult(ModuleAction.Proceed),
+            };
+
+            await _deployService.DeployAsync(tempDir, options);
+
+            Assert.That(_reported.Any(r => r.EventType == DeployEventType.ModuleStarted), Is.True);
+            Assert.That(_reported.Any(r => r.EventType == DeployEventType.ModuleCompleted), Is.True);
+            _symlinkProvider.Received(1).CreateSymlink(Arg.Any<string>(), Arg.Any<string>());
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_BeforeModule_ReceivesPreviewResults()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string modulePath = Path.Combine(tempDir, "mod");
+        Directory.CreateDirectory(modulePath);
+        string targetDir = Path.Combine(tempDir, "target");
+        Directory.CreateDirectory(targetDir);
+
+        try
+        {
+            var modules = ImmutableArray.Create(
+                new AppModule("mod", "Module", true, modulePath, ImmutableArray<Platform>.Empty, ImmutableArray.Create(
+                    new LinkEntry("f.txt", Path.Combine(targetDir, "f.txt"), LinkType.Symlink))));
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
+
+            IReadOnlyList<DeployResult>? capturedPreview = null;
+            var options = new DeployOptions
+            {
+                Progress = _progress,
+                BeforeModule = (_, preview) =>
+                {
+                    capturedPreview = preview;
+                    return Task.FromResult(ModuleAction.Proceed);
+                },
+            };
+
+            await _deployService.DeployAsync(tempDir, options);
+
+            Assert.That(capturedPreview, Is.Not.Null);
+            Assert.That(capturedPreview, Has.Count.GreaterThanOrEqualTo(1));
+            Assert.That(capturedPreview![0].Message, Does.Contain("Would"));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_BeforeModule_NotCalledForFilteredModules()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            _platformDetector.CurrentPlatform.Returns(Platform.Windows);
+            var modules = ImmutableArray.Create(
+                new AppModule("disabled", "Disabled", false, Path.Combine(tempDir, "a"), ImmutableArray<Platform>.Empty, ImmutableArray<LinkEntry>.Empty),
+                new AppModule("linux", "Linux Only", true, Path.Combine(tempDir, "b"), ImmutableArray.Create(Platform.Linux), ImmutableArray<LinkEntry>.Empty));
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
+
+            bool callbackInvoked = false;
+            var options = new DeployOptions
+            {
+                Progress = _progress,
+                BeforeModule = (_, _) =>
+                {
+                    callbackInvoked = true;
+                    return Task.FromResult(ModuleAction.Proceed);
+                },
+            };
+
+            await _deployService.DeployAsync(tempDir, options);
+
+            Assert.That(callbackInvoked, Is.False);
         }
         finally
         {
