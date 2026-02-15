@@ -30,7 +30,7 @@ public sealed class SystemScannerTests
     public async Task ScanAsync_AggregatesAllScanners()
     {
         var dotfiles = ImmutableArray.Create(
-            new DetectedDotfile(".gitconfig", "/home/user/.gitconfig", "Git", 100, DateTime.UtcNow));
+            new DetectedDotfile(".gitconfig", "/home/user/.gitconfig", "Git", 100, DateTime.UtcNow, false));
         _dotfileScanner.ScanAsync(Arg.Any<CancellationToken>()).Returns(dotfiles);
 
         var fonts = ImmutableArray.Create(

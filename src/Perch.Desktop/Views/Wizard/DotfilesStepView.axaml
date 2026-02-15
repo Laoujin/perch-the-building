@@ -26,7 +26,13 @@
                             <Grid ColumnDefinitions="Auto,*,Auto">
                                 <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" Margin="0,0,8,0" />
                                 <StackPanel Grid.Column="1" Spacing="2">
-                                    <TextBlock Text="{Binding Dotfile.Name}" FontWeight="SemiBold" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="{Binding Dotfile.Name}" FontWeight="SemiBold" />
+                                        <Border IsVisible="{Binding Dotfile.IsSymlink}" Padding="6,1" CornerRadius="3"
+                                                Background="{DynamicResource SystemAccentColor}">
+                                            <TextBlock Text="symlink" FontSize="10" Opacity="0.9" />
+                                        </Border>
+                                    </StackPanel>
                                     <TextBlock Text="{Binding Dotfile.Group}" Opacity="0.5" FontSize="11" />
                                 </StackPanel>
                                 <TextBlock Grid.Column="2" Text="{Binding Dotfile.FullPath}"
