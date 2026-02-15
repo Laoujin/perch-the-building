@@ -47,9 +47,10 @@ $checks = @(
 )
 
 foreach ($check in $checks) {
-    $item = Get-Item $check.Path -ErrorAction SilentlyContinue
-    if ($item -and $item.LinkTarget) {
-        Write-Host "[OK]   $($check.Label) -> $($item.LinkTarget)" -ForegroundColor Green
+    $item = Get-Item $check.Path -Force -ErrorAction SilentlyContinue
+    $isSymlink = $item -and ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint)
+    if ($isSymlink) {
+        Write-Host "[OK]   $($check.Label) is a symlink" -ForegroundColor Green
     } elseif ($item) {
         Write-Host "[FAIL] $($check.Label) exists but is NOT a symlink" -ForegroundColor Red
     } else {
@@ -87,8 +88,9 @@ Write-Host "Exit code: $exitCode"
 # --- Summary ---
 Write-Host ""
 Write-Host "=== Directory listing ===" -ForegroundColor Yellow
-Get-ChildItem $TargetsDir -Recurse | ForEach-Object {
-    $suffix = if ($_.LinkTarget) { " -> $($_.LinkTarget)" } else { "" }
+Get-ChildItem $TargetsDir -Recurse -Force | ForEach-Object {
+    $isLink = $_.Attributes -band [System.IO.FileAttributes]::ReparsePoint
+    $suffix = if ($isLink) { " [SYMLINK]" } else { "" }
     Write-Host "  $($_.FullName)$suffix"
 }
 
