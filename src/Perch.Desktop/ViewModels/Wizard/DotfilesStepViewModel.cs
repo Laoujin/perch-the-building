@@ -15,7 +15,7 @@ public sealed partial class DotfilesStepViewModel : WizardStepViewModel
     public ObservableCollection<DotfileItemViewModel> Items { get; } = [];
 
     public override string Title => "Dotfiles";
-    public override int StepNumber => 5;
+    public override int StepNumber => 4;
 
     public DotfilesStepViewModel(WizardState state)
     {

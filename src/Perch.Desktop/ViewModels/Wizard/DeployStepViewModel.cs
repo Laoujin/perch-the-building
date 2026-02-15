@@ -28,7 +28,7 @@ public sealed partial class DeployStepViewModel : WizardStepViewModel
     public ObservableCollection<DeployPhaseViewModel> Phases { get; } = [];
 
     public override string Title => "Deploy";
-    public override int StepNumber => 11;
+    public override int StepNumber => 9;
     public override bool CanSkip => false;
     public override bool CanGoBack => !IsDeploying;
 

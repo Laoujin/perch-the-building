@@ -38,13 +38,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         _steps =
         [
-            new WelcomeStepViewModel(),
+            new WelcomeStepViewModel(_state),
             new RepoSetupStepViewModel(_state),
             new SystemScanStepViewModel(scanner, _state),
-            new ProfileStepViewModel(_state),
             new DotfilesStepViewModel(_state),
             CreateAppCatalogStep(),
-            CreateFontsStep(),
             new VsCodeExtensionsStepViewModel(_state),
             CreateTweaksStep(),
             new ReviewStepViewModel(_state),
@@ -113,10 +111,6 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 await catalog.LoadCatalogAsync().ConfigureAwait(false);
                 break;
 
-            case FontsStepViewModel fonts when fonts.Fonts.Count == 0:
-                await fonts.LoadFontsAsync().ConfigureAwait(false);
-                break;
-
             case VsCodeExtensionsStepViewModel extensions:
                 extensions.LoadFromScanResult();
                 break;
@@ -144,11 +138,6 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         _catalogService != null
             ? new AppCatalogStepViewModel(_catalogService, _state)
             : new AppCatalogStepViewModel(new NoOpCatalogService(), _state);
-
-    private FontsStepViewModel CreateFontsStep() =>
-        _catalogService != null
-            ? new FontsStepViewModel(_catalogService, _state)
-            : new FontsStepViewModel(new NoOpCatalogService(), _state);
 
     private WindowsTweaksStepViewModel CreateTweaksStep() =>
         _catalogService != null

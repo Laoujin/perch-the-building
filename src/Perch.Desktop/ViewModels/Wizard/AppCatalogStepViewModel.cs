@@ -30,7 +30,7 @@ public sealed partial class AppCatalogStepViewModel : WizardStepViewModel
     public ObservableCollection<string> Categories { get; } = ["All Apps"];
 
     public override string Title => "App Catalog";
-    public override int StepNumber => 6;
+    public override int StepNumber => 5;
 
     public AppCatalogStepViewModel(ICatalogService catalogService, WizardState state)
     {
