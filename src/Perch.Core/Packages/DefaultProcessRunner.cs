@@ -4,7 +4,7 @@ namespace Perch.Core.Packages;
 
 public sealed class DefaultProcessRunner : IProcessRunner
 {
-    public async Task<ProcessRunResult> RunAsync(string fileName, string arguments, CancellationToken cancellationToken = default)
+    public async Task<ProcessRunResult> RunAsync(string fileName, string arguments, string? workingDirectory = null, CancellationToken cancellationToken = default)
     {
         using var process = new Process
         {
@@ -16,6 +16,7 @@ public sealed class DefaultProcessRunner : IProcessRunner
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true,
+                WorkingDirectory = workingDirectory ?? "",
             },
         };
 

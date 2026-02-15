@@ -20,6 +20,18 @@ app.Configure(config =>
         .WithDescription("Check for drift between managed configs and deployed symlinks");
     config.AddCommand<AppsCommand>("apps")
         .WithDescription("Show installed apps and their config module status");
+    config.AddBranch("git", git =>
+    {
+        git.AddCommand<GitSetupCommand>("setup")
+            .WithDescription("Register git clean filters defined in module manifests");
+    });
+    config.AddBranch("diff", diff =>
+    {
+        diff.AddCommand<DiffStartCommand>("start")
+            .WithDescription("Capture a filesystem snapshot for change detection");
+        diff.AddCommand<DiffStopCommand>("stop")
+            .WithDescription("Compare current state against the captured snapshot");
+    });
 });
 
 return app.Run(args);

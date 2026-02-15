@@ -19,7 +19,7 @@ public sealed class WingetPackageManagerProvider : IPackageManagerProvider
         ProcessRunResult result;
         try
         {
-            result = await _processRunner.RunAsync("winget", "list --source winget", cancellationToken).ConfigureAwait(false);
+            result = await _processRunner.RunAsync("winget", "list --source winget", cancellationToken: cancellationToken).ConfigureAwait(false);
         }
         catch (Win32Exception)
         {

@@ -26,7 +26,7 @@ public sealed class ChocolateyPackageManagerProviderTests
             3 packages installed.
             """;
 
-        _processRunner.RunAsync("choco", "list", Arg.Any<CancellationToken>())
+        _processRunner.RunAsync("choco", "list", cancellationToken: Arg.Any<CancellationToken>())
             .Returns(new ProcessRunResult(0, output, ""));
 
         var result = await _provider.ScanInstalledAsync();
@@ -45,7 +45,7 @@ public sealed class ChocolateyPackageManagerProviderTests
     [Test]
     public async Task ScanInstalled_ChocoNotInstalled_ReturnsUnavailable()
     {
-        _processRunner.RunAsync("choco", "list", Arg.Any<CancellationToken>())
+        _processRunner.RunAsync("choco", "list", cancellationToken: Arg.Any<CancellationToken>())
             .Returns<ProcessRunResult>(_ => throw new Win32Exception("not found"));
 
         var result = await _provider.ScanInstalledAsync();
@@ -60,7 +60,7 @@ public sealed class ChocolateyPackageManagerProviderTests
     [Test]
     public async Task ScanInstalled_ChocoReturnsError_ReturnsUnavailable()
     {
-        _processRunner.RunAsync("choco", "list", Arg.Any<CancellationToken>())
+        _processRunner.RunAsync("choco", "list", cancellationToken: Arg.Any<CancellationToken>())
             .Returns(new ProcessRunResult(1, "", "something went wrong"));
 
         var result = await _provider.ScanInstalledAsync();

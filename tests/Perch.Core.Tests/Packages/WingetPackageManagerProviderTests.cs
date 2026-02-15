@@ -25,7 +25,7 @@ public sealed class WingetPackageManagerProviderTests
             "Git                            Git.Git                2.42.0\r\n" +
             "7-Zip                          7zip.7zip              23.01\r\n";
 
-        _processRunner.RunAsync("winget", "list --source winget", Arg.Any<CancellationToken>())
+        _processRunner.RunAsync("winget", "list --source winget", cancellationToken: Arg.Any<CancellationToken>())
             .Returns(new ProcessRunResult(0, output, ""));
 
         var result = await _provider.ScanInstalledAsync();
@@ -43,7 +43,7 @@ public sealed class WingetPackageManagerProviderTests
     [Test]
     public async Task ScanInstalled_WingetNotInstalled_ReturnsUnavailable()
     {
-        _processRunner.RunAsync("winget", "list --source winget", Arg.Any<CancellationToken>())
+        _processRunner.RunAsync("winget", "list --source winget", cancellationToken: Arg.Any<CancellationToken>())
             .Returns<ProcessRunResult>(_ => throw new Win32Exception("not found"));
 
         var result = await _provider.ScanInstalledAsync();
@@ -58,7 +58,7 @@ public sealed class WingetPackageManagerProviderTests
     [Test]
     public async Task ScanInstalled_WingetReturnsError_ReturnsUnavailable()
     {
-        _processRunner.RunAsync("winget", "list --source winget", Arg.Any<CancellationToken>())
+        _processRunner.RunAsync("winget", "list --source winget", cancellationToken: Arg.Any<CancellationToken>())
             .Returns(new ProcessRunResult(1, "", "error occurred"));
 
         var result = await _provider.ScanInstalledAsync();

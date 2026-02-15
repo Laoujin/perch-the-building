@@ -2,6 +2,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Perch.Core.Backup;
 using Perch.Core.Config;
 using Perch.Core.Deploy;
+using Perch.Core.Diff;
+using Perch.Core.Git;
 using Perch.Core.Modules;
 using Perch.Core.Packages;
 using Perch.Core.Status;
@@ -30,6 +32,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IFileBackupProvider, FileBackupProvider>();
         services.AddSingleton<ISnapshotProvider, SnapshotProvider>();
         services.AddSingleton<SymlinkOrchestrator>();
+        services.AddSingleton<IHookRunner, HookRunner>();
+        services.AddSingleton<ICleanFilterService, CleanFilterService>();
+        services.AddSingleton<IDiffSnapshotService, DiffSnapshotService>();
         services.AddSingleton<IDeployService, DeployService>();
         services.AddSingleton<IStatusService, StatusService>();
         services.AddSingleton<ISettingsProvider, YamlSettingsProvider>();

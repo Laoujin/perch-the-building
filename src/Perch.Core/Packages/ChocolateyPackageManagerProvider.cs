@@ -19,7 +19,7 @@ public sealed class ChocolateyPackageManagerProvider : IPackageManagerProvider
         ProcessRunResult result;
         try
         {
-            result = await _processRunner.RunAsync("choco", "list", cancellationToken).ConfigureAwait(false);
+            result = await _processRunner.RunAsync("choco", "list", cancellationToken: cancellationToken).ConfigureAwait(false);
         }
         catch (Win32Exception)
         {

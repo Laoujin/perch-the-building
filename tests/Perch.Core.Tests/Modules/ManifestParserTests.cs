@@ -284,4 +284,107 @@ public sealed class ManifestParserTests
             Assert.That(result.Manifest!.Links[1].PlatformTargets, Is.Not.Null);
         });
     }
+
+    [Test]
+    public void Parse_WithHooks_ReturnsDeployHooks()
+    {
+        string yaml = """
+            hooks:
+              pre-deploy: "./scripts/setup.ps1"
+              post-deploy: "./scripts/import.ps1"
+            links:
+              - source: settings.json
+                target: "%APPDATA%\\App\\settings.json"
+            """;
+
+        var result = _parser.Parse(yaml, "myapp");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Manifest!.Hooks, Is.Not.Null);
+            Assert.That(result.Manifest!.Hooks!.PreDeploy, Is.EqualTo("./scripts/setup.ps1"));
+            Assert.That(result.Manifest!.Hooks!.PostDeploy, Is.EqualTo("./scripts/import.ps1"));
+        });
+    }
+
+    [Test]
+    public void Parse_WithPartialHooks_ReturnsPartialDeployHooks()
+    {
+        string yaml = """
+            hooks:
+              pre-deploy: "./scripts/setup.ps1"
+            links:
+              - source: settings.json
+                target: "%APPDATA%\\App\\settings.json"
+            """;
+
+        var result = _parser.Parse(yaml, "myapp");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Manifest!.Hooks, Is.Not.Null);
+            Assert.That(result.Manifest!.Hooks!.PreDeploy, Is.EqualTo("./scripts/setup.ps1"));
+            Assert.That(result.Manifest!.Hooks!.PostDeploy, Is.Null);
+        });
+    }
+
+    [Test]
+    public void Parse_NoHooks_ReturnsNullHooks()
+    {
+        string yaml = """
+            links:
+              - source: settings.json
+                target: "%APPDATA%\\App\\settings.json"
+            """;
+
+        var result = _parser.Parse(yaml, "myapp");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Manifest!.Hooks, Is.Null);
+    }
+
+    [Test]
+    public void Parse_WithCleanFilter_ReturnsCleanFilterDefinition()
+    {
+        string yaml = """
+            clean-filter:
+              name: obsidian-clean
+              script: scripts/clean.sh
+              files:
+                - data.json
+                - workspace.json
+            links:
+              - source: settings.json
+                target: "%APPDATA%\\App\\settings.json"
+            """;
+
+        var result = _parser.Parse(yaml, "obsidian");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Manifest!.CleanFilter, Is.Not.Null);
+            Assert.That(result.Manifest!.CleanFilter!.Name, Is.EqualTo("obsidian-clean"));
+            Assert.That(result.Manifest!.CleanFilter!.Script, Is.EqualTo("scripts/clean.sh"));
+            Assert.That(result.Manifest!.CleanFilter!.Files, Has.Length.EqualTo(2));
+            Assert.That(result.Manifest!.CleanFilter!.Files[0], Is.EqualTo("data.json"));
+        });
+    }
+
+    [Test]
+    public void Parse_NoCleanFilter_ReturnsNull()
+    {
+        string yaml = """
+            links:
+              - source: settings.json
+                target: "%APPDATA%\\App\\settings.json"
+            """;
+
+        var result = _parser.Parse(yaml, "myapp");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Manifest!.CleanFilter, Is.Null);
+    }
 }

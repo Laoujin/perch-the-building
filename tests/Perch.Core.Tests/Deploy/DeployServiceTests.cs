@@ -22,6 +22,7 @@ public sealed class DeployServiceTests
     private IPlatformDetector _platformDetector = null!;
     private IGlobResolver _globResolver = null!;
     private ISnapshotProvider _snapshotProvider = null!;
+    private IHookRunner _hookRunner = null!;
     private DeployService _deployService = null!;
     private List<DeployResult> _reported = null!;
     private IProgress<DeployResult> _progress = null!;
@@ -39,7 +40,10 @@ public sealed class DeployServiceTests
         var fileLockDetector = Substitute.For<IFileLockDetector>();
         var orchestrator = new SymlinkOrchestrator(_symlinkProvider, _backupProvider, fileLockDetector);
         _snapshotProvider = Substitute.For<ISnapshotProvider>();
-        _deployService = new DeployService(_discoveryService, orchestrator, _platformDetector, _globResolver, _snapshotProvider);
+        _hookRunner = Substitute.For<IHookRunner>();
+        _hookRunner.RunAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(new DeployResult("", "", "", ResultLevel.Ok, "Hook completed"));
+        _deployService = new DeployService(_discoveryService, orchestrator, _platformDetector, _globResolver, _snapshotProvider, _hookRunner);
         _reported = new List<DeployResult>();
         _progress = new SynchronousProgress<DeployResult>(r => _reported.Add(r));
     }
@@ -508,6 +512,135 @@ public sealed class DeployServiceTests
                 Assert.That(_reported[0].Message, Does.Contain("glob"));
             });
             _symlinkProvider.DidNotReceive().CreateSymlink(Arg.Any<string>(), Arg.Any<string>());
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_PreHookFails_SkipsModuleLinks()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string modulePath = Path.Combine(tempDir, "mod");
+        Directory.CreateDirectory(modulePath);
+        string targetDir = Path.Combine(tempDir, "target");
+        Directory.CreateDirectory(targetDir);
+
+        try
+        {
+            var hooks = new DeployHooks("./setup.ps1", null);
+            var modules = ImmutableArray.Create(
+                new AppModule("mod", "Module", modulePath, ImmutableArray<Platform>.Empty, ImmutableArray.Create(
+                    new LinkEntry("file.txt", Path.Combine(targetDir, "file.txt"), LinkType.Symlink)), hooks));
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
+            _hookRunner.RunAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DeployResult("Module", "", "", ResultLevel.Error, "Hook failed"));
+
+            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(1));
+                Assert.That(_reported.Any(r => r.Level == ResultLevel.Error), Is.True);
+            });
+            _symlinkProvider.DidNotReceive().CreateSymlink(Arg.Any<string>(), Arg.Any<string>());
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_PostHookFails_ReportsError()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string modulePath = Path.Combine(tempDir, "mod");
+        Directory.CreateDirectory(modulePath);
+        string targetDir = Path.Combine(tempDir, "target");
+        Directory.CreateDirectory(targetDir);
+
+        try
+        {
+            var hooks = new DeployHooks(null, "./cleanup.ps1");
+            var modules = ImmutableArray.Create(
+                new AppModule("mod", "Module", modulePath, ImmutableArray<Platform>.Empty, ImmutableArray.Create(
+                    new LinkEntry("file.txt", Path.Combine(targetDir, "file.txt"), LinkType.Symlink)), hooks));
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
+
+            string postHookPath = Path.GetFullPath(Path.Combine(modulePath, "./cleanup.ps1"));
+            _hookRunner.RunAsync("Module", postHookPath, modulePath, Arg.Any<CancellationToken>())
+                .Returns(new DeployResult("Module", "", "", ResultLevel.Error, "Post hook failed"));
+
+            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
+
+            Assert.That(exitCode, Is.EqualTo(1));
+            Assert.That(_reported.Any(r => r.Level == ResultLevel.Error && r.Message.Contains("Post hook")), Is.True);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_DryRun_SkipsHooks()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string modulePath = Path.Combine(tempDir, "mod");
+        Directory.CreateDirectory(modulePath);
+        string targetDir = Path.Combine(tempDir, "target");
+        Directory.CreateDirectory(targetDir);
+
+        try
+        {
+            var hooks = new DeployHooks("./setup.ps1", "./cleanup.ps1");
+            var modules = ImmutableArray.Create(
+                new AppModule("mod", "Module", modulePath, ImmutableArray<Platform>.Empty, ImmutableArray.Create(
+                    new LinkEntry("file.txt", Path.Combine(targetDir, "file.txt"), LinkType.Symlink)), hooks));
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
+
+            await _deployService.DeployAsync(tempDir, dryRun: true, _progress);
+
+            await _hookRunner.DidNotReceive().RunAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_NoHooks_ProcessesNormally()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string modulePath = Path.Combine(tempDir, "mod");
+        Directory.CreateDirectory(modulePath);
+        string targetDir = Path.Combine(tempDir, "target");
+        Directory.CreateDirectory(targetDir);
+
+        try
+        {
+            var modules = ImmutableArray.Create(
+                new AppModule("mod", "Module", modulePath, ImmutableArray<Platform>.Empty, ImmutableArray.Create(
+                    new LinkEntry("file.txt", Path.Combine(targetDir, "file.txt"), LinkType.Symlink))));
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
+
+            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
+
+            Assert.That(exitCode, Is.EqualTo(0));
+            await _hookRunner.DidNotReceive().RunAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+            _symlinkProvider.Received(1).CreateSymlink(Arg.Any<string>(), Arg.Any<string>());
         }
         finally
         {

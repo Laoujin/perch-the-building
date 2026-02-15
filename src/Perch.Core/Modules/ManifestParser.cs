@@ -60,7 +60,9 @@ public sealed class ManifestParser
 
         string displayName = string.IsNullOrWhiteSpace(model.DisplayName) ? moduleName : model.DisplayName;
         var platforms = ParsePlatforms(model.Platforms);
-        var manifest = new AppManifest(moduleName, displayName, platforms, links.ToImmutableArray());
+        var hooks = ParseHooks(model.Hooks);
+        var cleanFilter = ParseCleanFilter(model.CleanFilter);
+        var manifest = new AppManifest(moduleName, displayName, platforms, links.ToImmutableArray(), hooks, cleanFilter);
         return ManifestParseResult.Success(manifest);
     }
 
@@ -108,6 +110,36 @@ public sealed class ManifestParser
         }
 
         return null;
+    }
+
+    private static DeployHooks? ParseHooks(HooksYamlModel? hooks)
+    {
+        if (hooks == null)
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(hooks.PreDeploy) && string.IsNullOrWhiteSpace(hooks.PostDeploy))
+        {
+            return null;
+        }
+
+        return new DeployHooks(hooks.PreDeploy, hooks.PostDeploy);
+    }
+
+    private static CleanFilterDefinition? ParseCleanFilter(CleanFilterYamlModel? model)
+    {
+        if (model == null)
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(model.Name) || string.IsNullOrWhiteSpace(model.Script) || model.Files == null || model.Files.Count == 0)
+        {
+            return null;
+        }
+
+        return new CleanFilterDefinition(model.Name!, model.Script!, model.Files.ToImmutableArray());
     }
 
     private static LinkType ParseLinkType(string? value) =>
