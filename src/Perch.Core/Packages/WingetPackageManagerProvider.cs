@@ -41,82 +41,43 @@ public sealed class WingetPackageManagerProvider : IPackageManagerProvider
         string[] lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
         // Find the header separator line (dashes)
-        int dataStartIndex = -1;
+        int separatorIndex = -1;
         for (int i = 0; i < lines.Length; i++)
         {
-            if (lines[i].TrimStart().StartsWith('-') && lines[i].Contains("--"))
+            string trimmed = lines[i].TrimStart();
+            if (trimmed.StartsWith('-') && trimmed.Contains("--"))
             {
-                dataStartIndex = i + 1;
+                separatorIndex = i;
                 break;
             }
         }
 
-        if (dataStartIndex < 0 || dataStartIndex >= lines.Length)
+        if (separatorIndex < 0 || separatorIndex + 1 >= lines.Length)
         {
             return ImmutableArray<InstalledPackage>.Empty;
         }
 
-        // The header line is right before the separator
-        string headerLine = lines[dataStartIndex - 2];
-        string separatorLine = lines[dataStartIndex - 1];
-
-        // Find column boundaries from separator line
-        int idColumnStart = FindColumnStart(separatorLine, 1);
-        if (idColumnStart < 0)
+        // Find the end of the first dash group = Name column width
+        string separator = lines[separatorIndex];
+        int nameColumnEnd = separator.IndexOf(' ');
+        if (nameColumnEnd < 0)
         {
-            return ImmutableArray<InstalledPackage>.Empty;
+            nameColumnEnd = separator.Length;
         }
 
-        for (int i = dataStartIndex; i < lines.Length; i++)
+        for (int i = separatorIndex + 1; i < lines.Length; i++)
         {
             string line = lines[i];
             if (string.IsNullOrWhiteSpace(line))
                 continue;
 
-            // Extract the Name column (from start to idColumnStart)
-            if (line.Length > idColumnStart)
+            string name = (line.Length > nameColumnEnd ? line[..nameColumnEnd] : line).Trim();
+            if (!string.IsNullOrWhiteSpace(name))
             {
-                string name = line[..idColumnStart].Trim();
-                if (!string.IsNullOrWhiteSpace(name))
-                {
-                    packages.Add(new InstalledPackage(name, PackageManager.Winget));
-                }
+                packages.Add(new InstalledPackage(name, PackageManager.Winget));
             }
         }
 
         return packages.ToImmutableArray();
-    }
-
-    private static int FindColumnStart(string separatorLine, int columnIndex)
-    {
-        int current = 0;
-        int found = 0;
-        bool inDashes = separatorLine.Length > 0 && separatorLine[0] == '-';
-
-        for (int i = 0; i < separatorLine.Length; i++)
-        {
-            bool isDash = separatorLine[i] == '-';
-
-            if (inDashes && !isDash)
-            {
-                inDashes = false;
-            }
-            else if (!inDashes && isDash)
-            {
-                inDashes = true;
-                found++;
-                if (found > columnIndex)
-                {
-                    return -1;
-                }
-                current = i;
-                if (found == columnIndex)
-                {
-                    return current;
-                }
-            }
-        }
-
-        return -1;
     }
 }
