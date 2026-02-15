@@ -26,6 +26,8 @@ public static class ServiceCollectionExtensions
             services.AddSingleton<ISymlinkProvider, WindowsSymlinkProvider>();
             services.AddSingleton<IFileLockDetector, WindowsFileLockDetector>();
             services.AddSingleton<IRegistryProvider, WindowsRegistryProvider>();
+            services.AddSingleton<IPackageManagerProvider, ChocolateyPackageManagerProvider>();
+            services.AddSingleton<IPackageManagerProvider, WingetPackageManagerProvider>();
         }
         else
         {
@@ -45,8 +47,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ISettingsProvider, YamlSettingsProvider>();
         services.AddSingleton<PackageManifestParser>();
         services.AddSingleton<IProcessRunner, DefaultProcessRunner>();
-        services.AddSingleton<IPackageManagerProvider, ChocolateyPackageManagerProvider>();
-        services.AddSingleton<IPackageManagerProvider, WingetPackageManagerProvider>();
         services.AddSingleton<IAppScanService, AppScanService>();
         return services;
     }
