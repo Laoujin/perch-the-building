@@ -69,7 +69,7 @@ public sealed class StatusService : IStatusService
                     continue;
                 }
 
-                string expandedTarget = EnvironmentExpander.Expand(target);
+                string expandedTarget = EnvironmentExpander.Expand(target, machineProfile?.Variables);
                 string sourcePath = Path.GetFullPath(Path.Combine(module.ModulePath, link.Source));
 
                 IReadOnlyList<string> resolvedTargets = _globResolver.Resolve(expandedTarget);

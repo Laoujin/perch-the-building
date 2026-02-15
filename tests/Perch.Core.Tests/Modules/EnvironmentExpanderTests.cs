@@ -78,4 +78,94 @@ public sealed class EnvironmentExpanderTests
 
         Assert.That(result, Is.EqualTo("$PERCH_NONEXISTENT_12345/file"));
     }
+
+    [Test]
+    public void Expand_CustomVariable_WindowsSyntax_Resolves()
+    {
+        var variables = new Dictionary<string, string> { ["editor"] = "code" };
+
+        var result = EnvironmentExpander.Expand("%editor%/config", variables);
+
+        Assert.That(result, Is.EqualTo("code/config"));
+    }
+
+    [Test]
+    public void Expand_CustomVariable_UnixSyntax_Resolves()
+    {
+        var variables = new Dictionary<string, string> { ["editor"] = "code" };
+
+        var result = EnvironmentExpander.Expand("$editor/config", variables);
+
+        Assert.That(result, Is.EqualTo("code/config"));
+    }
+
+    [Test]
+    public void Expand_CustomVariable_OverridesEnvironmentVariable()
+    {
+        Environment.SetEnvironmentVariable("PERCH_TEST_OVERRIDE", "env-value");
+        try
+        {
+            var variables = new Dictionary<string, string> { ["PERCH_TEST_OVERRIDE"] = "custom-value" };
+
+            var result = EnvironmentExpander.Expand("%PERCH_TEST_OVERRIDE%/file", variables);
+
+            Assert.That(result, Is.EqualTo("custom-value/file"));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PERCH_TEST_OVERRIDE", null);
+        }
+    }
+
+    [Test]
+    public void Expand_CustomVariable_FallsBackToEnvironmentVariable()
+    {
+        Environment.SetEnvironmentVariable("PERCH_TEST_FALLBACK", "env-value");
+        try
+        {
+            var variables = new Dictionary<string, string> { ["other"] = "value" };
+
+            var result = EnvironmentExpander.Expand("%PERCH_TEST_FALLBACK%/file", variables);
+
+            Assert.That(result, Is.EqualTo("env-value/file"));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PERCH_TEST_FALLBACK", null);
+        }
+    }
+
+    [Test]
+    public void Expand_CustomVariable_MixedWithEnvVars()
+    {
+        Environment.SetEnvironmentVariable("PERCH_TEST_ENV", "from-env");
+        try
+        {
+            var variables = new Dictionary<string, string> { ["custom"] = "from-profile" };
+
+            var result = EnvironmentExpander.Expand("%PERCH_TEST_ENV%/%custom%/file", variables);
+
+            Assert.That(result, Is.EqualTo("from-env/from-profile/file"));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PERCH_TEST_ENV", null);
+        }
+    }
+
+    [Test]
+    public void Expand_NullVariables_BehavesLikeNoVariables()
+    {
+        Environment.SetEnvironmentVariable("PERCH_TEST_NULL", "resolved");
+        try
+        {
+            var result = EnvironmentExpander.Expand("%PERCH_TEST_NULL%/file", null);
+
+            Assert.That(result, Is.EqualTo("resolved/file"));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PERCH_TEST_NULL", null);
+        }
+    }
 }

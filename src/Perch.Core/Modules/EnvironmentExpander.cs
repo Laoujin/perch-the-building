@@ -4,11 +4,16 @@ namespace Perch.Core.Modules;
 
 public static partial class EnvironmentExpander
 {
-    public static string Expand(string input)
+    public static string Expand(string input, IReadOnlyDictionary<string, string>? variables = null)
     {
         string result = WindowsVarPattern().Replace(input, match =>
         {
             string varName = match.Groups[1].Value;
+            if (variables != null && variables.TryGetValue(varName, out string? customValue))
+            {
+                return customValue;
+            }
+
             string? value = Environment.GetEnvironmentVariable(varName);
             return value ?? match.Value;
         });
@@ -16,6 +21,11 @@ public static partial class EnvironmentExpander
         result = UnixVarPattern().Replace(result, match =>
         {
             string varName = match.Groups[1].Value;
+            if (variables != null && variables.TryGetValue(varName, out string? customValue))
+            {
+                return customValue;
+            }
+
             string? value = Environment.GetEnvironmentVariable(varName);
             return value ?? match.Value;
         });

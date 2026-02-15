@@ -72,9 +72,11 @@ public sealed class DeployService : IDeployService
             }
         }
 
+        IReadOnlyDictionary<string, string>? variables = machineProfile?.Variables;
+
         if (!dryRun)
         {
-            IReadOnlyList<string> allTargetPaths = CollectTargetPaths(discovery.Modules, currentPlatform);
+            IReadOnlyList<string> allTargetPaths = CollectTargetPaths(discovery.Modules, currentPlatform, variables);
             _snapshotProvider.CreateSnapshot(allTargetPaths, cancellationToken);
         }
 
@@ -85,8 +87,8 @@ public sealed class DeployService : IDeployService
             if (beforeModule != null)
             {
                 IReadOnlyList<DeployResult> preview = dryRun
-                    ? CollectModulePreview(module, currentPlatform)
-                    : await CollectModulePreviewAsync(module, currentPlatform, cancellationToken).ConfigureAwait(false);
+                    ? CollectModulePreview(module, currentPlatform, variables)
+                    : await CollectModulePreviewAsync(module, currentPlatform, variables, cancellationToken).ConfigureAwait(false);
 
                 ModuleAction action = await beforeModule(module, preview).ConfigureAwait(false);
                 if (action == ModuleAction.Skip)
@@ -103,7 +105,7 @@ public sealed class DeployService : IDeployService
 
             progress?.Report(new DeployResult(module.DisplayName, "", "", ResultLevel.Ok, "", DeployEventType.ModuleStarted));
 
-            bool moduleHadErrors = await DeployModuleAsync(module, currentPlatform, dryRun, progress, cancellationToken).ConfigureAwait(false);
+            bool moduleHadErrors = await DeployModuleAsync(module, currentPlatform, variables, dryRun, progress, cancellationToken).ConfigureAwait(false);
 
             ResultLevel completionLevel = moduleHadErrors ? ResultLevel.Error : ResultLevel.Ok;
             progress?.Report(new DeployResult(module.DisplayName, "", "", completionLevel, "", DeployEventType.ModuleCompleted));
@@ -147,20 +149,20 @@ public sealed class DeployService : IDeployService
         return null;
     }
 
-    private IReadOnlyList<DeployResult> CollectModulePreview(AppModule module, Platform currentPlatform)
+    private IReadOnlyList<DeployResult> CollectModulePreview(AppModule module, Platform currentPlatform, IReadOnlyDictionary<string, string>? variables)
     {
         var results = new List<DeployResult>();
         var previewProgress = new SynchronousProgress<DeployResult>(results.Add);
-        ProcessModuleLinks(module, currentPlatform, true, previewProgress);
+        ProcessModuleLinks(module, currentPlatform, variables, true, previewProgress);
         ProcessModuleRegistry(module, true, previewProgress);
         return results;
     }
 
-    private async Task<IReadOnlyList<DeployResult>> CollectModulePreviewAsync(AppModule module, Platform currentPlatform, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<DeployResult>> CollectModulePreviewAsync(AppModule module, Platform currentPlatform, IReadOnlyDictionary<string, string>? variables, CancellationToken cancellationToken)
     {
         var results = new List<DeployResult>();
         var previewProgress = new SynchronousProgress<DeployResult>(results.Add);
-        ProcessModuleLinks(module, currentPlatform, true, previewProgress);
+        ProcessModuleLinks(module, currentPlatform, variables, true, previewProgress);
         ProcessModuleRegistry(module, true, previewProgress);
         await ProcessModuleGlobalPackagesAsync(module, true, previewProgress, cancellationToken).ConfigureAwait(false);
         await ProcessListAsync(module.VscodeExtensions, id => _vscodeExtensionInstaller.InstallAsync(module.DisplayName, id, true, cancellationToken), previewProgress, cancellationToken).ConfigureAwait(false);
@@ -168,7 +170,7 @@ public sealed class DeployService : IDeployService
         return results;
     }
 
-    private async Task<bool> DeployModuleAsync(AppModule module, Platform currentPlatform, bool dryRun, IProgress<DeployResult>? progress, CancellationToken cancellationToken)
+    private async Task<bool> DeployModuleAsync(AppModule module, Platform currentPlatform, IReadOnlyDictionary<string, string>? variables, bool dryRun, IProgress<DeployResult>? progress, CancellationToken cancellationToken)
     {
         bool hasErrors = false;
 
@@ -183,7 +185,7 @@ public sealed class DeployService : IDeployService
             }
         }
 
-        bool moduleHadErrors = ProcessModuleLinks(module, currentPlatform, dryRun, progress);
+        bool moduleHadErrors = ProcessModuleLinks(module, currentPlatform, variables, dryRun, progress);
         ProcessModuleRegistry(module, dryRun, progress);
         if (await ProcessModuleGlobalPackagesAsync(module, dryRun, progress, cancellationToken).ConfigureAwait(false))
         {
@@ -261,7 +263,7 @@ public sealed class DeployService : IDeployService
             _ => false,
         };
 
-    private bool ProcessModuleLinks(AppModule module, Platform currentPlatform, bool dryRun, IProgress<DeployResult>? progress)
+    private bool ProcessModuleLinks(AppModule module, Platform currentPlatform, IReadOnlyDictionary<string, string>? variables, bool dryRun, IProgress<DeployResult>? progress)
     {
         bool hasErrors = false;
 
@@ -275,7 +277,7 @@ public sealed class DeployService : IDeployService
                 continue;
             }
 
-            string expandedTarget = EnvironmentExpander.Expand(target);
+            string expandedTarget = EnvironmentExpander.Expand(target, variables);
             string sourcePath = Path.GetFullPath(Path.Combine(module.ModulePath, link.Source));
 
             IReadOnlyList<string> resolvedTargets = _globResolver.Resolve(expandedTarget);
@@ -375,7 +377,7 @@ public sealed class DeployService : IDeployService
         return hasErrors;
     }
 
-    private IReadOnlyList<string> CollectTargetPaths(System.Collections.Immutable.ImmutableArray<AppModule> modules, Platform currentPlatform)
+    private IReadOnlyList<string> CollectTargetPaths(System.Collections.Immutable.ImmutableArray<AppModule> modules, Platform currentPlatform, IReadOnlyDictionary<string, string>? variables)
     {
         var targets = new List<string>();
         foreach (AppModule module in modules)
@@ -393,7 +395,7 @@ public sealed class DeployService : IDeployService
                     continue;
                 }
 
-                string expandedTarget = EnvironmentExpander.Expand(target);
+                string expandedTarget = EnvironmentExpander.Expand(target, variables);
                 IReadOnlyList<string> resolvedTargets = _globResolver.Resolve(expandedTarget);
                 targets.AddRange(resolvedTargets);
             }
