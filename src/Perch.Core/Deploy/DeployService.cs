@@ -237,7 +237,7 @@ public sealed class DeployService : IDeployService
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (!IsPlatformMatch(package.Manager, currentPlatform))
+            if (!package.Manager.IsPlatformMatch(currentPlatform))
             {
                 continue;
             }
@@ -254,14 +254,6 @@ public sealed class DeployService : IDeployService
         return hasErrors;
     }
 
-    internal static bool IsPlatformMatch(PackageManager manager, Platform platform) =>
-        manager switch
-        {
-            PackageManager.Chocolatey or PackageManager.Winget => platform == Platform.Windows,
-            PackageManager.Apt => platform == Platform.Linux,
-            PackageManager.Brew => platform == Platform.MacOS,
-            _ => false,
-        };
 
     private bool ProcessModuleLinks(AppModule module, Platform currentPlatform, IReadOnlyDictionary<string, string>? variables, bool dryRun, IProgress<DeployResult>? progress)
     {

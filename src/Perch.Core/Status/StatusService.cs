@@ -1,4 +1,3 @@
-using Perch.Core.Deploy;
 using Perch.Core.Machines;
 using Perch.Core.Modules;
 using Perch.Core.Packages;
@@ -320,7 +319,7 @@ public sealed class StatusService : IStatusService
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (!DeployService.IsPlatformMatch(package.Manager, currentPlatform))
+            if (!package.Manager.IsPlatformMatch(currentPlatform))
             {
                 continue;
             }
