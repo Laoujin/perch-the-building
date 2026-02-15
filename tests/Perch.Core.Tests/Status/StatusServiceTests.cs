@@ -5,6 +5,7 @@ using Perch.Core.Packages;
 using Perch.Core.Registry;
 using Perch.Core.Status;
 using Perch.Core.Symlinks;
+using Perch.Core.Templates;
 
 namespace Perch.Core.Tests.Status;
 
@@ -53,7 +54,8 @@ public sealed class StatusServiceTests
             registryProvider ?? _registryProvider,
             _packageManagerProviders,
             _packageManifestParser,
-            _processRunner);
+            _processRunner,
+            new TemplateProcessor());
 
     [Test]
     public async Task CheckAsync_AllLinksCorrect_ReturnsZero()
@@ -878,6 +880,125 @@ public sealed class StatusServiceTests
                 Assert.That(exitCode, Is.EqualTo(0));
                 Assert.That(_reported, Is.Empty);
             });
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task CheckAsync_TemplateSource_TargetExists_ReportsOk()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string modulePath = Path.Combine(tempDir, "mod");
+        Directory.CreateDirectory(modulePath);
+        string targetDir = Path.Combine(tempDir, "target");
+        Directory.CreateDirectory(targetDir);
+
+        try
+        {
+            string sourceFile = Path.Combine(modulePath, "config.conf");
+            File.WriteAllText(sourceFile, "token = {{op://vault/item/token}}");
+            string targetFile = Path.Combine(targetDir, "config.conf");
+            File.WriteAllText(targetFile, "token = resolved-value");
+
+            var modules = ImmutableArray.Create(
+                new AppModule("mod", "Module", true, modulePath, ImmutableArray<Platform>.Empty, ImmutableArray.Create(
+                    new LinkEntry("config.conf", targetFile, LinkType.Symlink))));
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
+
+            int exitCode = await _statusService.CheckAsync(tempDir, _progress);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(_reported, Has.Count.EqualTo(1));
+                Assert.That(_reported[0].Level, Is.EqualTo(DriftLevel.Ok));
+                Assert.That(_reported[0].Message, Does.Contain("generated file"));
+            });
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task CheckAsync_TemplateSource_TargetMissing_ReportsMissing()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string modulePath = Path.Combine(tempDir, "mod");
+        Directory.CreateDirectory(modulePath);
+        string targetDir = Path.Combine(tempDir, "target");
+        Directory.CreateDirectory(targetDir);
+
+        try
+        {
+            string sourceFile = Path.Combine(modulePath, "config.conf");
+            File.WriteAllText(sourceFile, "token = {{op://vault/item/token}}");
+            string targetFile = Path.Combine(targetDir, "config.conf");
+
+            var modules = ImmutableArray.Create(
+                new AppModule("mod", "Module", true, modulePath, ImmutableArray<Platform>.Empty, ImmutableArray.Create(
+                    new LinkEntry("config.conf", targetFile, LinkType.Symlink))));
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
+
+            int exitCode = await _statusService.CheckAsync(tempDir, _progress);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(1));
+                Assert.That(_reported, Has.Count.EqualTo(1));
+                Assert.That(_reported[0].Level, Is.EqualTo(DriftLevel.Missing));
+                Assert.That(_reported[0].Message, Does.Contain("Generated file does not exist"));
+            });
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task CheckAsync_NonTemplateSource_ChecksSymlink()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string modulePath = Path.Combine(tempDir, "mod");
+        Directory.CreateDirectory(modulePath);
+        string targetDir = Path.Combine(tempDir, "target");
+        Directory.CreateDirectory(targetDir);
+
+        try
+        {
+            string sourceFile = Path.Combine(modulePath, "plain.conf");
+            File.WriteAllText(sourceFile, "no placeholders");
+            string targetFile = Path.Combine(targetDir, "plain.conf");
+            File.WriteAllText(targetFile, "content");
+
+            _symlinkProvider.IsSymlink(targetFile).Returns(true);
+            _symlinkProvider.GetSymlinkTarget(targetFile).Returns(sourceFile);
+
+            var modules = ImmutableArray.Create(
+                new AppModule("mod", "Module", true, modulePath, ImmutableArray<Platform>.Empty, ImmutableArray.Create(
+                    new LinkEntry("plain.conf", targetFile, LinkType.Symlink))));
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
+
+            int exitCode = await _statusService.CheckAsync(tempDir, _progress);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(_reported, Has.Count.EqualTo(1));
+                Assert.That(_reported[0].Level, Is.EqualTo(DriftLevel.Ok));
+            });
+            _symlinkProvider.Received(1).IsSymlink(targetFile);
         }
         finally
         {

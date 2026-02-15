@@ -4,6 +4,7 @@ using Perch.Core.Modules;
 using Perch.Core.Packages;
 using Perch.Core.Registry;
 using Perch.Core.Symlinks;
+using Perch.Core.Templates;
 
 namespace Perch.Core.Deploy;
 
@@ -22,8 +23,10 @@ public sealed class DeployService : IDeployService
     private readonly IPsModuleInstaller _psModuleInstaller;
     private readonly PackageManifestParser _packageManifestParser;
     private readonly ISystemPackageInstaller _systemPackageInstaller;
+    private readonly ITemplateProcessor _templateProcessor;
+    private readonly IReferenceResolver _referenceResolver;
 
-    public DeployService(IModuleDiscoveryService discoveryService, SymlinkOrchestrator orchestrator, IPlatformDetector platformDetector, IGlobResolver globResolver, ISnapshotProvider snapshotProvider, IHookRunner hookRunner, IMachineProfileService machineProfileService, IRegistryProvider registryProvider, IGlobalPackageInstaller globalPackageInstaller, IVscodeExtensionInstaller vscodeExtensionInstaller, IPsModuleInstaller psModuleInstaller, PackageManifestParser packageManifestParser, ISystemPackageInstaller systemPackageInstaller)
+    public DeployService(IModuleDiscoveryService discoveryService, SymlinkOrchestrator orchestrator, IPlatformDetector platformDetector, IGlobResolver globResolver, ISnapshotProvider snapshotProvider, IHookRunner hookRunner, IMachineProfileService machineProfileService, IRegistryProvider registryProvider, IGlobalPackageInstaller globalPackageInstaller, IVscodeExtensionInstaller vscodeExtensionInstaller, IPsModuleInstaller psModuleInstaller, PackageManifestParser packageManifestParser, ISystemPackageInstaller systemPackageInstaller, ITemplateProcessor templateProcessor, IReferenceResolver referenceResolver)
     {
         _discoveryService = discoveryService;
         _orchestrator = orchestrator;
@@ -38,6 +41,8 @@ public sealed class DeployService : IDeployService
         _psModuleInstaller = psModuleInstaller;
         _packageManifestParser = packageManifestParser;
         _systemPackageInstaller = systemPackageInstaller;
+        _templateProcessor = templateProcessor;
+        _referenceResolver = referenceResolver;
     }
 
     public async Task<int> DeployAsync(string configRepoPath, DeployOptions? options = null, CancellationToken cancellationToken = default)
@@ -86,9 +91,7 @@ public sealed class DeployService : IDeployService
 
             if (beforeModule != null)
             {
-                IReadOnlyList<DeployResult> preview = dryRun
-                    ? CollectModulePreview(module, currentPlatform, variables)
-                    : await CollectModulePreviewAsync(module, currentPlatform, variables, cancellationToken).ConfigureAwait(false);
+                IReadOnlyList<DeployResult> preview = await CollectModulePreviewAsync(module, currentPlatform, variables, !dryRun, cancellationToken).ConfigureAwait(false);
 
                 ModuleAction action = await beforeModule(module, preview).ConfigureAwait(false);
                 if (action == ModuleAction.Skip)
@@ -149,24 +152,18 @@ public sealed class DeployService : IDeployService
         return null;
     }
 
-    private IReadOnlyList<DeployResult> CollectModulePreview(AppModule module, Platform currentPlatform, IReadOnlyDictionary<string, string>? variables)
+    private async Task<IReadOnlyList<DeployResult>> CollectModulePreviewAsync(AppModule module, Platform currentPlatform, IReadOnlyDictionary<string, string>? variables, bool includePackages, CancellationToken cancellationToken)
     {
         var results = new List<DeployResult>();
         var previewProgress = new SynchronousProgress<DeployResult>(results.Add);
-        ProcessModuleLinks(module, currentPlatform, variables, true, previewProgress);
+        await ProcessModuleLinksAsync(module, currentPlatform, variables, true, previewProgress, cancellationToken).ConfigureAwait(false);
         ProcessModuleRegistry(module, true, previewProgress);
-        return results;
-    }
-
-    private async Task<IReadOnlyList<DeployResult>> CollectModulePreviewAsync(AppModule module, Platform currentPlatform, IReadOnlyDictionary<string, string>? variables, CancellationToken cancellationToken)
-    {
-        var results = new List<DeployResult>();
-        var previewProgress = new SynchronousProgress<DeployResult>(results.Add);
-        ProcessModuleLinks(module, currentPlatform, variables, true, previewProgress);
-        ProcessModuleRegistry(module, true, previewProgress);
-        await ProcessModuleGlobalPackagesAsync(module, true, previewProgress, cancellationToken).ConfigureAwait(false);
-        await ProcessListAsync(module.VscodeExtensions, id => _vscodeExtensionInstaller.InstallAsync(module.DisplayName, id, true, cancellationToken), previewProgress, cancellationToken).ConfigureAwait(false);
-        await ProcessListAsync(module.PsModules, name => _psModuleInstaller.InstallAsync(module.DisplayName, name, true, cancellationToken), previewProgress, cancellationToken).ConfigureAwait(false);
+        if (includePackages)
+        {
+            await ProcessModuleGlobalPackagesAsync(module, true, previewProgress, cancellationToken).ConfigureAwait(false);
+            await ProcessListAsync(module.VscodeExtensions, id => _vscodeExtensionInstaller.InstallAsync(module.DisplayName, id, true, cancellationToken), previewProgress, cancellationToken).ConfigureAwait(false);
+            await ProcessListAsync(module.PsModules, name => _psModuleInstaller.InstallAsync(module.DisplayName, name, true, cancellationToken), previewProgress, cancellationToken).ConfigureAwait(false);
+        }
         return results;
     }
 
@@ -185,7 +182,7 @@ public sealed class DeployService : IDeployService
             }
         }
 
-        bool moduleHadErrors = ProcessModuleLinks(module, currentPlatform, variables, dryRun, progress);
+        bool moduleHadErrors = await ProcessModuleLinksAsync(module, currentPlatform, variables, dryRun, progress, cancellationToken).ConfigureAwait(false);
         ProcessModuleRegistry(module, dryRun, progress);
         if (await ProcessModuleGlobalPackagesAsync(module, dryRun, progress, cancellationToken).ConfigureAwait(false))
         {
@@ -255,7 +252,7 @@ public sealed class DeployService : IDeployService
     }
 
 
-    private bool ProcessModuleLinks(AppModule module, Platform currentPlatform, IReadOnlyDictionary<string, string>? variables, bool dryRun, IProgress<DeployResult>? progress)
+    private async Task<bool> ProcessModuleLinksAsync(AppModule module, Platform currentPlatform, IReadOnlyDictionary<string, string>? variables, bool dryRun, IProgress<DeployResult>? progress, CancellationToken cancellationToken)
     {
         bool hasErrors = false;
 
@@ -282,6 +279,21 @@ public sealed class DeployService : IDeployService
 
             foreach (string resolvedTarget in resolvedTargets)
             {
+                if (File.Exists(sourcePath) && !Directory.Exists(sourcePath))
+                {
+                    string content = await File.ReadAllTextAsync(sourcePath, cancellationToken).ConfigureAwait(false);
+                    if (_templateProcessor.ContainsPlaceholders(content))
+                    {
+                        DeployResult templateResult = await ProcessTemplateAsync(module.DisplayName, sourcePath, resolvedTarget, content, dryRun, cancellationToken).ConfigureAwait(false);
+                        progress?.Report(templateResult);
+                        if (templateResult.Level == ResultLevel.Error)
+                        {
+                            hasErrors = true;
+                        }
+                        continue;
+                    }
+                }
+
                 DeployResult result = _orchestrator.ProcessLink(module.DisplayName, sourcePath, resolvedTarget, link.LinkType, dryRun);
                 progress?.Report(result);
 
@@ -293,6 +305,53 @@ public sealed class DeployService : IDeployService
         }
 
         return hasErrors;
+    }
+
+    private async Task<DeployResult> ProcessTemplateAsync(string moduleName, string sourcePath, string targetPath, string content, bool dryRun, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<string> references = _templateProcessor.FindReferences(content);
+
+        if (dryRun)
+        {
+            return new DeployResult(moduleName, sourcePath, targetPath, ResultLevel.Ok,
+                $"Would resolve {references.Count} reference(s) and write to {targetPath}");
+        }
+
+        var resolvedValues = new Dictionary<string, string>();
+        var errors = new List<string>();
+
+        foreach (string reference in references)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ReferenceResolveResult result = await _referenceResolver.ResolveAsync(reference, cancellationToken).ConfigureAwait(false);
+            if (result.Value != null)
+            {
+                resolvedValues[reference] = result.Value;
+            }
+            else
+            {
+                errors.Add($"{reference}: {result.Error}");
+            }
+        }
+
+        if (errors.Count > 0)
+        {
+            return new DeployResult(moduleName, sourcePath, targetPath, ResultLevel.Error,
+                $"Failed to resolve: {string.Join("; ", errors)}");
+        }
+
+        string resolved = _templateProcessor.ReplacePlaceholders(content, resolvedValues);
+
+        string? targetDir = Path.GetDirectoryName(targetPath);
+        if (targetDir != null && !Directory.Exists(targetDir))
+        {
+            return new DeployResult(moduleName, sourcePath, targetPath, ResultLevel.Error,
+                $"Parent directory does not exist: {targetDir}");
+        }
+
+        await File.WriteAllTextAsync(targetPath, resolved, cancellationToken).ConfigureAwait(false);
+        return new DeployResult(moduleName, sourcePath, targetPath, ResultLevel.Ok,
+            $"Resolved {references.Count} reference(s) and wrote generated file");
     }
 
     private void ProcessModuleRegistry(AppModule module, bool dryRun, IProgress<DeployResult>? progress)

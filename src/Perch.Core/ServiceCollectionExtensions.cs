@@ -12,6 +12,7 @@ using Perch.Core.Registry;
 using Perch.Core.Scanner;
 using Perch.Core.Status;
 using Perch.Core.Symlinks;
+using Perch.Core.Templates;
 
 namespace Perch.Core;
 
@@ -63,6 +64,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ISettingsProvider, YamlSettingsProvider>();
         services.AddSingleton<PackageManifestParser>();
         services.AddSingleton<IProcessRunner, DefaultProcessRunner>();
+        services.AddSingleton<ITemplateProcessor, TemplateProcessor>();
+        services.AddSingleton<IReferenceResolver, OnePasswordResolver>();
         services.AddSingleton<IAppScanService, AppScanService>();
 
         services.AddSingleton<CatalogParser>();

@@ -3,6 +3,7 @@ using Perch.Core.Modules;
 using Perch.Core.Packages;
 using Perch.Core.Registry;
 using Perch.Core.Symlinks;
+using Perch.Core.Templates;
 
 namespace Perch.Core.Status;
 
@@ -17,8 +18,9 @@ public sealed class StatusService : IStatusService
     private readonly IEnumerable<IPackageManagerProvider> _packageManagerProviders;
     private readonly PackageManifestParser _packageManifestParser;
     private readonly IProcessRunner _processRunner;
+    private readonly ITemplateProcessor _templateProcessor;
 
-    public StatusService(IModuleDiscoveryService discoveryService, ISymlinkProvider symlinkProvider, IPlatformDetector platformDetector, IGlobResolver globResolver, IMachineProfileService machineProfileService, IRegistryProvider registryProvider, IEnumerable<IPackageManagerProvider> packageManagerProviders, PackageManifestParser packageManifestParser, IProcessRunner processRunner)
+    public StatusService(IModuleDiscoveryService discoveryService, ISymlinkProvider symlinkProvider, IPlatformDetector platformDetector, IGlobResolver globResolver, IMachineProfileService machineProfileService, IRegistryProvider registryProvider, IEnumerable<IPackageManagerProvider> packageManagerProviders, PackageManifestParser packageManifestParser, IProcessRunner processRunner, ITemplateProcessor templateProcessor)
     {
         _discoveryService = discoveryService;
         _symlinkProvider = symlinkProvider;
@@ -29,6 +31,7 @@ public sealed class StatusService : IStatusService
         _packageManagerProviders = packageManagerProviders;
         _packageManifestParser = packageManifestParser;
         _processRunner = processRunner;
+        _templateProcessor = templateProcessor;
     }
 
     public async Task<int> CheckAsync(string configRepoPath, IProgress<StatusResult>? progress = null, CancellationToken cancellationToken = default)
@@ -57,7 +60,7 @@ public sealed class StatusService : IStatusService
                 continue;
             }
 
-            if (CheckModuleLinks(module, currentPlatform, machineProfile, progress))
+            if (await CheckModuleLinksAsync(module, currentPlatform, machineProfile, progress, cancellationToken).ConfigureAwait(false))
             {
                 hasDrift = true;
             }
@@ -117,7 +120,7 @@ public sealed class StatusService : IStatusService
         return false;
     }
 
-    private bool CheckModuleLinks(AppModule module, Platform currentPlatform, MachineProfile? machineProfile, IProgress<StatusResult>? progress)
+    private async Task<bool> CheckModuleLinksAsync(AppModule module, Platform currentPlatform, MachineProfile? machineProfile, IProgress<StatusResult>? progress, CancellationToken cancellationToken)
     {
         bool hasDrift = false;
 
@@ -135,7 +138,16 @@ public sealed class StatusService : IStatusService
             IReadOnlyList<string> resolvedTargets = _globResolver.Resolve(expandedTarget);
             foreach (string resolvedTarget in resolvedTargets)
             {
-                StatusResult result = CheckLink(module.DisplayName, sourcePath, resolvedTarget);
+                bool isTemplate = false;
+                if (File.Exists(sourcePath) && !Directory.Exists(sourcePath))
+                {
+                    string content = await File.ReadAllTextAsync(sourcePath, cancellationToken).ConfigureAwait(false);
+                    isTemplate = _templateProcessor.ContainsPlaceholders(content);
+                }
+
+                StatusResult result = isTemplate
+                    ? CheckTemplateTarget(module.DisplayName, sourcePath, resolvedTarget)
+                    : CheckLink(module.DisplayName, sourcePath, resolvedTarget);
                 progress?.Report(result);
 
                 if (result.Level is DriftLevel.Missing or DriftLevel.Drift or DriftLevel.Error)
@@ -146,6 +158,23 @@ public sealed class StatusService : IStatusService
         }
 
         return hasDrift;
+    }
+
+    private static StatusResult CheckTemplateTarget(string moduleName, string sourcePath, string targetPath)
+    {
+        try
+        {
+            if (!File.Exists(targetPath))
+            {
+                return new StatusResult(moduleName, sourcePath, targetPath, DriftLevel.Missing, "Generated file does not exist");
+            }
+
+            return new StatusResult(moduleName, sourcePath, targetPath, DriftLevel.Ok, "OK (generated file)");
+        }
+        catch (Exception ex)
+        {
+            return new StatusResult(moduleName, sourcePath, targetPath, DriftLevel.Error, ex.Message);
+        }
     }
 
     private bool CheckModuleRegistry(AppModule module, IProgress<StatusResult>? progress)

@@ -7,6 +7,7 @@ using Perch.Core.Modules;
 using Perch.Core.Packages;
 using Perch.Core.Registry;
 using Perch.Core.Symlinks;
+using Perch.Core.Templates;
 using NSubstitute.ReceivedExtensions;
 
 namespace Perch.Core.Tests.Deploy;
@@ -32,6 +33,8 @@ public sealed class DeployServiceTests
     private IVscodeExtensionInstaller _vscodeExtensionInstaller = null!;
     private IPsModuleInstaller _psModuleInstaller = null!;
     private ISystemPackageInstaller _systemPackageInstaller = null!;
+    private IReferenceResolver _referenceResolver = null!;
+    private SymlinkOrchestrator _orchestrator = null!;
     private DeployService _deployService = null!;
     private List<DeployResult> _reported = null!;
     private IProgress<DeployResult> _progress = null!;
@@ -47,7 +50,7 @@ public sealed class DeployServiceTests
         _globResolver = Substitute.For<IGlobResolver>();
         _globResolver.Resolve(Arg.Any<string>()).Returns(x => new[] { x.Arg<string>() });
         var fileLockDetector = Substitute.For<IFileLockDetector>();
-        var orchestrator = new SymlinkOrchestrator(_symlinkProvider, _backupProvider, fileLockDetector);
+        _orchestrator = new SymlinkOrchestrator(_symlinkProvider, _backupProvider, fileLockDetector);
         _snapshotProvider = Substitute.For<ISnapshotProvider>();
         _hookRunner = Substitute.For<IHookRunner>();
         _hookRunner.RunAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
@@ -60,7 +63,8 @@ public sealed class DeployServiceTests
         _systemPackageInstaller = Substitute.For<ISystemPackageInstaller>();
         _systemPackageInstaller.InstallAsync(Arg.Any<string>(), Arg.Any<PackageManager>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(x => new DeployResult("system-packages", "", x.ArgAt<string>(0), ResultLevel.Ok, $"Installed {x.ArgAt<string>(0)}"));
-        _deployService = new DeployService(_discoveryService, orchestrator, _platformDetector, _globResolver, _snapshotProvider, _hookRunner, _machineProfileService, _registryProvider, _globalPackageInstaller, _vscodeExtensionInstaller, _psModuleInstaller, new PackageManifestParser(), _systemPackageInstaller);
+        _referenceResolver = Substitute.For<IReferenceResolver>();
+        _deployService = new DeployService(_discoveryService, _orchestrator, _platformDetector, _globResolver, _snapshotProvider, _hookRunner, _machineProfileService, _registryProvider, _globalPackageInstaller, _vscodeExtensionInstaller, _psModuleInstaller, new PackageManifestParser(), _systemPackageInstaller, new TemplateProcessor(), _referenceResolver);
         _reported = new List<DeployResult>();
         _progress = new SynchronousProgress<DeployResult>(r => _reported.Add(r));
     }
@@ -1481,6 +1485,157 @@ public sealed class DeployServiceTests
             await _systemPackageInstaller.Received(1).InstallAsync("7zip", PackageManager.Chocolatey, false, Arg.Any<CancellationToken>());
             await _systemPackageInstaller.DidNotReceive().InstallAsync("curl", Arg.Any<PackageManager>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
             await _systemPackageInstaller.DidNotReceive().InstallAsync("wget", Arg.Any<PackageManager>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_TemplateSource_ResolvesAndWritesFile()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string modulePath = Path.Combine(tempDir, "mod");
+        Directory.CreateDirectory(modulePath);
+        string targetDir = Path.Combine(tempDir, "target");
+        Directory.CreateDirectory(targetDir);
+
+        try
+        {
+            string sourceFile = Path.Combine(modulePath, "config.conf");
+            File.WriteAllText(sourceFile, "token = {{op://vault/item/token}}");
+            string targetFile = Path.Combine(targetDir, "config.conf");
+
+            _referenceResolver.ResolveAsync("op://vault/item/token", Arg.Any<CancellationToken>())
+                .Returns(new ReferenceResolveResult("abc123", null));
+
+            var modules = ImmutableArray.Create(
+                new AppModule("mod", "Module", true, modulePath, ImmutableArray<Platform>.Empty, ImmutableArray.Create(
+                    new LinkEntry("config.conf", targetFile, LinkType.Symlink))));
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
+
+            int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(File.Exists(targetFile), Is.True);
+                Assert.That(File.ReadAllText(targetFile), Is.EqualTo("token = abc123"));
+            });
+            _symlinkProvider.DidNotReceive().CreateSymlink(Arg.Any<string>(), Arg.Any<string>());
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_TemplateSource_DryRun_DoesNotWriteFile()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string modulePath = Path.Combine(tempDir, "mod");
+        Directory.CreateDirectory(modulePath);
+        string targetDir = Path.Combine(tempDir, "target");
+        Directory.CreateDirectory(targetDir);
+
+        try
+        {
+            string sourceFile = Path.Combine(modulePath, "config.conf");
+            File.WriteAllText(sourceFile, "token = {{op://vault/item/token}}");
+            string targetFile = Path.Combine(targetDir, "config.conf");
+
+            var modules = ImmutableArray.Create(
+                new AppModule("mod", "Module", true, modulePath, ImmutableArray<Platform>.Empty, ImmutableArray.Create(
+                    new LinkEntry("config.conf", targetFile, LinkType.Symlink))));
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
+
+            await _deployService.DeployAsync(tempDir, new DeployOptions { DryRun = true, Progress = _progress });
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(File.Exists(targetFile), Is.False);
+                Assert.That(_reported.Any(r => r.Message.Contains("Would resolve")), Is.True);
+            });
+            await _referenceResolver.DidNotReceive().ResolveAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_TemplateSource_ResolutionFailure_ReportsError()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string modulePath = Path.Combine(tempDir, "mod");
+        Directory.CreateDirectory(modulePath);
+        string targetDir = Path.Combine(tempDir, "target");
+        Directory.CreateDirectory(targetDir);
+
+        try
+        {
+            string sourceFile = Path.Combine(modulePath, "config.conf");
+            File.WriteAllText(sourceFile, "token = {{op://vault/item/token}}");
+            string targetFile = Path.Combine(targetDir, "config.conf");
+
+            _referenceResolver.ResolveAsync("op://vault/item/token", Arg.Any<CancellationToken>())
+                .Returns(new ReferenceResolveResult(null, "item not found"));
+
+            var modules = ImmutableArray.Create(
+                new AppModule("mod", "Module", true, modulePath, ImmutableArray<Platform>.Empty, ImmutableArray.Create(
+                    new LinkEntry("config.conf", targetFile, LinkType.Symlink))));
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
+
+            int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(1));
+                Assert.That(File.Exists(targetFile), Is.False);
+                Assert.That(_reported.Any(r => r.Level == ResultLevel.Error && r.Message.Contains("item not found")), Is.True);
+            });
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_NonTemplateSource_CreatesSymlink()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string modulePath = Path.Combine(tempDir, "mod");
+        Directory.CreateDirectory(modulePath);
+        string targetDir = Path.Combine(tempDir, "target");
+        Directory.CreateDirectory(targetDir);
+
+        try
+        {
+            string sourceFile = Path.Combine(modulePath, "plain.conf");
+            File.WriteAllText(sourceFile, "no placeholders here");
+            string targetFile = Path.Combine(targetDir, "plain.conf");
+
+            var modules = ImmutableArray.Create(
+                new AppModule("mod", "Module", true, modulePath, ImmutableArray<Platform>.Empty, ImmutableArray.Create(
+                    new LinkEntry("plain.conf", targetFile, LinkType.Symlink))));
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
+
+            await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
+
+            _symlinkProvider.Received(1).CreateSymlink(targetFile, Arg.Any<string>());
+            await _referenceResolver.DidNotReceive().ResolveAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
         }
         finally
         {
