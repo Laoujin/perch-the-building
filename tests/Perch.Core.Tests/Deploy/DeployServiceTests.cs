@@ -4,8 +4,14 @@ using Perch.Core.Backup;
 using Perch.Core.Deploy;
 using Perch.Core.Modules;
 using Perch.Core.Symlinks;
+using NSubstitute.ReceivedExtensions;
 
 namespace Perch.Core.Tests.Deploy;
+
+internal sealed class SynchronousProgress<T>(Action<T> handler) : IProgress<T>
+{
+    public void Report(T value) => handler(value);
+}
 
 [TestFixture]
 public sealed class DeployServiceTests
@@ -15,9 +21,10 @@ public sealed class DeployServiceTests
     private IFileBackupProvider _backupProvider = null!;
     private IPlatformDetector _platformDetector = null!;
     private IGlobResolver _globResolver = null!;
+    private ISnapshotProvider _snapshotProvider = null!;
     private DeployService _deployService = null!;
     private List<DeployResult> _reported = null!;
-    private Progress<DeployResult> _progress = null!;
+    private IProgress<DeployResult> _progress = null!;
 
     [SetUp]
     public void SetUp()
@@ -29,10 +36,12 @@ public sealed class DeployServiceTests
         _platformDetector.CurrentPlatform.Returns(Platform.Windows);
         _globResolver = Substitute.For<IGlobResolver>();
         _globResolver.Resolve(Arg.Any<string>()).Returns(x => new[] { x.Arg<string>() });
-        var orchestrator = new SymlinkOrchestrator(_symlinkProvider, _backupProvider);
-        _deployService = new DeployService(_discoveryService, orchestrator, _platformDetector, _globResolver);
+        var fileLockDetector = Substitute.For<IFileLockDetector>();
+        var orchestrator = new SymlinkOrchestrator(_symlinkProvider, _backupProvider, fileLockDetector);
+        _snapshotProvider = Substitute.For<ISnapshotProvider>();
+        _deployService = new DeployService(_discoveryService, orchestrator, _platformDetector, _globResolver, _snapshotProvider);
         _reported = new List<DeployResult>();
-        _progress = new Progress<DeployResult>(r => _reported.Add(r));
+        _progress = new SynchronousProgress<DeployResult>(r => _reported.Add(r));
     }
 
     [Test]
@@ -57,9 +66,8 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            int exitCode = await _deployService.DeployAsync(tempDir, _progress);
+            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
 
-            await Task.Delay(50);
             Assert.Multiple(() =>
             {
                 Assert.That(exitCode, Is.EqualTo(0));
@@ -90,9 +98,8 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            int exitCode = await _deployService.DeployAsync(tempDir, _progress);
+            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
 
-            await Task.Delay(50);
             Assert.That(exitCode, Is.EqualTo(1));
         }
         finally
@@ -119,7 +126,7 @@ public sealed class DeployServiceTests
             cts.Cancel();
 
             Assert.ThrowsAsync<OperationCanceledException>(
-                () => _deployService.DeployAsync(tempDir, _progress, cts.Token));
+                () => _deployService.DeployAsync(tempDir, progress: _progress, cancellationToken: cts.Token));
         }
         finally
         {
@@ -146,9 +153,8 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            await _deployService.DeployAsync(tempDir, _progress);
+            await _deployService.DeployAsync(tempDir, progress: _progress);
 
-            await Task.Delay(50);
             string expectedTarget = Path.Combine(targetDir, "output.txt");
             _symlinkProvider.Received(1).CreateSymlink(expectedTarget, Arg.Any<string>());
         }
@@ -177,7 +183,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            await _deployService.DeployAsync(tempDir, _progress);
+            await _deployService.DeployAsync(tempDir, progress: _progress);
 
             string expectedSource = Path.Combine(modulePath, "settings.json");
             _symlinkProvider.Received(1).CreateSymlink(Arg.Any<string>(), expectedSource);
@@ -203,9 +209,8 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            int exitCode = await _deployService.DeployAsync(tempDir, _progress);
+            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
 
-            await Task.Delay(50);
             Assert.Multiple(() =>
             {
                 Assert.That(exitCode, Is.EqualTo(0));
@@ -239,7 +244,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            await _deployService.DeployAsync(tempDir, _progress);
+            await _deployService.DeployAsync(tempDir, progress: _progress);
 
             _symlinkProvider.Received(1).CreateSymlink(Arg.Any<string>(), Arg.Any<string>());
         }
@@ -267,7 +272,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            await _deployService.DeployAsync(tempDir, _progress);
+            await _deployService.DeployAsync(tempDir, progress: _progress);
 
             _symlinkProvider.Received(1).CreateSymlink(Arg.Any<string>(), Arg.Any<string>());
         }
@@ -301,7 +306,7 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            await _deployService.DeployAsync(tempDir, _progress);
+            await _deployService.DeployAsync(tempDir, progress: _progress);
 
             _symlinkProvider.Received(1).CreateSymlink(Path.Combine(targetDir, "win.txt"), Arg.Any<string>());
         }
@@ -321,8 +326,6 @@ public sealed class DeployServiceTests
 
         try
         {
-            await Task.Delay(50);
-            _reported.Clear();
             _platformDetector.CurrentPlatform.Returns(Platform.MacOS);
             var platformTargets = ImmutableDictionary.CreateRange(new[]
             {
@@ -334,9 +337,8 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            int exitCode = await _deployService.DeployAsync(tempDir, _progress);
+            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
 
-            await Task.Delay(50);
             Assert.Multiple(() =>
             {
                 Assert.That(exitCode, Is.EqualTo(0));
@@ -376,9 +378,100 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            await _deployService.DeployAsync(tempDir, _progress);
+            await _deployService.DeployAsync(tempDir, progress: _progress);
 
             _symlinkProvider.Received(2).CreateSymlink(Arg.Any<string>(), Arg.Any<string>());
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_DryRun_NoFilesystemChanges()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string modulePath = Path.Combine(tempDir, "mod");
+        Directory.CreateDirectory(modulePath);
+        string targetDir = Path.Combine(tempDir, "target");
+        Directory.CreateDirectory(targetDir);
+
+        try
+        {
+            var modules = ImmutableArray.Create(
+                new AppModule("mod", "Module", modulePath, ImmutableArray<Platform>.Empty, ImmutableArray.Create(
+                    new LinkEntry("file.txt", Path.Combine(targetDir, "file.txt"), LinkType.Symlink))));
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
+
+            int exitCode = await _deployService.DeployAsync(tempDir, dryRun: true, _progress);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(_reported, Has.Count.EqualTo(1));
+                Assert.That(_reported[0].Message, Does.Contain("Would"));
+            });
+            _symlinkProvider.DidNotReceive().CreateSymlink(Arg.Any<string>(), Arg.Any<string>());
+            _snapshotProvider.DidNotReceive().CreateSnapshot(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>());
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_WithExistingTargets_CreatesSnapshot()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string modulePath = Path.Combine(tempDir, "mod");
+        Directory.CreateDirectory(modulePath);
+        string targetDir = Path.Combine(tempDir, "target");
+        Directory.CreateDirectory(targetDir);
+
+        try
+        {
+            var modules = ImmutableArray.Create(
+                new AppModule("mod", "Module", modulePath, ImmutableArray<Platform>.Empty, ImmutableArray.Create(
+                    new LinkEntry("file.txt", Path.Combine(targetDir, "file.txt"), LinkType.Symlink))));
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
+
+            await _deployService.DeployAsync(tempDir, progress: _progress);
+
+            _snapshotProvider.Received(1).CreateSnapshot(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>());
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_DryRun_SkipsSnapshot()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string modulePath = Path.Combine(tempDir, "mod");
+        Directory.CreateDirectory(modulePath);
+        string targetDir = Path.Combine(tempDir, "target");
+        Directory.CreateDirectory(targetDir);
+
+        try
+        {
+            var modules = ImmutableArray.Create(
+                new AppModule("mod", "Module", modulePath, ImmutableArray<Platform>.Empty, ImmutableArray.Create(
+                    new LinkEntry("file.txt", Path.Combine(targetDir, "file.txt"), LinkType.Symlink))));
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
+
+            await _deployService.DeployAsync(tempDir, dryRun: true, _progress);
+
+            _snapshotProvider.DidNotReceive().CreateSnapshot(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>());
         }
         finally
         {
@@ -405,9 +498,8 @@ public sealed class DeployServiceTests
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
-            int exitCode = await _deployService.DeployAsync(tempDir, _progress);
+            int exitCode = await _deployService.DeployAsync(tempDir, progress: _progress);
 
-            await Task.Delay(50);
             Assert.Multiple(() =>
             {
                 Assert.That(exitCode, Is.EqualTo(0));

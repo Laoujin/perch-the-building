@@ -1,0 +1,12 @@
+display-name: VS Code
+links:
+  - source: settings.json
+    target:
+      windows: "%PERCH_TEST_HOME%\\Code\\User\\settings.json"
+      linux: "$PERCH_TEST_HOME/Code/User/settings.json"
+      macos: "$PERCH_TEST_HOME/Code/User/settings.json"
+  - source: keybindings.json
+    target:
+      windows: "%PERCH_TEST_HOME%\\Code\\User\\keybindings.json"
+      linux: "$PERCH_TEST_HOME/Code/User/keybindings.json"
+      macos: "$PERCH_TEST_HOME/Code/User/keybindings.json"

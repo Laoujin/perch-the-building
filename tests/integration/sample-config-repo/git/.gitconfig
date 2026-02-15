@@ -1,0 +1,10 @@
+[user]
+    name = Test User
+    email = test@example.com
+[core]
+    autocrlf = true
+    editor = code --wait
+[alias]
+    st = status
+    co = checkout
+    br = branch

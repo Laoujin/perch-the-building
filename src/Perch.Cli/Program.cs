@@ -16,6 +16,8 @@ app.Configure(config =>
 {
     config.AddCommand<DeployCommand>("deploy")
         .WithDescription("Deploy managed configs by creating symlinks");
+    config.AddCommand<StatusCommand>("status")
+        .WithDescription("Check for drift between managed configs and deployed symlinks");
 });
 
 return app.Run(args);

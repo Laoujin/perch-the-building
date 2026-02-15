@@ -1,0 +1,7 @@
+display-name: Git
+links:
+  - source: .gitconfig
+    target:
+      windows: "%PERCH_TEST_HOME%\\.gitconfig"
+      linux: "$PERCH_TEST_HOME/.gitconfig"
+      macos: "$PERCH_TEST_HOME/.gitconfig"

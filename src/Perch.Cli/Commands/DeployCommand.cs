@@ -17,6 +17,14 @@ public sealed class DeployCommand : AsyncCommand<DeployCommand.Settings>
         [CommandOption("--config-path")]
         [Description("Path to the config repository")]
         public string? ConfigPath { get; init; }
+
+        [CommandOption("--dry-run")]
+        [Description("Preview changes without making them")]
+        public bool DryRun { get; init; }
+
+        [CommandOption("--output")]
+        [Description("Output format (Pretty or Json)")]
+        public OutputFormat Output { get; init; } = OutputFormat.Pretty;
     }
 
     public DeployCommand(IDeployService deployService, ISettingsProvider settingsProvider, IAnsiConsole console)
@@ -42,28 +50,54 @@ public sealed class DeployCommand : AsyncCommand<DeployCommand.Settings>
             return 2;
         }
 
+        if (settings.Output == OutputFormat.Json)
+        {
+            return await ExecuteJsonAsync(configPath, settings.DryRun, cancellationToken);
+        }
+
+        return await ExecutePrettyAsync(configPath, settings.DryRun, cancellationToken);
+    }
+
+    private async Task<int> ExecutePrettyAsync(string configPath, bool dryRun, CancellationToken cancellationToken)
+    {
+        if (dryRun)
+        {
+            _console.MarkupLine("[yellow]DRY RUN[/] — no changes will be made.");
+        }
+
         _console.MarkupLine($"[blue]Deploying from:[/] {configPath.EscapeMarkup()}");
         _console.WriteLine();
 
-        var progress = new Progress<DeployResult>(result =>
-        {
-            string icon = result.Level switch
+        var table = new Table();
+        table.AddColumn("Module");
+        table.AddColumn("Status");
+        table.AddColumn("Details");
+
+        int exitCode = 0;
+
+        await _console.Live(table)
+            .AutoClear(false)
+            .StartAsync(async ctx =>
             {
-                ResultLevel.Ok => "[green]OK[/]",
-                ResultLevel.Warning => "[yellow]WARN[/]",
-                ResultLevel.Error => "[red]FAIL[/]",
-                _ => "[grey]??[/]",
-            };
+                var progress = new SynchronousProgress<DeployResult>(result =>
+                {
+                    string status = result.Level switch
+                    {
+                        ResultLevel.Ok => "[green]OK[/]",
+                        ResultLevel.Warning => "[yellow]WARN[/]",
+                        ResultLevel.Error => "[red]FAIL[/]",
+                        _ => "[grey]??[/]",
+                    };
 
-            _console.MarkupLine($"  {icon} [{GetColor(result.Level)}]{result.ModuleName.EscapeMarkup()}[/] {result.Message.EscapeMarkup()}");
+                    table.AddRow(
+                        $"[{GetColor(result.Level)}]{result.ModuleName.EscapeMarkup()}[/]",
+                        status,
+                        result.Message.EscapeMarkup());
+                    ctx.Refresh();
+                });
 
-            if (result.Level != ResultLevel.Error)
-            {
-                _console.MarkupLine($"       [grey]{result.TargetPath.EscapeMarkup()}[/]");
-            }
-        });
-
-        int exitCode = await _deployService.DeployAsync(configPath, progress, cancellationToken);
+                exitCode = await _deployService.DeployAsync(configPath, dryRun, progress, cancellationToken);
+            });
 
         _console.WriteLine();
         if (exitCode == 0)
@@ -78,6 +112,32 @@ public sealed class DeployCommand : AsyncCommand<DeployCommand.Settings>
         return exitCode;
     }
 
+    private async Task<int> ExecuteJsonAsync(string configPath, bool dryRun, CancellationToken cancellationToken)
+    {
+        var results = new List<DeployResult>();
+        var progress = new SynchronousProgress<DeployResult>(results.Add);
+
+        int exitCode = await _deployService.DeployAsync(configPath, dryRun, progress, cancellationToken);
+
+        var output = new
+        {
+            dryRun,
+            exitCode,
+            results = results.Select(r => new
+            {
+                moduleName = r.ModuleName,
+                sourcePath = r.SourcePath,
+                targetPath = r.TargetPath,
+                level = r.Level.ToString(),
+                message = r.Message,
+            }),
+        };
+
+        string json = JsonSerializer.Serialize(output, new JsonSerializerOptions { WriteIndented = true });
+        _console.WriteLine(json);
+        return exitCode;
+    }
+
     private static string GetColor(ResultLevel level) => level switch
     {
         ResultLevel.Ok => "green",
@@ -85,4 +145,9 @@ public sealed class DeployCommand : AsyncCommand<DeployCommand.Settings>
         ResultLevel.Error => "red",
         _ => "grey",
     };
+
+    private sealed class SynchronousProgress<T>(Action<T> handler) : IProgress<T>
+    {
+        public void Report(T value) => handler(value);
+    }
 }

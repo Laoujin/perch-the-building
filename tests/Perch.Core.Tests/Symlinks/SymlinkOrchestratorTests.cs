@@ -10,6 +10,7 @@ public sealed class SymlinkOrchestratorTests
 {
     private ISymlinkProvider _symlinkProvider = null!;
     private IFileBackupProvider _backupProvider = null!;
+    private IFileLockDetector _fileLockDetector = null!;
     private SymlinkOrchestrator _orchestrator = null!;
 
     [SetUp]
@@ -17,7 +18,8 @@ public sealed class SymlinkOrchestratorTests
     {
         _symlinkProvider = Substitute.For<ISymlinkProvider>();
         _backupProvider = Substitute.For<IFileBackupProvider>();
-        _orchestrator = new SymlinkOrchestrator(_symlinkProvider, _backupProvider);
+        _fileLockDetector = Substitute.For<IFileLockDetector>();
+        _orchestrator = new SymlinkOrchestrator(_symlinkProvider, _backupProvider, _fileLockDetector);
     }
 
     [Test]
@@ -148,6 +150,180 @@ public sealed class SymlinkOrchestratorTests
 
             Assert.That(result.Level, Is.EqualTo(ResultLevel.Error));
             Assert.That(result.Message, Does.Contain("Access denied"));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public void ProcessLink_UnauthorizedAccessException_ReturnsActionableError()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string target = Path.Combine(tempDir, "settings.json");
+        string source = "C:\\repo\\vscode\\settings.json";
+        _symlinkProvider.When(x => x.CreateSymlink(Arg.Any<string>(), Arg.Any<string>()))
+            .Do(_ => throw new UnauthorizedAccessException("A required privilege is not held by the client."));
+
+        try
+        {
+            DeployResult result = _orchestrator.ProcessLink("vscode", source, target, LinkType.Symlink);
+
+            Assert.That(result.Level, Is.EqualTo(ResultLevel.Error));
+            Assert.That(result.Message, Does.Contain("Developer Mode").Or.Contain("permissions"));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public void ProcessLink_PrivilegeIOException_ReturnsActionableError()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string target = Path.Combine(tempDir, "settings.json");
+        string source = "C:\\repo\\vscode\\settings.json";
+        _symlinkProvider.When(x => x.CreateSymlink(Arg.Any<string>(), Arg.Any<string>()))
+            .Do(_ => throw new IOException("A required privilege is not held by the client. : 'path'"));
+
+        try
+        {
+            DeployResult result = _orchestrator.ProcessLink("vscode", source, target, LinkType.Symlink);
+
+            Assert.That(result.Level, Is.EqualTo(ResultLevel.Error));
+            Assert.That(result.Message, Does.Contain("Developer Mode").Or.Contain("permissions"));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public void ProcessLink_DryRun_NoTargetExists_ReportsWouldCreate()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string target = Path.Combine(tempDir, "settings.json");
+        string source = "C:\\repo\\vscode\\settings.json";
+
+        try
+        {
+            DeployResult result = _orchestrator.ProcessLink("vscode", source, target, LinkType.Symlink, dryRun: true);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Level, Is.EqualTo(ResultLevel.Ok));
+                Assert.That(result.Message, Does.Contain("Would create link"));
+            });
+            _symlinkProvider.DidNotReceive().CreateSymlink(Arg.Any<string>(), Arg.Any<string>());
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public void ProcessLink_DryRun_ExistingFile_ReportsWouldBackup()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string target = Path.Combine(tempDir, "settings.json");
+        File.WriteAllText(target, "existing");
+        string source = "C:\\repo\\vscode\\settings.json";
+
+        try
+        {
+            DeployResult result = _orchestrator.ProcessLink("vscode", source, target, LinkType.Symlink, dryRun: true);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Level, Is.EqualTo(ResultLevel.Warning));
+                Assert.That(result.Message, Does.Contain("Would back up"));
+            });
+            _backupProvider.DidNotReceive().BackupFile(Arg.Any<string>());
+            _symlinkProvider.DidNotReceive().CreateSymlink(Arg.Any<string>(), Arg.Any<string>());
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public void ProcessLink_DryRun_AlreadyLinked_SkipsAsNormal()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string target = Path.Combine(tempDir, "settings.json");
+        string source = "C:\\repo\\vscode\\settings.json";
+        _symlinkProvider.IsSymlink(target).Returns(true);
+        _symlinkProvider.GetSymlinkTarget(target).Returns(source);
+
+        try
+        {
+            DeployResult result = _orchestrator.ProcessLink("vscode", source, target, LinkType.Symlink, dryRun: true);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Level, Is.EqualTo(ResultLevel.Ok));
+                Assert.That(result.Message, Does.Contain("skipped"));
+            });
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public void ProcessLink_TargetFileLocked_ReturnsError()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string target = Path.Combine(tempDir, "settings.json");
+        File.WriteAllText(target, "existing");
+        string source = "C:\\repo\\vscode\\settings.json";
+        _fileLockDetector.IsLocked(target).Returns(true);
+
+        try
+        {
+            DeployResult result = _orchestrator.ProcessLink("vscode", source, target, LinkType.Symlink);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.Level, Is.EqualTo(ResultLevel.Error));
+                Assert.That(result.Message, Does.Contain("locked"));
+            });
+            _backupProvider.DidNotReceive().BackupFile(Arg.Any<string>());
+            _symlinkProvider.DidNotReceive().CreateSymlink(Arg.Any<string>(), Arg.Any<string>());
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public void ProcessLink_TargetFileNotLocked_ProceedsNormally()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        string target = Path.Combine(tempDir, "settings.json");
+        string source = "C:\\repo\\vscode\\settings.json";
+        _fileLockDetector.IsLocked(target).Returns(false);
+
+        try
+        {
+            DeployResult result = _orchestrator.ProcessLink("vscode", source, target, LinkType.Symlink);
+
+            Assert.That(result.Level, Is.EqualTo(ResultLevel.Ok));
+            _symlinkProvider.Received(1).CreateSymlink(target, source);
         }
         finally
         {

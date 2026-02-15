@@ -1,0 +1,7 @@
+display-name: Broken App
+links:
+  - source: config.txt
+    target:
+      windows: "%PERCH_TEST_HOME%\\nonexistent-dir\\deep\\config.txt"
+      linux: "$PERCH_TEST_HOME/nonexistent-dir/deep/config.txt"
+      macos: "$PERCH_TEST_HOME/nonexistent-dir/deep/config.txt"
