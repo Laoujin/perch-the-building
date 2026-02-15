@@ -9,8 +9,13 @@ public sealed class GlobResolver : IGlobResolver
             return [path];
         }
 
-        string[] segments = path.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-        var current = new List<string> { "" };
+        string root = Path.GetPathRoot(path) ?? "";
+        string relativePart = path[root.Length..];
+        string[] segments = relativePart
+            .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+            .Where(s => s.Length > 0)
+            .ToArray();
+        var current = new List<string> { root };
 
         for (int i = 0; i < segments.Length; i++)
         {

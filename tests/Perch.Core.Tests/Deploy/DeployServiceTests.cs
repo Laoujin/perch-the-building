@@ -161,7 +161,7 @@ public sealed class DeployServiceTests
         {
             var modules = ImmutableArray.Create(
                 new AppModule("mod", "Module", true, modulePath, ImmutableArray<Platform>.Empty, ImmutableArray.Create(
-                    new LinkEntry("file.txt", "%PERCH_TEST_DEPLOY%\\output.txt", LinkType.Symlink))));
+                    new LinkEntry("file.txt", $"%PERCH_TEST_DEPLOY%{Path.DirectorySeparatorChar}output.txt", LinkType.Symlink))));
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                 .Returns(new DiscoveryResult(modules, ImmutableArray<string>.Empty));
 
