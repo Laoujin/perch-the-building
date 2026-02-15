@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -23,7 +24,7 @@ public sealed class PackageManifestParser
         {
             model = Deserializer.Deserialize<PackageYamlModel>(yaml);
         }
-        catch (Exception ex)
+        catch (YamlException ex)
         {
             return PackageManifestParseResult.Failure($"Invalid YAML: {ex.Message}");
         }
