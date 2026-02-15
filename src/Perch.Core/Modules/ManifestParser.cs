@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Perch.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -42,18 +43,71 @@ public sealed class ManifestParser
                 return ManifestParseResult.Failure($"Link [{i}] is missing 'source'.");
             }
 
-            if (string.IsNullOrWhiteSpace(link.Target))
+            if (link.Target == null)
             {
                 return ManifestParseResult.Failure($"Link [{i}] is missing 'target'.");
             }
 
             var linkType = ParseLinkType(link.LinkType);
-            links.Add(new LinkEntry(link.Source, link.Target, linkType));
+            var entry = ParseTarget(link.Source, link.Target, linkType);
+            if (entry == null)
+            {
+                return ManifestParseResult.Failure($"Link [{i}] has an invalid 'target'.");
+            }
+
+            links.Add(entry);
         }
 
         string displayName = string.IsNullOrWhiteSpace(model.DisplayName) ? moduleName : model.DisplayName;
-        var manifest = new AppManifest(moduleName, displayName, links.ToImmutableArray());
+        var platforms = ParsePlatforms(model.Platforms);
+        var manifest = new AppManifest(moduleName, displayName, platforms, links.ToImmutableArray());
         return ManifestParseResult.Success(manifest);
+    }
+
+    private static ImmutableArray<Platform> ParsePlatforms(List<string>? values)
+    {
+        if (values == null || values.Count == 0)
+        {
+            return ImmutableArray<Platform>.Empty;
+        }
+
+        var platforms = new List<Platform>();
+        foreach (string value in values)
+        {
+            if (Enum.TryParse<Platform>(value, ignoreCase: true, out var platform))
+            {
+                platforms.Add(platform);
+            }
+        }
+
+        return platforms.ToImmutableArray();
+    }
+
+    private static LinkEntry? ParseTarget(string source, object target, LinkType linkType)
+    {
+        if (target is string s)
+        {
+            return string.IsNullOrWhiteSpace(s) ? null : new LinkEntry(source, s, linkType);
+        }
+
+        if (target is Dictionary<object, object> dict)
+        {
+            var platformTargets = new Dictionary<Platform, string>();
+            foreach (var kvp in dict)
+            {
+                if (kvp.Key is string key && kvp.Value is string value
+                    && Enum.TryParse<Platform>(key, ignoreCase: true, out var platform))
+                {
+                    platformTargets[platform] = value;
+                }
+            }
+
+            return platformTargets.Count > 0
+                ? new LinkEntry(source, null, platformTargets.ToImmutableDictionary(), linkType)
+                : null;
+        }
+
+        return null;
     }
 
     private static LinkType ParseLinkType(string? value) =>

@@ -1,3 +1,4 @@
+using Perch.Core;
 using Perch.Core.Modules;
 
 namespace Perch.Core.Tests.Modules;
@@ -165,5 +166,122 @@ public sealed class ManifestParserTests
 
         Assert.That(result.IsSuccess, Is.False);
         Assert.That(result.Error, Does.Contain("target"));
+    }
+
+    [Test]
+    public void Parse_WithPlatforms_ReturnsParsedPlatforms()
+    {
+        string yaml = """
+            platforms:
+              - windows
+              - linux
+            links:
+              - source: config
+                target: "C:\\test\\config"
+            """;
+
+        var result = _parser.Parse(yaml, "app");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Manifest!.Platforms, Is.EquivalentTo(new[] { Platform.Windows, Platform.Linux }));
+    }
+
+    [Test]
+    public void Parse_NoPlatforms_ReturnsEmptyArray()
+    {
+        string yaml = """
+            links:
+              - source: config
+                target: "C:\\test\\config"
+            """;
+
+        var result = _parser.Parse(yaml, "app");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Manifest!.Platforms, Is.Empty);
+    }
+
+    [Test]
+    public void Parse_UnknownPlatform_IgnoresUnknown()
+    {
+        string yaml = """
+            platforms:
+              - windows
+              - beos
+            links:
+              - source: config
+                target: "C:\\test\\config"
+            """;
+
+        var result = _parser.Parse(yaml, "app");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Manifest!.Platforms, Has.Length.EqualTo(1));
+        Assert.That(result.Manifest!.Platforms[0], Is.EqualTo(Platform.Windows));
+    }
+
+    [Test]
+    public void Parse_SimpleTarget_BackwardCompatible()
+    {
+        string yaml = """
+            links:
+              - source: settings.json
+                target: "%APPDATA%\\Code\\User\\settings.json"
+            """;
+
+        var result = _parser.Parse(yaml, "vscode");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Manifest!.Links[0].Target, Is.EqualTo("%APPDATA%\\Code\\User\\settings.json"));
+        Assert.That(result.Manifest!.Links[0].PlatformTargets, Is.Null);
+    }
+
+    [Test]
+    public void Parse_PlatformTargets_ReturnsDictionary()
+    {
+        string yaml = """
+            links:
+              - source: settings.json
+                target:
+                  windows: "%APPDATA%\\Code\\User\\settings.json"
+                  linux: "$HOME/.config/Code/User/settings.json"
+            """;
+
+        var result = _parser.Parse(yaml, "vscode");
+
+        Assert.That(result.IsSuccess, Is.True);
+        var link = result.Manifest!.Links[0];
+        Assert.Multiple(() =>
+        {
+            Assert.That(link.Target, Is.Null);
+            Assert.That(link.PlatformTargets, Is.Not.Null);
+            Assert.That(link.PlatformTargets!, Has.Count.EqualTo(2));
+            Assert.That(link.GetTargetForPlatform(Platform.Windows), Is.EqualTo("%APPDATA%\\Code\\User\\settings.json"));
+            Assert.That(link.GetTargetForPlatform(Platform.Linux), Is.EqualTo("$HOME/.config/Code/User/settings.json"));
+        });
+    }
+
+    [Test]
+    public void Parse_MixedSimpleAndPlatformLinks_ParsesBoth()
+    {
+        string yaml = """
+            links:
+              - source: settings.json
+                target: "%APPDATA%\\Code\\User\\settings.json"
+              - source: keybindings.json
+                target:
+                  windows: "%APPDATA%\\Code\\User\\keybindings.json"
+                  macos: "$HOME/Library/Application Support/Code/User/keybindings.json"
+            """;
+
+        var result = _parser.Parse(yaml, "vscode");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Manifest!.Links, Has.Length.EqualTo(2));
+            Assert.That(result.Manifest!.Links[0].Target, Is.Not.Null);
+            Assert.That(result.Manifest!.Links[1].PlatformTargets, Is.Not.Null);
+        });
     }
 }
