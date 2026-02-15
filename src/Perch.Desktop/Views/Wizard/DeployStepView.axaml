@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Perch.Desktop.ViewModels.Wizard"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="Perch.Desktop.Views.Wizard.DeployStepView"
+             x:DataType="vm:DeployStepViewModel">
+
+    <DockPanel Margin="32">
+        <TextBlock DockPanel.Dock="Top" Text="Deploying..."
+                   FontSize="24" FontWeight="Bold" Margin="0,0,0,16" />
+
+        <ProgressBar DockPanel.Dock="Top"
+                     Minimum="0" Maximum="{Binding TotalPhases}"
+                     Value="{Binding CompletedPhases}"
+                     Height="6" Margin="0,0,0,24" />
+
+        <ScrollViewer>
+            <ItemsControl ItemsSource="{Binding Phases}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:DeployPhaseViewModel">
+                        <Border Padding="12,8" Margin="0,4">
+                            <Grid ColumnDefinitions="Auto,*">
+                                <TextBlock Grid.Column="0" Width="24" Margin="0,0,12,0"
+                                           VerticalAlignment="Center"
+                                           Text="{Binding Status}" FontSize="11" />
+                                <TextBlock Grid.Column="1" Text="{Binding Name}"
+                                           VerticalAlignment="Center" FontSize="14" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <Border DockPanel.Dock="Bottom" IsVisible="{Binding DeployComplete}"
+                Padding="16" Margin="0,16,0,0" CornerRadius="8"
+                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+            <TextBlock Text="Setup complete!" FontSize="16" FontWeight="SemiBold"
+                       HorizontalAlignment="Center" />
+        </Border>
+    </DockPanel>
+</UserControl>

@@ -1,0 +1,45 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Perch.Desktop.ViewModels.Wizard"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="Perch.Desktop.Views.Wizard.VsCodeExtensionsStepView"
+             x:DataType="vm:VsCodeExtensionsStepViewModel">
+
+    <DockPanel Margin="32">
+        <TextBlock DockPanel.Dock="Top" Text="VS Code Extensions"
+                   FontSize="24" FontWeight="Bold" Margin="0,0,0,16" />
+
+        <!-- VS Code not detected -->
+        <StackPanel IsVisible="{Binding !VsCodeDetected}"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
+            <TextBlock Text="VS Code not detected" FontSize="16" HorizontalAlignment="Center" />
+            <TextBlock Text="Skip this step or install VS Code first."
+                       Opacity="0.6" HorizontalAlignment="Center" />
+        </StackPanel>
+
+        <!-- Extensions list -->
+        <ScrollViewer IsVisible="{Binding VsCodeDetected}">
+            <StackPanel Spacing="4">
+                <TextBlock Text="{Binding InstalledExtensions.Count, StringFormat='Detected {0} extensions on this machine:'}"
+                           Margin="0,0,0,12" Opacity="0.7" />
+                <ItemsControl ItemsSource="{Binding InstalledExtensions}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="vm:ExtensionItemViewModel">
+                            <Border Padding="8,4" Margin="0,1">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" Margin="0,0,8,0" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Extension.Id}"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="2" Text="{Binding Extension.Version}"
+                                               Opacity="0.5" VerticalAlignment="Center" FontSize="11" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

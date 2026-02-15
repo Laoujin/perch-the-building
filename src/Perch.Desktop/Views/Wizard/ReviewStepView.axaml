@@ -1,0 +1,93 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Perch.Desktop.ViewModels.Wizard"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="Perch.Desktop.Views.Wizard.ReviewStepView"
+             x:DataType="vm:ReviewStepViewModel">
+
+    <ScrollViewer Padding="32">
+        <StackPanel Spacing="20" MaxWidth="600" HorizontalAlignment="Center">
+            <TextBlock Text="Review &amp; Confirm"
+                       FontSize="24" FontWeight="Bold" />
+
+            <!-- Config Repository -->
+            <Border Padding="16" CornerRadius="8"
+                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Config Repository" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding RepoSummary}" Opacity="0.7" />
+                </StackPanel>
+            </Border>
+
+            <!-- Dotfiles -->
+            <Border Padding="16" CornerRadius="8"
+                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1">
+                <StackPanel Spacing="4">
+                    <TextBlock FontWeight="SemiBold">
+                        <Run Text="Dotfiles to Adopt: " />
+                        <Run Text="{Binding DotfileCount}" FontWeight="Bold" />
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <!-- Apps -->
+            <Border Padding="16" CornerRadius="8"
+                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1">
+                <StackPanel Spacing="4">
+                    <TextBlock FontWeight="SemiBold">
+                        <Run Text="Apps to Install: " />
+                        <Run Text="{Binding AppsToInstallCount}" FontWeight="Bold" />
+                    </TextBlock>
+                    <TextBlock FontWeight="SemiBold">
+                        <Run Text="Configs to Manage: " />
+                        <Run Text="{Binding ConfigsToAdoptCount}" FontWeight="Bold" />
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <!-- Fonts -->
+            <Border Padding="16" CornerRadius="8"
+                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1">
+                <StackPanel Spacing="4">
+                    <TextBlock FontWeight="SemiBold">
+                        <Run Text="Fonts to Install: " />
+                        <Run Text="{Binding FontsToInstallCount}" FontWeight="Bold" />
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <!-- Extensions -->
+            <Border Padding="16" CornerRadius="8"
+                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1">
+                <StackPanel Spacing="4">
+                    <TextBlock FontWeight="SemiBold">
+                        <Run Text="VS Code Extensions to Sync: " />
+                        <Run Text="{Binding ExtensionsToSyncCount}" FontWeight="Bold" />
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <!-- Tweaks -->
+            <Border Padding="16" CornerRadius="8"
+                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1">
+                <StackPanel Spacing="4">
+                    <TextBlock FontWeight="SemiBold">
+                        <Run Text="Windows Tweaks: " />
+                        <Run Text="{Binding TweaksToApplyCount}" FontWeight="Bold" />
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <!-- Machine -->
+            <Border Padding="16" CornerRadius="8"
+                    Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+                <TextBlock>
+                    <Run Text="Machine: " FontWeight="SemiBold" />
+                    <Run Text="{Binding MachineName}" />
+                </TextBlock>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

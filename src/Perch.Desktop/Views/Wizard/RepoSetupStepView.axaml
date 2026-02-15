@@ -1,0 +1,75 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Perch.Desktop.ViewModels.Wizard"
+             xmlns:core="using:Perch.Core.Wizard"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="Perch.Desktop.Views.Wizard.RepoSetupStepView"
+             x:DataType="vm:RepoSetupStepViewModel">
+
+    <ScrollViewer Padding="32">
+        <StackPanel Spacing="24" MaxWidth="600" HorizontalAlignment="Center">
+            <TextBlock Text="Where should Perch store your configs?"
+                       FontSize="24" FontWeight="Bold" />
+
+            <!-- Start Fresh -->
+            <Border Padding="16" CornerRadius="8"
+                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1">
+                <StackPanel Spacing="8">
+                    <RadioButton GroupName="RepoMode"
+                                 IsChecked="{Binding SelectedMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static core:RepoSetupMode.StartFresh}}"
+                                 Content="Start fresh" FontWeight="SemiBold" />
+                    <TextBlock Text="Create a new config repository from scratch"
+                               Opacity="0.6" Margin="28,0,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Clone from GitHub -->
+            <Border Padding="16" CornerRadius="8"
+                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1">
+                <StackPanel Spacing="8">
+                    <RadioButton GroupName="RepoMode"
+                                 IsChecked="{Binding SelectedMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static core:RepoSetupMode.CloneFromGitHub}}"
+                                 Content="Clone from GitHub" FontWeight="SemiBold" />
+                    <TextBlock Text="Clone an existing dotfiles repository"
+                               Opacity="0.6" Margin="28,0,0,0" />
+                    <TextBox Watermark="https://github.com/user/dotfiles.git"
+                             Text="{Binding CloneUrl}"
+                             Margin="28,4,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Link existing folder -->
+            <Border Padding="16" CornerRadius="8"
+                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1">
+                <StackPanel Spacing="8">
+                    <RadioButton GroupName="RepoMode"
+                                 IsChecked="{Binding SelectedMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static core:RepoSetupMode.LinkExisting}}"
+                                 Content="Link existing folder" FontWeight="SemiBold" />
+                    <TextBlock Text="Point Perch at an existing config folder"
+                               Opacity="0.6" Margin="28,0,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Local only -->
+            <Border Padding="16" CornerRadius="8"
+                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1">
+                <StackPanel Spacing="8">
+                    <RadioButton GroupName="RepoMode"
+                                 IsChecked="{Binding SelectedMode, Converter={x:Static ObjectConverters.Equal}, ConverterParameter={x:Static core:RepoSetupMode.LocalOnly}}"
+                                 Content="No git (local only)" FontWeight="SemiBold" />
+                    <TextBlock Text="Manage configs locally without version control"
+                               Opacity="0.6" Margin="28,0,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Folder path -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="Config folder path" FontWeight="SemiBold" />
+                <TextBox Watermark="C:\Users\you\dotfiles"
+                         Text="{Binding RepoPath}" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

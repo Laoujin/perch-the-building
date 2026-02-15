@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Perch.Cli/Perch.Cli.csproj" />
     <Project Path="src/Perch.Core/Perch.Core.csproj" />
+    <Project Path="src/Perch.Desktop/Perch.Desktop.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Perch.Core.Tests/Perch.Core.Tests.csproj" />

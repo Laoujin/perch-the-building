@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Perch.Desktop.ViewModels.Wizard"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="Perch.Desktop.Views.Wizard.WelcomeStepView"
+             x:DataType="vm:WelcomeStepViewModel">
+
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="24" MaxWidth="500">
+        <TextBlock Text="Perch"
+                   FontSize="48" FontWeight="Bold"
+                   HorizontalAlignment="Center" />
+
+        <TextBlock Text="Your configs, everywhere."
+                   FontSize="20" Opacity="0.7"
+                   HorizontalAlignment="Center" />
+
+        <TextBlock Text="Perch manages your dotfiles, app configs, and system settings across machines using symlinks and git."
+                   TextWrapping="Wrap" TextAlignment="Center"
+                   FontSize="14" Opacity="0.5"
+                   Margin="0,16,0,0" />
+    </StackPanel>
+</UserControl>

@@ -1,0 +1,74 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Perch.Desktop.ViewModels.Wizard"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="Perch.Desktop.Views.Wizard.AppCatalogStepView"
+             x:DataType="vm:AppCatalogStepViewModel">
+
+    <Grid ColumnDefinitions="200,*" Margin="0">
+        <!-- Left sidebar: categories -->
+        <Border Grid.Column="0" Padding="16"
+                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="Categories"
+                           FontWeight="SemiBold" Margin="0,0,0,12" />
+                <ListBox ItemsSource="{Binding Categories}"
+                         SelectedItem="{Binding SelectedCategory}" />
+            </DockPanel>
+        </Border>
+
+        <!-- Main content -->
+        <DockPanel Grid.Column="1" Margin="16">
+            <!-- Search and filters -->
+            <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,16">
+                <TextBox Watermark="Search apps..." Text="{Binding SearchText}" />
+            </StackPanel>
+
+            <!-- Loading state -->
+            <StackPanel IsVisible="{Binding IsLoading}" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <ProgressBar IsIndeterminate="True" Width="200" Height="4" />
+                <TextBlock Text="Loading catalog..." HorizontalAlignment="Center" Margin="0,8,0,0" />
+            </StackPanel>
+
+            <!-- App list -->
+            <ScrollViewer IsVisible="{Binding !IsLoading}">
+                <ItemsControl ItemsSource="{Binding Apps}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="vm:AppItemViewModel">
+                            <Border Padding="12" Margin="0,4" CornerRadius="6"
+                                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                    BorderThickness="1">
+                                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+                                    <TextBlock Grid.Row="0" Grid.Column="0"
+                                               Text="{Binding Entry.Name}"
+                                               FontWeight="SemiBold" FontSize="14" />
+                                    <TextBlock Grid.Row="0" Grid.Column="1"
+                                               Text="{Binding Entry.Category}"
+                                               Opacity="0.5" FontSize="11" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                               Text="{Binding Entry.Description}"
+                                               TextWrapping="Wrap" Opacity="0.6" FontSize="12"
+                                               Margin="0,4,0,0" />
+                                    <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                                                Orientation="Horizontal" Spacing="12" Margin="0,8,0,0">
+                                        <CheckBox IsChecked="{Binding WillInstall}"
+                                                  IsVisible="{Binding !IsInstalled}"
+                                                  Content="Install" />
+                                        <TextBlock IsVisible="{Binding IsInstalled}"
+                                                   Text="Installed" Opacity="0.6"
+                                                   VerticalAlignment="Center" />
+                                        <CheckBox IsChecked="{Binding WillAdoptConfig}"
+                                                  IsVisible="{Binding HasConfig}"
+                                                  Content="Adopt Config" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </DockPanel>
+    </Grid>
+</UserControl>

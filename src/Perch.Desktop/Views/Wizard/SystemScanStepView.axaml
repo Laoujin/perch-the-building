@@ -1,0 +1,50 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Perch.Desktop.ViewModels.Wizard"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="Perch.Desktop.Views.Wizard.SystemScanStepView"
+             x:DataType="vm:SystemScanStepViewModel">
+
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="24" MaxWidth="500">
+        <TextBlock Text="Scanning your system..."
+                   FontSize="24" FontWeight="Bold"
+                   HorizontalAlignment="Center" />
+
+        <ProgressBar IsIndeterminate="{Binding IsScanning}" Height="4" />
+
+        <ItemsControl ItemsSource="{Binding ScanLog}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding}" Opacity="0.7" Margin="0,2" />
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <Border IsVisible="{Binding ScanComplete}" Padding="16" CornerRadius="8"
+                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+            <StackPanel Spacing="8">
+                <TextBlock Text="{Binding StatusText}" FontWeight="SemiBold" />
+                <StackPanel Orientation="Horizontal" Spacing="16">
+                    <TextBlock>
+                        <Run Text="{Binding AppCount}" FontWeight="Bold" />
+                        <Run Text=" apps" />
+                    </TextBlock>
+                    <TextBlock>
+                        <Run Text="{Binding DotfileCount}" FontWeight="Bold" />
+                        <Run Text=" dotfiles" />
+                    </TextBlock>
+                    <TextBlock>
+                        <Run Text="{Binding FontCount}" FontWeight="Bold" />
+                        <Run Text=" fonts" />
+                    </TextBlock>
+                    <TextBlock>
+                        <Run Text="{Binding ExtensionCount}" FontWeight="Bold" />
+                        <Run Text=" extensions" />
+                    </TextBlock>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

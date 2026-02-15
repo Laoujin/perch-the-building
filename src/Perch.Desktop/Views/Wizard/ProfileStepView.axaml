@@ -1,0 +1,71 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Perch.Desktop.ViewModels.Wizard"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="Perch.Desktop.Views.Wizard.ProfileStepView"
+             x:DataType="vm:ProfileStepViewModel">
+
+    <ScrollViewer Padding="32">
+        <StackPanel Spacing="24" MaxWidth="600" HorizontalAlignment="Center">
+            <TextBlock Text="What kind of user are you?"
+                       FontSize="24" FontWeight="Bold" />
+
+            <TextBlock Text="Select one or more profiles to set smart defaults for the next steps."
+                       Opacity="0.6" />
+
+            <StackPanel Spacing="16">
+                <!-- Developer -->
+                <Border Padding="20" CornerRadius="8" MinWidth="170"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1">
+                    <StackPanel Spacing="8">
+                        <CheckBox IsChecked="{Binding IsDeveloper}" Content="Developer" FontWeight="SemiBold" FontSize="16" />
+                        <TextBlock Text="Git, VS Code, terminals, SDKs, SSH, dev extensions"
+                                   TextWrapping="Wrap" Opacity="0.6" FontSize="12" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Creative -->
+                <Border Padding="20" CornerRadius="8" MinWidth="170"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1">
+                    <StackPanel Spacing="8">
+                        <CheckBox IsChecked="{Binding IsCreative}" Content="Creative" FontWeight="SemiBold" FontSize="16" />
+                        <TextBlock Text="Image editors, design tools, media production"
+                                   TextWrapping="Wrap" Opacity="0.6" FontSize="12" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Power User -->
+                <Border Padding="20" CornerRadius="8" MinWidth="170"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1">
+                    <StackPanel Spacing="8">
+                        <CheckBox IsChecked="{Binding IsPowerUser}" Content="Power User" FontWeight="SemiBold" FontSize="16" />
+                        <TextBlock Text="System tweaks, shell customization, advanced utilities"
+                                   TextWrapping="Wrap" Opacity="0.6" FontSize="12" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Gamer -->
+                <Border Padding="20" CornerRadius="8" MinWidth="170"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1">
+                    <StackPanel Spacing="8">
+                        <CheckBox IsChecked="{Binding IsGamer}" Content="Gamer" FontWeight="SemiBold" FontSize="16" />
+                        <TextBlock Text="Game launchers, performance tweaks, overlays"
+                                   TextWrapping="Wrap" Opacity="0.6" FontSize="12" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Minimal -->
+                <Border Padding="20" CornerRadius="8" MinWidth="170"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1">
+                    <StackPanel Spacing="8">
+                        <CheckBox IsChecked="{Binding IsMinimal}" Content="Minimal" FontWeight="SemiBold" FontSize="16" />
+                        <TextBlock Text="Just browser, file manager, essentials"
+                                   TextWrapping="Wrap" Opacity="0.6" FontSize="12" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

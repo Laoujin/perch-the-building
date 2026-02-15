@@ -1,0 +1,42 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Perch.Desktop.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1024" d:DesignHeight="768"
+        x:Class="Perch.Desktop.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="Perch"
+        Width="1024" Height="768"
+        WindowStartupLocation="CenterScreen">
+
+    <DockPanel>
+        <!-- Bottom navigation bar -->
+        <Border DockPanel.Dock="Bottom" Padding="16" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Grid.Column="0"
+                        Content="Back"
+                        Command="{Binding GoBackCommand}"
+                        IsVisible="{Binding CanGoBack}"
+                        Padding="16,8"
+                        Margin="0,0,8,0" />
+
+                <TextBlock Grid.Column="1"
+                           Text="{Binding CurrentStepIndex, StringFormat='Step {0}'}"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           Opacity="0.6" />
+
+                <Button Grid.Column="2"
+                        Content="Next"
+                        Command="{Binding GoNextCommand}"
+                        IsVisible="{Binding CanGoNext}"
+                        Classes="accent"
+                        Padding="16,8" />
+            </Grid>
+        </Border>
+
+        <!-- Current page content -->
+        <ContentControl Content="{Binding CurrentPage}" Margin="0" />
+    </DockPanel>
+</Window>

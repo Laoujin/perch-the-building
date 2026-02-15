@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Perch.Desktop.ViewModels.Wizard"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="Perch.Desktop.Views.Wizard.DotfilesStepView"
+             x:DataType="vm:DotfilesStepViewModel">
+
+    <DockPanel Margin="32">
+        <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,16">
+            <TextBlock Text="We found these config files on your system"
+                       FontSize="24" FontWeight="Bold" />
+            <Border Padding="12" CornerRadius="4"
+                    Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+                <TextBlock Text="Checked files will be copied into your config repo and replaced with symlinks."
+                           TextWrapping="Wrap" Opacity="0.7" />
+            </Border>
+        </StackPanel>
+
+        <ScrollViewer>
+            <ItemsControl ItemsSource="{Binding Items}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:DotfileItemViewModel">
+                        <Border Padding="8,6" Margin="0,2">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" Margin="0,0,8,0" />
+                                <StackPanel Grid.Column="1" Spacing="2">
+                                    <TextBlock Text="{Binding Dotfile.Name}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Dotfile.Group}" Opacity="0.5" FontSize="11" />
+                                </StackPanel>
+                                <TextBlock Grid.Column="2" Text="{Binding Dotfile.FullPath}"
+                                           Opacity="0.4" FontSize="11" VerticalAlignment="Center" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>
