@@ -15,7 +15,12 @@ public sealed class VsCodeServiceTests
     public void SetUp()
     {
         _processRunner = Substitute.For<IProcessRunner>();
-        _service = new VsCodeService(_processRunner);
+        _service = new TestableVsCodeService(_processRunner);
+    }
+
+    private sealed class TestableVsCodeService(IProcessRunner runner) : VsCodeService(runner)
+    {
+        protected override string? FindCodePath() => "code";
     }
 
     [Test]

@@ -4,7 +4,7 @@ using Perch.Core.Packages;
 
 namespace Perch.Core.Scanner;
 
-public sealed class VsCodeService : IVsCodeService
+public class VsCodeService : IVsCodeService
 {
     private readonly IProcessRunner _processRunner;
 
@@ -13,11 +13,11 @@ public sealed class VsCodeService : IVsCodeService
         _processRunner = processRunner;
     }
 
-    public bool IsInstalled => FindCodeExecutable() != null;
+    public bool IsInstalled => FindCodePath() != null;
 
     public async Task<ImmutableArray<DetectedVsCodeExtension>> GetInstalledExtensionsAsync(CancellationToken cancellationToken = default)
     {
-        string? codePath = FindCodeExecutable();
+        string? codePath = FindCodePath();
         if (codePath == null)
         {
             return ImmutableArray<DetectedVsCodeExtension>.Empty;
@@ -48,7 +48,7 @@ public sealed class VsCodeService : IVsCodeService
         return extensions.ToImmutableArray();
     }
 
-    private static string? FindCodeExecutable()
+    protected virtual string? FindCodePath()
     {
         if (OperatingSystem.IsWindows())
         {
