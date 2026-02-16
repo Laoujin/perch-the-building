@@ -57,6 +57,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IPsModuleInstaller, PsModuleInstaller>();
         services.AddSingleton<IMachineProfileService, MachineProfileService>();
         services.AddSingleton<ICleanFilterService, CleanFilterService>();
+        services.AddSingleton<ISubmoduleService, SubmoduleService>();
         services.AddSingleton<IDiffSnapshotService, DiffSnapshotService>();
         services.AddSingleton<ISystemPackageInstaller, SystemPackageInstaller>();
         services.AddSingleton<IDeployService, DeployService>();
