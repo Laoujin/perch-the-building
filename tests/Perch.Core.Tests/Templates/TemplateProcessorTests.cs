@@ -123,8 +123,80 @@ public sealed class TemplateProcessorTests
     }
 
     [Test]
-    public void ContainsPlaceholders_NonOpScheme_ReturnsFalse()
+    public void ContainsPlaceholders_GeneralVariable_ReturnsTrue()
     {
-        Assert.That(_processor.ContainsPlaceholders("{{http://not-a-ref}}"), Is.False);
+        Assert.That(_processor.ContainsPlaceholders("name = {{user.name}}"), Is.True);
+    }
+
+    [Test]
+    public void ContainsPlaceholders_MixedOpAndVariable_ReturnsTrue()
+    {
+        Assert.That(_processor.ContainsPlaceholders("{{op://v/i}} {{user.name}}"), Is.True);
+    }
+
+    [Test]
+    public void FindVariables_SingleVariable_ReturnsIt()
+    {
+        var vars = _processor.FindVariables("Hello {{user.name}}!");
+
+        Assert.That(vars, Is.EqualTo(new[] { "user.name" }));
+    }
+
+    [Test]
+    public void FindVariables_ExcludesOpReferences()
+    {
+        var vars = _processor.FindVariables("{{op://vault/item}} and {{machine.name}}");
+
+        Assert.That(vars, Is.EqualTo(new[] { "machine.name" }));
+    }
+
+    [Test]
+    public void FindVariables_NoVariables_ReturnsEmpty()
+    {
+        var vars = _processor.FindVariables("just {{op://vault/item}}");
+
+        Assert.That(vars, Is.Empty);
+    }
+
+    [Test]
+    public void FindVariables_DuplicateVariables_ReturnsDistinct()
+    {
+        var vars = _processor.FindVariables("{{user.name}} and {{user.name}} again");
+
+        Assert.That(vars, Is.EqualTo(new[] { "user.name" }));
+    }
+
+    [Test]
+    public void FindReferences_StillReturnsOnlyOpReferences()
+    {
+        var refs = _processor.FindReferences("{{op://v/i/f}} and {{user.name}}");
+
+        Assert.That(refs, Is.EqualTo(new[] { "op://v/i/f" }));
+    }
+
+    [Test]
+    public void ReplacePlaceholders_MixedOpAndVariable_ReplacesBoth()
+    {
+        string content = "user={{user.name}} token={{op://v/i/f}}";
+        var values = new Dictionary<string, string>
+        {
+            ["user.name"] = "Wouter",
+            ["op://v/i/f"] = "secret",
+        };
+
+        string result = _processor.ReplacePlaceholders(content, values);
+
+        Assert.That(result, Is.EqualTo("user=Wouter token=secret"));
+    }
+
+    [Test]
+    public void ReplacePlaceholders_UnresolvedVariable_LeavesPlaceholder()
+    {
+        string content = "name={{unknown.var}}";
+        var values = new Dictionary<string, string>();
+
+        string result = _processor.ReplacePlaceholders(content, values);
+
+        Assert.That(result, Is.EqualTo("name={{unknown.var}}"));
     }
 }
