@@ -23,13 +23,15 @@ public sealed class DeployService : IDeployService
     private readonly IVscodeExtensionInstaller _vscodeExtensionInstaller;
     private readonly IPsModuleInstaller _psModuleInstaller;
     private readonly PackageManifestParser _packageManifestParser;
+    private readonly InstallManifestParser _installManifestParser;
+    private readonly IInstallResolver _installResolver;
     private readonly ISystemPackageInstaller _systemPackageInstaller;
     private readonly ITemplateProcessor _templateProcessor;
     private readonly IReferenceResolver _referenceResolver;
     private readonly IVariableResolver _variableResolver;
     private readonly ICleanFilterService _cleanFilterService;
 
-    public DeployService(IModuleDiscoveryService discoveryService, SymlinkOrchestrator orchestrator, IPlatformDetector platformDetector, IGlobResolver globResolver, ISnapshotProvider snapshotProvider, IHookRunner hookRunner, IMachineProfileService machineProfileService, IRegistryProvider registryProvider, IGlobalPackageInstaller globalPackageInstaller, IVscodeExtensionInstaller vscodeExtensionInstaller, IPsModuleInstaller psModuleInstaller, PackageManifestParser packageManifestParser, ISystemPackageInstaller systemPackageInstaller, ITemplateProcessor templateProcessor, IReferenceResolver referenceResolver, IVariableResolver variableResolver, ICleanFilterService cleanFilterService)
+    public DeployService(IModuleDiscoveryService discoveryService, SymlinkOrchestrator orchestrator, IPlatformDetector platformDetector, IGlobResolver globResolver, ISnapshotProvider snapshotProvider, IHookRunner hookRunner, IMachineProfileService machineProfileService, IRegistryProvider registryProvider, IGlobalPackageInstaller globalPackageInstaller, IVscodeExtensionInstaller vscodeExtensionInstaller, IPsModuleInstaller psModuleInstaller, PackageManifestParser packageManifestParser, InstallManifestParser installManifestParser, IInstallResolver installResolver, ISystemPackageInstaller systemPackageInstaller, ITemplateProcessor templateProcessor, IReferenceResolver referenceResolver, IVariableResolver variableResolver, ICleanFilterService cleanFilterService)
     {
         _discoveryService = discoveryService;
         _orchestrator = orchestrator;
@@ -43,6 +45,8 @@ public sealed class DeployService : IDeployService
         _vscodeExtensionInstaller = vscodeExtensionInstaller;
         _psModuleInstaller = psModuleInstaller;
         _packageManifestParser = packageManifestParser;
+        _installManifestParser = installManifestParser;
+        _installResolver = installResolver;
         _systemPackageInstaller = systemPackageInstaller;
         _templateProcessor = templateProcessor;
         _referenceResolver = referenceResolver;
@@ -106,7 +110,8 @@ public sealed class DeployService : IDeployService
             }
         }
 
-        if (await ProcessSystemPackagesAsync(configRepoPath, currentPlatform, dryRun, progress, cancellationToken).ConfigureAwait(false))
+        string machineName = Environment.MachineName;
+        if (await ProcessSystemPackagesAsync(configRepoPath, machineName, currentPlatform, dryRun, progress, cancellationToken).ConfigureAwait(false))
         {
             hasErrors = true;
         }
@@ -234,14 +239,59 @@ public sealed class DeployService : IDeployService
         return hasErrors;
     }
 
-    private async Task<bool> ProcessSystemPackagesAsync(string configRepoPath, Platform currentPlatform, bool dryRun, IProgress<DeployResult>? progress, CancellationToken cancellationToken)
+    private async Task<bool> ProcessSystemPackagesAsync(string configRepoPath, string machineName, Platform currentPlatform, bool dryRun, IProgress<DeployResult>? progress, CancellationToken cancellationToken)
     {
-        string packagesPath = Path.Combine(configRepoPath, "packages.yaml");
-        if (!File.Exists(packagesPath))
+        string installPath = Path.Combine(configRepoPath, "install.yaml");
+        if (File.Exists(installPath))
         {
-            return false;
+            return await ProcessInstallYamlAsync(installPath, machineName, currentPlatform, dryRun, progress, cancellationToken).ConfigureAwait(false);
         }
 
+        string packagesPath = Path.Combine(configRepoPath, "packages.yaml");
+        if (File.Exists(packagesPath))
+        {
+            return await ProcessPackagesYamlAsync(packagesPath, currentPlatform, dryRun, progress, cancellationToken).ConfigureAwait(false);
+        }
+
+        return false;
+    }
+
+    private async Task<bool> ProcessInstallYamlAsync(string installPath, string machineName, Platform currentPlatform, bool dryRun, IProgress<DeployResult>? progress, CancellationToken cancellationToken)
+    {
+        string yaml = await File.ReadAllTextAsync(installPath, cancellationToken).ConfigureAwait(false);
+        InstallManifestParseResult parseResult = _installManifestParser.Parse(yaml);
+
+        if (!parseResult.IsSuccess)
+        {
+            progress?.Report(new DeployResult("system-packages", "", "", ResultLevel.Error, parseResult.Error!));
+            return true;
+        }
+
+        InstallResolution resolution = await _installResolver.ResolveAsync(parseResult.Manifest!, machineName, currentPlatform, cancellationToken).ConfigureAwait(false);
+
+        bool hasErrors = false;
+        foreach (string error in resolution.Errors)
+        {
+            progress?.Report(new DeployResult("system-packages", "", "", ResultLevel.Error, error));
+            hasErrors = true;
+        }
+
+        foreach (PackageDefinition package in resolution.Packages)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            DeployResult result = await _systemPackageInstaller.InstallAsync(package.Name, package.Manager, dryRun, cancellationToken).ConfigureAwait(false);
+            progress?.Report(result);
+            if (result.Level == ResultLevel.Error)
+            {
+                hasErrors = true;
+            }
+        }
+
+        return hasErrors;
+    }
+
+    private async Task<bool> ProcessPackagesYamlAsync(string packagesPath, Platform currentPlatform, bool dryRun, IProgress<DeployResult>? progress, CancellationToken cancellationToken)
+    {
         string yaml = await File.ReadAllTextAsync(packagesPath, cancellationToken).ConfigureAwait(false);
         PackageManifestParseResult parseResult = _packageManifestParser.Parse(yaml);
 
@@ -377,6 +427,7 @@ public sealed class DeployService : IDeployService
             }
         }
 
+        var warnings = new List<string>();
         foreach (string variable in variableNames)
         {
             string? resolved = _variableResolver.Resolve(variable, variables);
@@ -386,7 +437,7 @@ public sealed class DeployService : IDeployService
             }
             else
             {
-                errors.Add($"{variable}: unknown variable");
+                warnings.Add($"{{{{{variable}}}}}: unknown variable");
             }
         }
 
@@ -406,7 +457,14 @@ public sealed class DeployService : IDeployService
 
         await File.WriteAllTextAsync(generatedPath, resolvedContent, cancellationToken).ConfigureAwait(false);
 
-        return _orchestrator.ProcessLink(moduleName, generatedPath, targetPath, linkType, dryRun);
+        DeployResult linkResult = _orchestrator.ProcessLink(moduleName, generatedPath, targetPath, linkType, dryRun);
+        if (warnings.Count > 0)
+        {
+            string warningMessage = $"{linkResult.Message}; unresolved: {string.Join(", ", warnings)}";
+            return linkResult with { Level = ResultLevel.Warning, Message = warningMessage };
+        }
+
+        return linkResult;
     }
 
     private void ProcessModuleRegistry(AppModule module, bool dryRun, IProgress<DeployResult>? progress)

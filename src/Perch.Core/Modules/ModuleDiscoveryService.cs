@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 
 using Perch.Core.Catalog;
+using Perch.Core.Git;
 
 namespace Perch.Core.Modules;
 
@@ -9,12 +10,14 @@ public sealed class ModuleDiscoveryService : IModuleDiscoveryService
     private readonly ManifestParser _parser;
     private readonly ICatalogService? _catalogService;
     private readonly IGalleryOverlayService? _overlayService;
+    private readonly ISubmoduleService? _submoduleService;
 
-    public ModuleDiscoveryService(ManifestParser parser, ICatalogService? catalogService = null, IGalleryOverlayService? overlayService = null)
+    public ModuleDiscoveryService(ManifestParser parser, ICatalogService? catalogService = null, IGalleryOverlayService? overlayService = null, ISubmoduleService? submoduleService = null)
     {
         _parser = parser;
         _catalogService = catalogService;
         _overlayService = overlayService;
+        _submoduleService = submoduleService;
     }
 
     public async Task<DiscoveryResult> DiscoverAsync(string configRepoPath, CancellationToken cancellationToken = default)
@@ -26,6 +29,11 @@ public sealed class ModuleDiscoveryService : IModuleDiscoveryService
         {
             errors.Add($"Config repo path does not exist: {configRepoPath}");
             return new DiscoveryResult(modules.ToImmutableArray(), errors.ToImmutableArray());
+        }
+
+        if (_submoduleService != null)
+        {
+            await _submoduleService.InitializeIfNeededAsync(configRepoPath, cancellationToken).ConfigureAwait(false);
         }
 
         string[] subdirectories = Directory.GetDirectories(configRepoPath);

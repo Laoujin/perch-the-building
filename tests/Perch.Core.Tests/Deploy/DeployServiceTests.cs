@@ -37,6 +37,7 @@ public sealed class DeployServiceTests
     private IReferenceResolver _referenceResolver = null!;
     private IVariableResolver _variableResolver = null!;
     private ICleanFilterService _cleanFilterService = null!;
+    private IInstallResolver _installResolver = null!;
     private SymlinkOrchestrator _orchestrator = null!;
     private DeployService _deployService = null!;
     private List<DeployResult> _reported = null!;
@@ -71,7 +72,8 @@ public sealed class DeployServiceTests
         _cleanFilterService = Substitute.For<ICleanFilterService>();
         _cleanFilterService.SetupAsync(Arg.Any<string>(), Arg.Any<ImmutableArray<AppModule>>(), Arg.Any<CancellationToken>())
             .Returns(ImmutableArray<CleanFilterResult>.Empty);
-        _deployService = new DeployService(_discoveryService, _orchestrator, _platformDetector, _globResolver, _snapshotProvider, _hookRunner, _machineProfileService, _registryProvider, _globalPackageInstaller, _vscodeExtensionInstaller, _psModuleInstaller, new PackageManifestParser(), _systemPackageInstaller, new TemplateProcessor(), _referenceResolver, _variableResolver, _cleanFilterService);
+        _installResolver = Substitute.For<IInstallResolver>();
+        _deployService = new DeployService(_discoveryService, _orchestrator, _platformDetector, _globResolver, _snapshotProvider, _hookRunner, _machineProfileService, _registryProvider, _globalPackageInstaller, _vscodeExtensionInstaller, _psModuleInstaller, new PackageManifestParser(), new InstallManifestParser(), _installResolver, _systemPackageInstaller, new TemplateProcessor(), _referenceResolver, _variableResolver, _cleanFilterService);
         _reported = new List<DeployResult>();
         _progress = new SynchronousProgress<DeployResult>(r => _reported.Add(r));
     }
@@ -1731,7 +1733,7 @@ public sealed class DeployServiceTests
     }
 
     [Test]
-    public async Task DeployAsync_TemplateWithUnknownVariable_ReportsError()
+    public async Task DeployAsync_TemplateWithUnknownVariable_ReportsWarningAndContinues()
     {
         string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -1759,8 +1761,8 @@ public sealed class DeployServiceTests
 
             Assert.Multiple(() =>
             {
-                Assert.That(exitCode, Is.EqualTo(1));
-                Assert.That(_reported.Any(r => r.Level == ResultLevel.Error && r.Message.Contains("unknown.var")), Is.True);
+                Assert.That(exitCode, Is.EqualTo(0));
+                Assert.That(_reported.Any(r => r.Level == ResultLevel.Warning && r.Message.Contains("unknown.var")), Is.True);
             });
         }
         finally
