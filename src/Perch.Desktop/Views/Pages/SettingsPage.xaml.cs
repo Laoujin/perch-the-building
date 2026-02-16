@@ -14,4 +14,10 @@ public partial class SettingsPage : Page
         DataContext = viewModel;
         InitializeComponent();
     }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.LoadCommand.CanExecute(null))
+            ViewModel.LoadCommand.Execute(null);
+    }
 }
