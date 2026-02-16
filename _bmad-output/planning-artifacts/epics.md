@@ -51,6 +51,13 @@ This document provides the complete epic and story breakdown for Perch, decompos
 - FR24: System reports apps installed but without a config module [Scope 2]
 - FR48: User can define packages for cross-platform package managers (apt, brew, and others such as VS Code extensions, npm/bun global packages) using the same manifest format [Scope 3]
 
+**Scoop Integration**
+- FR54: User can define a Scoop app manifest (`scoop.yaml`) in the config repo listing buckets and apps to install [Scope 5]
+- FR55: System manages Scoop buckets declaratively — adds listed buckets, skips already-added ones [Scope 5]
+- FR56: System installs Scoop apps declaratively — installs listed apps, skips already-installed ones (idempotent) [Scope 5]
+- FR57: User can export currently installed Scoop apps and diff against the manifest to discover untracked apps [Scope 5]
+- FR58: System leverages Scoop's predictable install paths (`~/scoop/apps/<name>/current/`) to assist config module discovery [Scope 5]
+
 **Git Integration**
 - FR25: System registers per-app git clean filters to suppress noisy config diffs [Scope 2]
 - FR26: System performs before/after filesystem diffing to discover config file changes [Scope 2]
@@ -188,6 +195,11 @@ This document provides the complete epic and story breakdown for Perch, decompos
 | FR46 | 12 | Chezmoi import/conversion |
 | FR47 | 12 | Dotbot/Dotter import/export |
 | FR48 | 8 | Cross-platform package managers |
+| FR54 | 13 | Scoop app manifest in config repo |
+| FR55 | 13 | Declarative Scoop bucket management |
+| FR56 | 13 | Declarative Scoop app installation |
+| FR57 | 13 | Scoop app export/diff |
+| FR58 | 13 | Scoop path-based config discovery |
 
 ## Epic List
 
@@ -242,6 +254,10 @@ Returning user opens Perch Desktop and sees a drift-focused dashboard: hero bann
 ### Epic 12: Migration Tools (Scope 4)
 Users of chezmoi, Dotbot, or Dotter can import their dotfiles repo into Perch format, and Perch users can export back — enabling two-way migration.
 **FRs covered:** FR46, FR47
+
+### Epic 13: Scoop Integration (Scope 5)
+Developer manages dev tools via Scoop from the config repo. Buckets and apps are declared in `scoop.yaml`, installed idempotently, and exportable. Scoop's predictable `~/scoop/apps/<name>/current/` paths integrate with config module discovery.
+**FRs covered:** FR54, FR55, FR56, FR57, FR58
 
 ---
 
@@ -1369,3 +1385,91 @@ So that I can migrate away or share configs with users of other tools.
 **Given** the exported config
 **When** the user runs the target tool against it
 **Then** the same config files are linked to the same target locations
+
+## Epic 13: Scoop Integration
+
+Developer manages dev tools via Scoop from the config repo. Buckets and apps are declared in `scoop.yaml`, installed idempotently, and exportable. Scoop's predictable install paths integrate with config module discovery.
+
+### Story 13.1: Scoop App Manifest
+
+As a developer,
+I want to define my Scoop buckets and apps in a `scoop.yaml` file in my config repo,
+So that my dev tool list is version-controlled and portable across machines.
+
+**Acceptance Criteria:**
+
+**Given** a `scoop.yaml` file in the config repo with `buckets` and `apps` sections
+**When** the Scoop manifest parser reads it
+**Then** it returns a list of bucket names and app definitions (name, optional bucket source)
+
+**Given** a `scoop.yaml` with invalid entries (missing app name, malformed YAML)
+**When** the parser reads it
+**Then** invalid entries are reported as errors and valid entries are still returned
+
+**Given** a `scoop.yaml` with apps specifying their bucket (e.g., `extras/ripgrep`)
+**When** parsed
+**Then** the bucket association is preserved in the app definition
+
+### Story 13.2: Declarative Bucket & App Installation
+
+As a developer,
+I want to run `perch scoop install` and have all listed buckets added and apps installed,
+So that a fresh machine gets all my dev tools with one command.
+
+**Acceptance Criteria:**
+
+**Given** a `scoop.yaml` listing buckets `[extras, nerd-fonts]` and apps `[ripgrep, fd, fzf, delta, bat]`
+**When** the user runs `perch scoop install`
+**Then** each bucket is added via `scoop bucket add` (skipped if already added)
+**And** each app is installed via `scoop install` (skipped if already installed)
+**And** results are streamed to the console with status indicators (installed/skipped/failed)
+
+**Given** Scoop is not installed on the system
+**When** the user runs `perch scoop install`
+**Then** an error explains that Scoop must be installed first and provides the install URL
+
+**Given** an app install fails (e.g., network error, unknown app)
+**When** processing continues
+**Then** the failed app is reported as an Error result and remaining apps are still processed (fault isolation)
+
+**Given** all listed apps are already installed
+**When** the user runs `perch scoop install`
+**Then** all apps are skipped with Info results and exit code is 0
+
+### Story 13.3: Scoop App Export & Sync
+
+As a developer,
+I want to export my currently installed Scoop apps and diff against my manifest,
+So that I can discover new tools I've installed but haven't tracked yet.
+
+**Acceptance Criteria:**
+
+**Given** the user has 20 Scoop apps installed and `scoop.yaml` lists 15
+**When** the user runs `perch scoop export`
+**Then** the 5 untracked apps are listed with their bucket source
+**And** the user is offered to add them to `scoop.yaml`
+
+**Given** the user confirms adding untracked apps
+**When** the export completes
+**Then** `scoop.yaml` is updated with the new entries
+
+**Given** `scoop.yaml` lists apps that are not installed
+**When** the user runs `perch scoop status`
+**Then** missing apps are reported so the user can install them or remove them from the manifest
+
+### Story 13.4: Scoop Path-Based Config Discovery
+
+As a developer,
+I want Perch to leverage Scoop's predictable install paths to find app config files,
+So that onboarding a Scoop-installed app's config is easier.
+
+**Acceptance Criteria:**
+
+**Given** an app installed via Scoop at `~/scoop/apps/<name>/current/`
+**When** the user runs `perch discover <name>` and the app is Scoop-installed
+**Then** the system checks `~/scoop/apps/<name>/current/` for config files (JSON, YAML, INI, TOML)
+**And** discovered config paths are reported as candidates for a new module
+
+**Given** the app stores config outside the Scoop directory (e.g., in `%AppData%`)
+**When** discovery runs
+**Then** both the Scoop install path and standard config locations are checked

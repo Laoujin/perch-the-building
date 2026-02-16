@@ -16,7 +16,8 @@ classification:
   scopes:
     scope1: "Switch machines - core symlink/junction engine, PowerShell profile, git config, program settings via symlinks"
     scope2: "Rock solid + cross-platform - idempotency, drift detection, WhatIf, package management, git clean filters, discovery, automated testing, Linux/macOS support"
-    scope3: "Accessible & complete - registry management (Windows), machine-specific overrides, MAUI UI, secrets/1Password, community tools, competitor migration"
+    scope3: "Accessible & complete - registry management (Windows), machine-specific overrides, WPF Desktop app (wizard onboarding + drift dashboard), secrets/1Password, community tools, competitor migration"
+    scope5: "Scoop integration - Scoop as primary dev-tool package manager, bucket management, app install/export/import, predictable path integration"
 ---
 
 # Product Requirements Document - Perch
@@ -30,11 +31,11 @@ classification:
 
 **Core differentiator:** Symlink-first philosophy. Change a setting in any app, and it's immediately visible in git — no re-add step, no re-run. Perch thinks in *applications* (manifests, modules, conventions), not just files.
 
-**Target user:** Developer managing personal dotfiles and program settings across multiple machines (Windows, Linux, macOS). Future: any user via MAUI UI.
+**Target user:** Developer managing personal dotfiles and program settings across multiple machines (Windows, Linux, macOS). Future: any user via WPF Desktop app with guided onboarding wizard.
 
-**Technology:** C# / .NET 10, Spectre.Console for CLI output, NUnit + NSubstitute for testing, GitHub Actions CI. Distributed as .NET tool (`dotnet tool install perch -g`). Engine library shared between CLI and future MAUI app.
+**Technology:** C# / .NET 10, Spectre.Console for CLI output, WPF Desktop app (WPF UI + HandyControl + CommunityToolkit.Mvvm), NUnit + NSubstitute for testing, GitHub Actions CI. Distributed as .NET tool (`dotnet tool install perch -g`). Engine library shared between CLI and Desktop app.
 
-**Competitive context:** Existing tools (chezmoi, PSDotFiles, Dotter, Dotbot) are Linux/macOS-first or use copy-on-apply models. None combine symlink-first + app-level awareness + cross-platform with Windows-native features (registry, MAUI). See `competitive-research.md` and `chezmoi-comparison.md` for detailed analysis.
+**Competitive context:** Existing tools (chezmoi, PSDotFiles, Dotter, Dotbot) are Linux/macOS-first or use copy-on-apply models. None combine symlink-first + app-level awareness + cross-platform with Windows-native features (registry, WPF Desktop UI). See `competitive-research.md` and `chezmoi-comparison.md` for detailed analysis.
 
 ## Success Criteria
 
@@ -51,10 +52,11 @@ classification:
 - **Scope 1:** Switch to new Windows PC (already here, apps installed) using Perch. Immediate priority
 - **Scope 2:** Engine robust, tested, CI-green. Cross-platform support for Linux/macOS. Confidence to run on any machine without fear
 - **Scope 3:** New users onboard via UI with minimal friction. Registry management (Windows), secrets integration, and machine-specific overrides work across all machines
+- **Scope 5:** Dev tools managed via Scoop — install, update, export app lists, manage buckets. New machines provisioned with one command
 
 ### Technical Success
 
-- C# / .NET 10 core engine shared between CLI and future MAUI UI
+- C# / .NET 10 core engine shared between CLI and WPF Desktop app
 - NUnit + NSubstitute test suite covering core engine logic
 - GitHub Actions CI on Windows and Linux runners
 - Engine/config separation clean — no personal config in engine repo
@@ -67,7 +69,9 @@ classification:
 - Scope 2: CI pipeline green on every push (Windows + Linux)
 - Scope 2: same config repo deploys correctly on both Windows and Linux
 - Scope 3: machine-specific overrides work across 2-4 machines with shared base config
-- Scope 3: non-author user can onboard without reading source code
+- Scope 3: non-author user can onboard via Desktop wizard without reading source code
+- Scope 5: `perch scoop install` provisions all dev tools from config on a fresh machine
+- Scope 5: Scoop app list stays in sync with config repo — add/remove in config, deploy picks it up
 
 ## User Journeys
 
@@ -89,11 +93,17 @@ Wouter changes a keybinding in his editor on his desktop. The settings file is a
 
 **Capabilities revealed:** Symlink persistence, git-native workflow, zero Perch re-runs for setting changes.
 
-### Journey 4: AI-Assisted App Discovery (Scope 3)
+### Journey 4: Desktop Wizard Onboarding (Scope 3)
 
-Wouter wants to onboard a complex app where he's not sure where the settings live. He launches the onboarding tool (CLI or MAUI). The tool can work two ways: if the app is already installed, it scans the system; if not, it spins up a Windows Sandbox, installs the app there. Either way, an AI lookup finds the known config locations online. The tool cross-references that against the actual filesystem — "found `settings.json` at `%AppData%\ToolName\config\`." Wouter pokes around in the MAUI UI to verify, maybe discovers additional files the AI missed. The tool generates the manifest, including version-specific paths if needed (e.g., v3.x stores config here, v4.x stores it there). He reviews, approves, and the module is ready.
+Wouter's colleague wants to try Perch but isn't comfortable with CLI tools. He installs Perch Desktop and launches it. On first run, the wizard starts — he picks the "Developer" and "Power User" profile cards (with striking hero images), and the wizard adjusts to show Dotfiles, Apps, and System Tweaks steps. The Dotfiles step loads and his `.gitconfig`, VS Code settings, and PowerShell profile appear as cards — detected automatically from the filesystem. He toggles the ones he wants managed. The Apps step shows installed apps matched against known config locations from the gallery, organized in three tiers: "Your Apps" (detected), "Suggested for You" (based on profile), and "Other Apps" (searchable gallery). He toggles a few more. On the Review step he sees "12 dotfiles, 8 apps, 3 tweaks selected" and hits Deploy. Each card shows a progress ring, then flips to green as it completes. The wizard ends with a clear summary: "23 configs linked." He clicks "Open Dashboard" and sees the drift-focused home screen — all green. Done.
 
-**Capabilities revealed:** AI config path lookup, Windows Sandbox integration, version-range aware manifests, MAUI interactive explorer, CLI fallback for the workflow.
+**Capabilities revealed:** WPF Desktop wizard, profile-based filtering, detection-first card grid, three-tier layout, card toggle/deploy, per-card progress feedback, wizard-to-dashboard transition.
+
+### Journey 4b: AI-Assisted App Discovery (Scope 3)
+
+Wouter wants to onboard a complex app where he's not sure where the settings live. He launches the onboarding tool (CLI or Desktop). The tool can work two ways: if the app is already installed, it scans the system; if not, it spins up a Windows Sandbox, installs the app there. Either way, an AI lookup finds the known config locations online. The tool cross-references that against the actual filesystem — "found `settings.json` at `%AppData%\ToolName\config\`." Wouter pokes around in the Desktop UI to verify, maybe discovers additional files the AI missed. The tool generates the manifest, including version-specific paths if needed (e.g., v3.x stores config here, v4.x stores it there). He reviews, approves, and the module is ready.
+
+**Capabilities revealed:** AI config path lookup, Windows Sandbox integration, version-range aware manifests, Desktop interactive explorer, CLI fallback for the workflow.
 
 ### Journey 5: Cross-Platform Sync (Scope 2)
 
@@ -119,7 +129,19 @@ Wouter has been using his machine for a few weeks and has installed several new 
 
 **Capabilities revealed:** Installed app detection, missing config module reporting, before/after filesystem diffing, per-app git clean filters, pre/post-deploy lifecycle hooks, package manifest (chocolatey/winget).
 
-### Journey 9: Migration from Another Tool (Scope 4)
+### Journey 9: Desktop Dashboard & Drift Resolution (Scope 3)
+
+A week after initial setup, Wouter opens Perch Desktop to check on his configs. The dashboard loads instantly — the drift hero banner shows "15 linked, 2 attention, 1 broken." Below the banner, attention cards are grouped by severity: a red card for his broken Windows Terminal symlink (target was deleted), a yellow card for his VS Code settings (file exists but isn't linked — he edited it outside the repo), and a blue info card suggesting he manage a newly detected Obsidian config. He clicks the red card — it expands to show the broken path and offers "Re-link." One click, the card flips to green, the hero updates to "16 linked, 1 attention, 0 broken." He navigates to Apps via the sidebar, sees the same card gallery from the wizard, and toggles Obsidian on. The DeployBar slides up — "1 item to deploy." He clicks Deploy, and it's linked. He closes the app — his configs are healthy.
+
+**Capabilities revealed:** WPF Desktop dashboard, drift hero banner, attention cards grouped by severity, one-click fix actions, sidebar card gallery navigation, contextual deploy bar.
+
+### Journey 10: Scoop-Based Dev Tool Provisioning (Scope 5)
+
+Wouter sets up a fresh Windows machine. After cloning perch-config and running `perch deploy` for his dotfiles, he runs `perch scoop install`. Perch reads his `scoop.yaml` config — a list of buckets and apps — adds the `extras` and `nerd-fonts` buckets, then installs everything: ripgrep, fd, fzf, delta, bat, lazygit, nerd fonts. All land in `~/scoop/apps/` — no admin, no UAC, no installer wizards. On his existing machine, he installed a new tool via `scoop install tokei` and wants to track it. He runs `perch scoop export` — Perch diffs the currently installed Scoop apps against `scoop.yaml` and offers to add the new ones. He commits the updated config. On the next machine, `perch scoop install` picks it up.
+
+**Capabilities revealed:** Scoop app manifest in config repo, bucket management, declarative app installation, export/sync of installed apps, no-admin user-level package management.
+
+### Journey 11: Migration from Another Tool (Scope 4)
 
 Wouter's colleague uses chezmoi and wants to try Perch. He runs `perch import chezmoi ~/dotfiles` — Perch scans the chezmoi source directory, converts `dot_` prefixed files into Perch module folders with manifests, resolves templates into plain config files where possible, and flags templates with complex logic for manual review. The colleague runs `perch deploy` and verifies his configs are in place. If he decides to switch back, `perch export chezmoi` reverses the process.
 
@@ -127,36 +149,50 @@ Wouter's colleague uses chezmoi and wants to try Perch. He runs `perch import ch
 
 ### Journey Requirements Summary
 
-| Capability | J1 | J2 | J3 | J4 | J5 | J6 | J7 | J8 | J9 | Scope |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Symlink creation engine | x | x | | | x | | | | | 1 |
-| Manifest discovery (convention-over-config) | x | x | | | x | | | | | 1 |
-| Deploy command | x | x | | | x | | | | | 1 |
-| Engine/config repo split | x | x | x | | x | | | | | 1 |
-| Re-runnable, additive deploy | | x | | | | | | | | 1 |
-| Platform-aware manifest paths | | | | | x | | | | | 2 |
-| Platform-specific module filtering | | | | | x | | | | | 2 |
-| Cross-platform path resolution | | | | | x | | | | | 2 |
-| Package manifest (chocolatey/winget) | | | | | | | | x | | 2 |
-| Installed app detection | | | | | | | | x | | 2 |
-| Missing config module reporting | | | | | | | | x | | 2 |
-| Before/after filesystem diffing | | | | | | | | x | | 2 |
-| Per-app git clean filters | | | | | | | | x | | 2 |
-| Pre/post-deploy lifecycle hooks | | | | | | | | x | | 2 |
-| Per-machine overrides | | | | | | x | | | | 3 |
-| Module-to-machine filtering | | | | | | x | | | | 3 |
-| Declarative registry management | | | | | | x | | | | 3 |
-| Registry state reporting | | | | | | x | | | | 3 |
-| Secret placeholder resolution | | | | | | | x | | | 3 |
-| Password manager integration | | | | | | | x | | | 3 |
-| Generated (non-symlinked) files | | | | | | | x | | | 3 |
-| Version-range manifest paths | | | | x | | | | | | 3 |
-| AI config path lookup | | | | x | | | | | | 3 |
-| Windows Sandbox integration | | | | x | | | | | | 3 |
-| MAUI interactive explorer | | | | x | | | | | | 3 |
-| CLI onboarding fallback | | | | x | | | | | | 3 |
-| Chezmoi import/conversion | | | | | | | | | x | 4 |
-| Dotfiles format export (two-way) | | | | | | | | | x | 4 |
+| Capability | J1 | J2 | J3 | J4 | J4b | J5 | J6 | J7 | J8 | J9 | J10 | J11 | Scope |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Symlink creation engine | x | x | | x | | x | | | | | | | 1 |
+| Manifest discovery (convention-over-config) | x | x | | x | | x | | | | | | | 1 |
+| Deploy command | x | x | | | | x | | | | | | | 1 |
+| Engine/config repo split | x | x | x | | | x | | | | | | | 1 |
+| Re-runnable, additive deploy | | x | | | | | | | | | | | 1 |
+| Platform-aware manifest paths | | | | | | x | | | | | | | 2 |
+| Platform-specific module filtering | | | | | | x | | | | | | | 2 |
+| Cross-platform path resolution | | | | | | x | | | | | | | 2 |
+| Package manifest (chocolatey/winget) | | | | | | | | | x | | | | 2 |
+| Installed app detection | | | | x | | | | | x | | | | 2 |
+| Missing config module reporting | | | | | | | | | x | | | | 2 |
+| Before/after filesystem diffing | | | | | | | | | x | | | | 2 |
+| Per-app git clean filters | | | | | | | | | x | | | | 2 |
+| Pre/post-deploy lifecycle hooks | | | | | | | | | x | | | | 2 |
+| Per-machine overrides | | | | | | | x | | | | | | 3 |
+| Module-to-machine filtering | | | | | | | x | | | | | | 3 |
+| Declarative registry management | | | | | | | x | | | | | | 3 |
+| Registry state reporting | | | | | | | x | | | | | | 3 |
+| Secret placeholder resolution | | | | | | | | x | | | | | 3 |
+| Password manager integration | | | | | | | | x | | | | | 3 |
+| Generated (non-symlinked) files | | | | | | | | x | | | | | 3 |
+| Desktop wizard onboarding | | | | x | | | | | | | | | 3 |
+| Profile-based content filtering | | | | x | | | | | | | | | 3 |
+| Detection-first card grid | | | | x | | | | | | x | | | 3 |
+| Three-tier layout (detected/suggested/other) | | | | x | | | | | | x | | | 3 |
+| Desktop deploy with per-card progress | | | | x | | | | | | x | | | 3 |
+| Desktop drift dashboard | | | | | | | | | | x | | | 3 |
+| Drift hero banner with health summary | | | | | | | | | | x | | | 3 |
+| One-click fix actions | | | | | | | | | | x | | | 3 |
+| Contextual deploy bar | | | | x | | | | | | x | | | 3 |
+| Shared views (wizard + dashboard) | | | | x | | | | | | x | | | 3 |
+| Version-range manifest paths | | | | | x | | | | | | | | 3 |
+| AI config path lookup | | | | | x | | | | | | | | 3 |
+| Windows Sandbox integration | | | | | x | | | | | | | | 3 |
+| Desktop interactive explorer | | | | | x | | | | | | | | 3 |
+| CLI onboarding fallback | | | | | x | | | | | | | | 3 |
+| Chezmoi import/conversion | | | | | | | | | | | | x | 4 |
+| Dotfiles format export (two-way) | | | | | | | | | | | | x | 4 |
+| Scoop app manifest in config repo | | | | | | | | | | | x | | 5 |
+| Scoop bucket management | | | | | | | | | | | x | | 5 |
+| Scoop declarative app install | | | | | | | | | | | x | | 5 |
+| Scoop app export/sync | | | | | | | | | | | x | | 5 |
 
 ## Domain-Specific Requirements
 
@@ -201,7 +237,14 @@ Wouter's colleague uses chezmoi and wants to try Perch. He runs `perch import ch
 ### Config Schema
 
 - **App manifests:** Co-located in the config repo alongside config files. Minimum required fields: source path(s), target path(s) per platform, link type (symlink vs junction). Platform filter (optional — which OSes this module applies to)
-- **Future [Scope 3]:** Manifests become templates from a separate repository, hosted via GitHub Pages as a public gallery/registry
+- **Future [Scope 3]:** Manifests become templates from a separate repository, hosted via GitHub Pages as a public gallery/registry. Desktop app uses gallery data to populate the "Suggested for You" and "Other Apps" tiers in card views
+
+### Desktop UI
+
+- **Scope 3:** WPF Desktop app (Windows-only) sharing the Perch.Core engine with the CLI. Two modes: wizard (first-run onboarding) and dashboard (ongoing drift monitoring). Built with WPF UI (lepoco/wpfui) for Fluent 2 design, HandyControl for StepBar wizard indicator, CommunityToolkit.Mvvm for MVVM
+- **Wizard:** Profile selection (Developer/Power User/Gamer/Casual multi-select) drives dynamic step sequence. Steps show detection-first card grids with three-tier layout. Deploy step with per-card progress feedback
+- **Dashboard:** Drift hero banner (health summary), attention cards grouped by severity, one-click fix actions. Sidebar navigation into card gallery views (same components as wizard). Grid/list density toggle
+- **Detection:** Filesystem-based detection of installed apps and existing config files, cross-referenced against gallery. No AI — filesystem scan against known paths
 
 ### Backup & Restore
 
@@ -255,6 +298,8 @@ Wouter's colleague uses chezmoi and wants to try Perch. He runs `perch import ch
 - App discovery tooling
 - Shell completion
 
+**Config Schema note:** PRD originally specified JSON manifests; Architecture Decision #1 changed to YAML (YamlDotNet). All manifest references in this PRD should be read as YAML format.
+
 ### Phase 2: Rock Solid + Cross-Platform
 
 - Linux/macOS support — platform-aware path resolution, cross-platform modules
@@ -285,11 +330,22 @@ Wouter's colleague uses chezmoi and wants to try Perch. He runs `perch import ch
 - Version-range-aware manifest paths
 - Restore from backup (full restore capability)
 - Shell completion
-- MAUI onboarding app (AI-assisted discovery, Windows Sandbox) — shares engine library
-- MAUI drift dashboard — shares engine library
+- WPF Desktop wizard — profile-driven onboarding, detection-first card grids, three-tier layout, per-card deploy progress. Built on WPF UI (Fluent 2), HandyControl (StepBar), CommunityToolkit.Mvvm. Shares Perch.Core engine library
+- WPF Desktop dashboard — drift hero banner, attention cards with one-click fix, sidebar navigation into shared card gallery views. Same engine, same views as wizard
 - Competitor migration tool (chezmoi → Perch, other popular formats)
 - Community config path database
 - Git identity bootstrap automation
+
+### Phase 5: Scoop Integration
+
+- Scoop as the primary dev-tool package manager (user-level, no admin, portable installs)
+- Scoop app manifest in config repo (`scoop.yaml`) — declarative list of buckets and apps
+- `perch scoop install` — add buckets and install all listed apps
+- `perch scoop export` — diff installed Scoop apps against manifest, offer to add new ones
+- `perch scoop status` — show installed vs expected, missing, extra
+- Leverage Scoop's predictable `~/scoop/apps/<name>/current/` paths for config module discovery
+- Scoop bucket management — add/remove custom buckets from config
+- Idempotent — already-installed apps skipped, already-added buckets skipped
 
 ### Risk Mitigation
 
@@ -341,6 +397,13 @@ Wouter's colleague uses chezmoi and wants to try Perch. He runs `perch import ch
 
 - **FR22:** User can define all managed packages in a single manifest file, supporting chocolatey and winget with per-package manager specification [Scope 2]
 - **FR48:** User can define packages for cross-platform package managers (apt, brew, and others such as VS Code extensions, npm/bun global packages) using the same manifest format [Scope 3]
+
+#### Scoop Integration
+- **FR54:** User can define a Scoop app manifest (`scoop.yaml`) in the config repo listing buckets and apps to install [Scope 5]
+- **FR55:** System manages Scoop buckets declaratively — adds listed buckets, skips already-added ones [Scope 5]
+- **FR56:** System installs Scoop apps declaratively — installs listed apps, skips already-installed ones (idempotent) [Scope 5]
+- **FR57:** User can export currently installed Scoop apps and diff against the manifest to discover untracked apps [Scope 5]
+- **FR58:** System leverages Scoop's predictable install paths (`~/scoop/apps/<name>/current/`) to assist config module discovery [Scope 5]
 - **FR23:** System detects installed apps and cross-references against managed modules [Scope 2]
 - **FR24:** System reports apps installed but without a config module [Scope 2]
 
@@ -354,7 +417,7 @@ Wouter's colleague uses chezmoi and wants to try Perch. He runs `perch import ch
 - **FR27:** User can scan the system for installed apps and see which have config modules [Scope 2]
 - **FR28:** System looks up known config file locations for popular apps [Scope 3]
 - **FR29:** System launches an app in Windows Sandbox to discover its config locations [Scope 3]
-- **FR30:** User can generate a new module manifest via interactive onboarding workflow (CLI or MAUI) [Scope 3]
+- **FR30:** User can generate a new module manifest via interactive onboarding workflow (CLI or Desktop) [Scope 3]
 
 ### Machine Configuration
 
@@ -369,11 +432,16 @@ Wouter's colleague uses chezmoi and wants to try Perch. He runs `perch import ch
 - **FR44:** User can define secret placeholders in config templates that are resolved from a configured password manager during deploy [Scope 3]
 - **FR45:** System manages any config file containing secret placeholders as a generated (non-symlinked) file. Examples: NuGet registry credentials, npm tokens, SSH config, API keys [Scope 3]
 
-### MAUI UI
+### Desktop UI (WPF)
 
-- **FR35:** User can view sync status of all managed modules in a visual dashboard [Scope 3]
-- **FR36:** User can interactively explore an app's filesystem to find config locations [Scope 3]
-- **FR37:** User can generate and edit module manifests via a visual interface [Scope 3]
+- **FR35:** User can view sync status of all managed modules in a visual dashboard with drift hero banner showing aggregate health (linked/attention/broken counts) and attention cards grouped by severity with one-click fix actions [Scope 3]
+- **FR36:** User can interactively explore an app's filesystem to find config locations [Scope 3 — future]
+- **FR37:** User can generate and edit module manifests via a visual interface [Scope 3 — future]
+- **FR49:** User is guided through a first-run wizard: profile selection (Developer/Power User/Gamer/Casual) drives which steps and content are shown, with card-based browsing and toggling of detected configs, and a final review + deploy step [Scope 3]
+- **FR50:** Desktop app detects installed apps and existing config files on the filesystem and presents them as cards in a three-tier layout: "Your Apps" (detected), "Suggested for You" (profile-based), "Other Apps" (gallery) [Scope 3]
+- **FR51:** Card-based view components (Apps, Dotfiles, System Tweaks) are shared between wizard steps and dashboard sidebar pages [Scope 3]
+- **FR52:** User can deploy selected configs from the Desktop app with per-card progress feedback and a contextual deploy bar showing selection count and deploy action [Scope 3]
+- **FR53:** Desktop app supports card grid and compact list display modes with a density toggle [Scope 3]
 
 ### Plugin Lifecycle
 
@@ -409,5 +477,6 @@ Wouter's colleague uses chezmoi and wants to try Perch. He runs `perch import ch
 - Scope 1: runs on Windows 10+ with .NET 10 runtime
 - Scope 2: runs on Windows 10+, Linux (major distros), and macOS with .NET 10 runtime
 - No dependency on specific shell (PowerShell, cmd, bash, zsh all work)
-- Config repo format: plain files + JSON manifests — no binary formats, no database, no proprietary encoding
+- Config repo format: plain files + YAML manifests — no binary formats, no database, no proprietary encoding
+- Scope 3: WPF Desktop app is Windows-only; CLI remains cross-platform
 - `dotnet tool install perch -g` works on all supported platforms [Scope 2]
