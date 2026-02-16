@@ -272,3 +272,45 @@ stylized fantasy bird perched at the hub of a complex interlocking system, multi
 ```
 stylized fantasy bird settling into a perfectly bird-shaped nook in a cozy wooden wall, like a puzzle piece finding its home, forest green with warm honey-wood tones, painterly concept art, Ghibli warmth, satisfying snug fit, soft warm light from within the nook --ar 4:5 --s 750 --v 6.1
 ```
+
+---
+
+## Final Selections
+
+### Visual Identity -- Chosen Direction
+
+**Style:** Ethereal crystalline bird, cinematic 3D render, forest green (#10B981) atmosphere, dark backgrounds, luminous particles
+
+**Final images (all in `Perch/images/`):**
+
+| File | Asset | Description |
+|------|-------|-------------|
+| `startpage.png` | WPF app banner | Ethereal crystalline bird taking off from dark water |
+| `hero.png` | Website hero | Wide cinematic version of the bird takeoff |
+| `logo.png` | Logo | Bird taking off from water silhouette, forest green on dark |
+| `logo-small.png` | Favicon | Simplified logo for small sizes |
+| `profile-developer.png` | Profile: Developer | Windows PC with code on screen, green syntax, dark room |
+| `profile-gamer.png` | Profile: Gamer | Gaming setup, controller, RGB, emerald LED accents |
+| `profile-power-user.png` | Profile: Power User | Multi-monitor dashboard, system monitors, automation |
+| `profile-casual.png` | Profile: Casual | Cozy setup, warm lighting, approachable |
+| `profile-casual2.png` | Profile: Casual (alt) | Alternative casual image |
+| `profile-creative.png` | Profile: Creative | Design/art workstation, tablet, creative tools |
+| `wizard-success.png` | Success state | Calm accomplishment, everything connected and resolved |
+| `wizard-error.png` | Error state | Broken connections, amber warning tones, recoverable |
+| `wizard-empty.png` | Empty state | Waiting/anticipation, before the journey begins |
+
+**Key decisions:**
+- Profiles use persona-specific workspaces (no bird), Windows PCs only, no Apple hardware
+- 5 profiles: Developer, Gamer, Power User, Casual, Creative
+
+### Tagline
+
+**"Make yourself at home."**
+
+### Hero Subtitles
+
+**Developer audience:**
+"Everything that makes your machine yours -- dotfiles, app settings, packages, registry -- managed in git, symlinked into place."
+
+**Non-tech audience:**
+"Perch remembers how you like your computer set up -- and makes every machine feel the same."
