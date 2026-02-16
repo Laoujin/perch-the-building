@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Perch.Cli/Perch.Cli.csproj" />
+    <Project Path="src/Perch.Core/Perch.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Perch.Core.Tests/Perch.Core.Tests.csproj" />
+  </Folder>
+</Solution>
