@@ -235,7 +235,7 @@ public sealed class CatalogParser
         var result = new List<RegistryEntryDefinition>();
         foreach (var entry in entries)
         {
-            if (string.IsNullOrWhiteSpace(entry.Key) || string.IsNullOrWhiteSpace(entry.Name) || entry.Value == null)
+            if (string.IsNullOrWhiteSpace(entry.Key) || entry.Name == null || entry.Value == null)
             {
                 continue;
             }
