@@ -28,7 +28,7 @@ public sealed partial class DeployStepViewModel : WizardStepViewModel
     public ObservableCollection<DeployPhaseViewModel> Phases { get; } = [];
 
     public override string Title => "Deploy";
-    public override int StepNumber => 11;
+    public override int StepNumber => 9;
     public override bool CanSkip => false;
     public override bool CanGoBack => !IsDeploying;
 
@@ -41,8 +41,7 @@ public sealed partial class DeployStepViewModel : WizardStepViewModel
     {
         Phases.Clear();
         Phases.Add(new DeployPhaseViewModel("Repository Setup"));
-        Phases.Add(new DeployPhaseViewModel("Installing Applications"));
-        Phases.Add(new DeployPhaseViewModel("Installing Fonts"));
+        Phases.Add(new DeployPhaseViewModel("Installing Applications & Fonts"));
         Phases.Add(new DeployPhaseViewModel("Adopting Config Files"));
         Phases.Add(new DeployPhaseViewModel("Creating Symlinks"));
         Phases.Add(new DeployPhaseViewModel("Syncing VS Code Extensions"));

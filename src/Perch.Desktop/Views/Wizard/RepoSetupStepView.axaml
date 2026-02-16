@@ -67,8 +67,7 @@
             <!-- Folder path -->
             <StackPanel Spacing="4">
                 <TextBlock Text="Config folder path" FontWeight="SemiBold" />
-                <TextBox Watermark="C:\Users\you\dotfiles"
-                         Text="{Binding RepoPath}" />
+                <TextBox Text="{Binding RepoPath}" />
             </StackPanel>
         </StackPanel>
     </ScrollViewer>

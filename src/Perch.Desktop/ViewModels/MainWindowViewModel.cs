@@ -31,20 +31,28 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool _canGoBack;
 
+    [ObservableProperty]
+    private string _stepLabel = string.Empty;
+
+    [ObservableProperty]
+    private string _currentStepTitle = "Welcome";
+
+    public List<StepHeaderItem> StepHeaders { get; } = [];
+
     public MainWindowViewModel(ISystemScanner scanner, ICatalogService? catalogService = null)
     {
         _scanner = scanner;
         _catalogService = catalogService;
 
+        var scanStep = new SystemScanStepViewModel(_state);
+
         _steps =
         [
-            new WelcomeStepViewModel(),
+            new WelcomeStepViewModel(_state),
             new RepoSetupStepViewModel(_state),
-            new SystemScanStepViewModel(scanner, _state),
-            new ProfileStepViewModel(_state),
+            scanStep,
             new DotfilesStepViewModel(_state),
             CreateAppCatalogStep(),
-            CreateFontsStep(),
             new VsCodeExtensionsStepViewModel(_state),
             CreateTweaksStep(),
             new ReviewStepViewModel(_state),
@@ -54,6 +62,16 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         TotalSteps = _steps.Count;
         _currentPage = _steps[0];
+        _stepLabel = $"Step 1 of {TotalSteps}";
+
+        for (int i = 0; i < _steps.Count; i++)
+        {
+            StepHeaders.Add(new StepHeaderItem(i, _steps[i].Title));
+        }
+        StepHeaders[0].IsCurrent = true;
+        StepHeaders[0].IsVisited = true;
+
+        scanStep.BeginScan(scanner);
     }
 
     [RelayCommand]
@@ -66,6 +84,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             CurrentStepIndex++;
             CurrentPage = _steps[CurrentStepIndex];
             CanGoBack = CurrentPage is WizardStepViewModel ws && ws.CanGoBack;
+            UpdateNavigationState();
             await OnEnteringStepAsync(CurrentStepIndex).ConfigureAwait(true);
         }
     }
@@ -78,6 +97,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             CurrentStepIndex--;
             CurrentPage = _steps[CurrentStepIndex];
             CanGoBack = CurrentPage is WizardStepViewModel ws && ws.CanGoBack;
+            UpdateNavigationState();
         }
     }
 
@@ -89,7 +109,21 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             CurrentStepIndex = stepIndex;
             CurrentPage = _steps[CurrentStepIndex];
             CanGoBack = CurrentPage is WizardStepViewModel ws && ws.CanGoBack;
+            UpdateNavigationState();
         }
+    }
+
+    private void UpdateNavigationState()
+    {
+        StepLabel = $"Step {CurrentStepIndex + 1} of {TotalSteps}";
+        CurrentStepTitle = _steps[CurrentStepIndex].Title;
+
+        foreach (var header in StepHeaders)
+        {
+            header.IsCurrent = header.Index == CurrentStepIndex;
+        }
+
+        StepHeaders[CurrentStepIndex].IsVisited = true;
     }
 
     private Task OnLeavingStepAsync(int _) => Task.CompletedTask;
@@ -99,10 +133,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         switch (_steps[index])
         {
             case SystemScanStepViewModel scan:
-                if (!scan.ScanComplete)
-                {
-                    await scan.RunScanAsync().ConfigureAwait(false);
-                }
+                await scan.WaitForScanAsync().ConfigureAwait(false);
                 break;
 
             case DotfilesStepViewModel dotfiles:
@@ -111,10 +142,6 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
             case AppCatalogStepViewModel catalog when catalog.Apps.Count == 0:
                 await catalog.LoadCatalogAsync().ConfigureAwait(false);
-                break;
-
-            case FontsStepViewModel fonts when fonts.Fonts.Count == 0:
-                await fonts.LoadFontsAsync().ConfigureAwait(false);
                 break;
 
             case VsCodeExtensionsStepViewModel extensions:
@@ -145,13 +172,26 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             ? new AppCatalogStepViewModel(_catalogService, _state)
             : new AppCatalogStepViewModel(new NoOpCatalogService(), _state);
 
-    private FontsStepViewModel CreateFontsStep() =>
-        _catalogService != null
-            ? new FontsStepViewModel(_catalogService, _state)
-            : new FontsStepViewModel(new NoOpCatalogService(), _state);
-
     private WindowsTweaksStepViewModel CreateTweaksStep() =>
         _catalogService != null
             ? new WindowsTweaksStepViewModel(_catalogService, _state)
             : new WindowsTweaksStepViewModel(new NoOpCatalogService(), _state);
+}
+
+public sealed partial class StepHeaderItem : ViewModelBase
+{
+    [ObservableProperty]
+    private bool _isCurrent;
+
+    [ObservableProperty]
+    private bool _isVisited;
+
+    public int Index { get; }
+    public string Title { get; }
+
+    public StepHeaderItem(int index, string title)
+    {
+        Index = index;
+        Title = title;
+    }
 }

@@ -9,8 +9,8 @@ namespace Perch.Desktop.ViewModels.Wizard;
 
 public sealed partial class SystemScanStepViewModel : WizardStepViewModel
 {
-    private readonly ISystemScanner _scanner;
     private readonly WizardState _state;
+    private Task? _scanTask;
 
     [ObservableProperty]
     private bool _isScanning;
@@ -19,7 +19,7 @@ public sealed partial class SystemScanStepViewModel : WizardStepViewModel
     private bool _scanComplete;
 
     [ObservableProperty]
-    private string _statusText = "Ready to scan...";
+    private string _statusText = "Scanning...";
 
     [ObservableProperty]
     private int _appCount;
@@ -39,17 +39,20 @@ public sealed partial class SystemScanStepViewModel : WizardStepViewModel
     public override int StepNumber => 3;
     public override bool CanSkip => true;
 
-    public SystemScanStepViewModel(ISystemScanner scanner, WizardState state)
+    public SystemScanStepViewModel(WizardState state)
     {
-        _scanner = scanner;
         _state = state;
     }
 
-    public async Task RunScanAsync(CancellationToken cancellationToken = default)
+    public void BeginScan(ISystemScanner scanner, CancellationToken cancellationToken = default)
     {
+        if (_scanTask != null)
+        {
+            return;
+        }
+
         IsScanning = true;
         ScanComplete = false;
-        ScanLog.Clear();
 
         var progress = new Progress<string>(message =>
         {
@@ -57,7 +60,20 @@ public sealed partial class SystemScanStepViewModel : WizardStepViewModel
             ScanLog.Add(message);
         });
 
-        var result = await _scanner.ScanAsync(progress, cancellationToken).ConfigureAwait(false);
+        _scanTask = RunScanCoreAsync(scanner, progress, cancellationToken);
+    }
+
+    public async Task WaitForScanAsync()
+    {
+        if (_scanTask != null)
+        {
+            await _scanTask.ConfigureAwait(false);
+        }
+    }
+
+    private async Task RunScanCoreAsync(ISystemScanner scanner, IProgress<string> progress, CancellationToken cancellationToken)
+    {
+        var result = await scanner.ScanAsync(progress, cancellationToken).ConfigureAwait(false);
         _state.ScanResult = result;
 
         AppCount = result.InstalledPackages.Length;

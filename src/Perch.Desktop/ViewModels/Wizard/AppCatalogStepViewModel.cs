@@ -29,8 +29,8 @@ public sealed partial class AppCatalogStepViewModel : WizardStepViewModel
     public ObservableCollection<AppItemViewModel> Apps { get; } = [];
     public ObservableCollection<string> Categories { get; } = ["All Apps"];
 
-    public override string Title => "App Catalog";
-    public override int StepNumber => 6;
+    public override string Title => "Apps & Fonts";
+    public override int StepNumber => 5;
 
     public AppCatalogStepViewModel(ICatalogService catalogService, WizardState state)
     {
@@ -42,31 +42,48 @@ public sealed partial class AppCatalogStepViewModel : WizardStepViewModel
     {
         IsLoading = true;
 
-        var apps = await _catalogService.GetAllAppsAsync(cancellationToken).ConfigureAwait(false);
         var installedNames = _state.ScanResult?.InstalledPackages
             .Select(p => p.Name)
             .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? [];
 
+        var installedFontNames = _state.ScanResult?.InstalledFonts
+            .Select(f => f.Name)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? [];
+
+        var apps = await _catalogService.GetAllAppsAsync(cancellationToken).ConfigureAwait(false);
         foreach (var app in apps)
         {
-            bool isInstalled = IsAppInstalled(app, installedNames);
-            var item = new AppItemViewModel(app, isInstalled);
-            item.PropertyChanged += (_, e) =>
-            {
-                if (e.PropertyName is nameof(AppItemViewModel.WillInstall) or nameof(AppItemViewModel.WillAdoptConfig))
-                {
-                    UpdateState();
-                }
-            };
-            Apps.Add(item);
+            AddAppItem(app, IsAppInstalled(app, installedNames));
+        }
 
-            if (!Categories.Contains(app.Category))
-            {
-                Categories.Add(app.Category);
-            }
+        var fonts = await _catalogService.GetAllFontsAsync(cancellationToken).ConfigureAwait(false);
+        foreach (var font in fonts)
+        {
+            var entry = FontToCatalogEntry(font);
+            bool isInstalled = installedFontNames.Any(n =>
+                n.Contains(font.Name, StringComparison.OrdinalIgnoreCase));
+            AddAppItem(entry, isInstalled);
         }
 
         IsLoading = false;
+    }
+
+    private void AddAppItem(CatalogEntry entry, bool isInstalled)
+    {
+        var item = new AppItemViewModel(entry, isInstalled);
+        item.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(AppItemViewModel.WillInstall) or nameof(AppItemViewModel.WillAdoptConfig))
+            {
+                UpdateState();
+            }
+        };
+        Apps.Add(item);
+
+        if (!Categories.Contains(entry.Category))
+        {
+            Categories.Add(entry.Category);
+        }
     }
 
     private void UpdateState()
@@ -81,6 +98,20 @@ public sealed partial class AppCatalogStepViewModel : WizardStepViewModel
             .Select(a => a.Entry.Id)
             .ToImmutableHashSet();
     }
+
+    private static CatalogEntry FontToCatalogEntry(FontCatalogEntry font) =>
+        new(
+            Id: font.Id,
+            Name: font.Name,
+            DisplayName: font.Name,
+            Category: "Fonts",
+            Tags: font.Tags,
+            Description: font.Description,
+            Logo: font.Logo,
+            Links: null,
+            Install: font.Install,
+            Config: null,
+            Extensions: null);
 
     private static bool IsAppInstalled(CatalogEntry app, HashSet<string> installedNames)
     {

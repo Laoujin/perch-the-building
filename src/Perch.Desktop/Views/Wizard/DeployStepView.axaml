@@ -16,11 +16,25 @@
                      Value="{Binding CompletedPhases}"
                      Height="6" Margin="0,0,0,24" />
 
+        <Border DockPanel.Dock="Bottom" IsVisible="{Binding DeployComplete}"
+                Padding="16" Margin="0,16,0,0" CornerRadius="8"
+                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+            <TextBlock Text="Setup complete!" FontSize="16" FontWeight="SemiBold"
+                       HorizontalAlignment="Center" />
+        </Border>
+
         <ScrollViewer>
             <ItemsControl ItemsSource="{Binding Phases}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Spacing="8" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="vm:DeployPhaseViewModel">
-                        <Border Padding="12,8" Margin="0,4">
+                        <Border Padding="16,12" CornerRadius="8"
+                                BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                BorderThickness="1">
                             <Grid ColumnDefinitions="Auto,*">
                                 <TextBlock Grid.Column="0" Width="24" Margin="0,0,12,0"
                                            VerticalAlignment="Center"
@@ -33,12 +47,5 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
-
-        <Border DockPanel.Dock="Bottom" IsVisible="{Binding DeployComplete}"
-                Padding="16" Margin="0,16,0,0" CornerRadius="8"
-                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-            <TextBlock Text="Setup complete!" FontSize="16" FontWeight="SemiBold"
-                       HorizontalAlignment="Center" />
-        </Border>
     </DockPanel>
 </UserControl>

@@ -33,7 +33,7 @@ public sealed partial class ReviewStepViewModel : WizardStepViewModel
     private string _machineName = string.Empty;
 
     public override string Title => "Review";
-    public override int StepNumber => 10;
+    public override int StepNumber => 8;
     public override bool CanSkip => false;
 
     public ReviewStepViewModel(WizardState state)

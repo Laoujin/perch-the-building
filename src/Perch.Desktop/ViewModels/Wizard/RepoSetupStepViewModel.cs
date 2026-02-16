@@ -12,7 +12,7 @@ public sealed partial class RepoSetupStepViewModel : WizardStepViewModel
     private RepoSetupMode _selectedMode;
 
     [ObservableProperty]
-    private string _repoPath = string.Empty;
+    private string _repoPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "dotfiles");
 
     [ObservableProperty]
     private string _cloneUrl = string.Empty;
@@ -25,7 +25,11 @@ public sealed partial class RepoSetupStepViewModel : WizardStepViewModel
     {
         _state = state;
         _selectedMode = state.RepoMode;
-        _repoPath = state.RepoPath ?? string.Empty;
+        if (!string.IsNullOrEmpty(state.RepoPath))
+        {
+            _repoPath = state.RepoPath;
+        }
+        state.RepoPath = _repoPath;
         _cloneUrl = state.CloneUrl ?? string.Empty;
     }
 

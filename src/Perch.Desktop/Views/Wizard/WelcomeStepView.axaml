@@ -7,18 +7,95 @@
              x:Class="Perch.Desktop.Views.Wizard.WelcomeStepView"
              x:DataType="vm:WelcomeStepViewModel">
 
-    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="24" MaxWidth="500">
-        <TextBlock Text="Perch"
-                   FontSize="48" FontWeight="Bold"
-                   HorizontalAlignment="Center" />
+    <ScrollViewer>
+        <StackPanel HorizontalAlignment="Center" Spacing="24" MaxWidth="700" Margin="32">
+            <!-- Logo and tagline -->
+            <StackPanel Spacing="8" Margin="0,16,0,0">
+                <TextBlock Text="Perch"
+                           FontSize="48" FontWeight="Bold"
+                           HorizontalAlignment="Center" />
 
-        <TextBlock Text="Your configs, everywhere."
-                   FontSize="20" Opacity="0.7"
-                   HorizontalAlignment="Center" />
+                <TextBlock Text="{Binding Tagline}"
+                           FontSize="20" Opacity="0.7"
+                           HorizontalAlignment="Center" />
+            </StackPanel>
 
-        <TextBlock Text="Perch manages your dotfiles, app configs, and system settings across machines using symlinks and git."
-                   TextWrapping="Wrap" TextAlignment="Center"
-                   FontSize="14" Opacity="0.5"
-                   Margin="0,16,0,0" />
-    </StackPanel>
+            <!-- Profile heading -->
+            <TextBlock Text="What kind of user are you?"
+                       FontSize="16" Opacity="0.5"
+                       HorizontalAlignment="Center" Margin="0,8,0,0" />
+
+            <!-- Profile cards -->
+            <StackPanel Spacing="12">
+                <!-- Developer -->
+                <Border Padding="20" CornerRadius="8"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1">
+                    <Grid ColumnDefinitions="Auto,*">
+                        <CheckBox Grid.Column="0" IsChecked="{Binding IsDeveloper}" VerticalAlignment="Top" Margin="0,0,12,0" />
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <TextBlock Text="Developer" FontWeight="SemiBold" FontSize="16" />
+                            <TextBlock Text="Git, VS Code, terminals, SDKs, SSH keys, programming fonts, dev extensions"
+                                       TextWrapping="Wrap" Opacity="0.6" FontSize="12" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Creative -->
+                <Border Padding="20" CornerRadius="8"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1">
+                    <Grid ColumnDefinitions="Auto,*">
+                        <CheckBox Grid.Column="0" IsChecked="{Binding IsCreative}" VerticalAlignment="Top" Margin="0,0,12,0" />
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <TextBlock Text="Creative" FontWeight="SemiBold" FontSize="16" />
+                            <TextBlock Text="Image editors, design tools, media production, creative fonts"
+                                       TextWrapping="Wrap" Opacity="0.6" FontSize="12" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Power User -->
+                <Border Padding="20" CornerRadius="8"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1">
+                    <Grid ColumnDefinitions="Auto,*">
+                        <CheckBox Grid.Column="0" IsChecked="{Binding IsPowerUser}" VerticalAlignment="Top" Margin="0,0,12,0" />
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <TextBlock Text="Power User" FontWeight="SemiBold" FontSize="16" />
+                            <TextBlock Text="System tweaks, shell customization, advanced utilities, WSL"
+                                       TextWrapping="Wrap" Opacity="0.6" FontSize="12" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Gamer -->
+                <Border Padding="20" CornerRadius="8"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1">
+                    <Grid ColumnDefinitions="Auto,*">
+                        <CheckBox Grid.Column="0" IsChecked="{Binding IsGamer}" VerticalAlignment="Top" Margin="0,0,12,0" />
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <TextBlock Text="Gamer" FontWeight="SemiBold" FontSize="16" />
+                            <TextBlock Text="Game launchers, performance tweaks, overlays, RGB software"
+                                       TextWrapping="Wrap" Opacity="0.6" FontSize="12" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Minimal -->
+                <Border Padding="20" CornerRadius="8"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1">
+                    <Grid ColumnDefinitions="Auto,*">
+                        <CheckBox Grid.Column="0" IsChecked="{Binding IsMinimal}" VerticalAlignment="Top" Margin="0,0,12,0" />
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <TextBlock Text="Minimal" FontWeight="SemiBold" FontSize="16" />
+                            <TextBlock Text="Just browser, file manager, essentials"
+                                       TextWrapping="Wrap" Opacity="0.6" FontSize="12" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </StackPanel>
+
+            <TextBlock Text="Select one or more profiles to set smart defaults, or skip to configure everything manually."
+                       TextWrapping="Wrap" TextAlignment="Center"
+                       FontSize="12" Opacity="0.4" Margin="0,0,0,16" />
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>

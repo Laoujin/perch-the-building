@@ -35,9 +35,14 @@
             <!-- App list -->
             <ScrollViewer IsVisible="{Binding !IsLoading}">
                 <ItemsControl ItemsSource="{Binding Apps}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="8" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="vm:AppItemViewModel">
-                            <Border Padding="12" Margin="0,4" CornerRadius="6"
+                            <Border Padding="16" CornerRadius="8"
                                     BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                                     BorderThickness="1">
                                 <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
@@ -50,15 +55,16 @@
                                     <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
                                                Text="{Binding Entry.Description}"
                                                TextWrapping="Wrap" Opacity="0.6" FontSize="12"
-                                               Margin="0,4,0,0" />
+                                               Margin="0,6,0,0" />
                                     <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                                                Orientation="Horizontal" Spacing="12" Margin="0,8,0,0">
+                                                Orientation="Horizontal" Spacing="16" Margin="0,10,0,0">
                                         <CheckBox IsChecked="{Binding WillInstall}"
                                                   IsVisible="{Binding !IsInstalled}"
                                                   Content="Install" />
-                                        <TextBlock IsVisible="{Binding IsInstalled}"
-                                                   Text="Installed" Opacity="0.6"
-                                                   VerticalAlignment="Center" />
+                                        <Border IsVisible="{Binding IsInstalled}" Padding="8,4" CornerRadius="4"
+                                                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+                                            <TextBlock Text="Installed" Opacity="0.7" FontSize="12" />
+                                        </Border>
                                         <CheckBox IsChecked="{Binding WillAdoptConfig}"
                                                   IsVisible="{Binding HasConfig}"
                                                   Content="Adopt Config" />

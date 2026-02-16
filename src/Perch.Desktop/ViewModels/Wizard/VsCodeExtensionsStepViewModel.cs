@@ -18,7 +18,7 @@ public sealed partial class VsCodeExtensionsStepViewModel : WizardStepViewModel
     public ObservableCollection<ExtensionItemViewModel> InstalledExtensions { get; } = [];
 
     public override string Title => "VS Code Extensions";
-    public override int StepNumber => 8;
+    public override int StepNumber => 6;
 
     public VsCodeExtensionsStepViewModel(WizardState state)
     {

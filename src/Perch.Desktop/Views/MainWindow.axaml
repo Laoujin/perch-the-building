@@ -11,8 +11,36 @@
         WindowStartupLocation="CenterScreen">
 
     <DockPanel>
+        <!-- Top header with step navigation -->
+        <Border DockPanel.Dock="Top" Padding="16,8"
+                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                BorderThickness="0,0,0,1">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                <ItemsControl ItemsSource="{Binding StepHeaders}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="4" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="vm:StepHeaderItem">
+                            <Button Content="{Binding Title}"
+                                    Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).GoToStepCommand}"
+                                    CommandParameter="{Binding Index}"
+                                    IsEnabled="{Binding IsVisited}"
+                                    Padding="12,6" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+
         <!-- Bottom navigation bar -->
-        <Border DockPanel.Dock="Bottom" Padding="16" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+        <Border DockPanel.Dock="Bottom" Padding="16"
+                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                BorderThickness="0,1,0,0">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <Button Grid.Column="0"
                         Content="Back"
@@ -22,7 +50,7 @@
                         Margin="0,0,8,0" />
 
                 <TextBlock Grid.Column="1"
-                           Text="{Binding CurrentStepIndex, StringFormat='Step {0}'}"
+                           Text="{Binding StepLabel}"
                            VerticalAlignment="Center"
                            HorizontalAlignment="Center"
                            Opacity="0.6" />

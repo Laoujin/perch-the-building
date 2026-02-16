@@ -26,7 +26,7 @@ public sealed partial class WindowsTweaksStepViewModel : WizardStepViewModel
     public ObservableCollection<string> Categories { get; } = ["All Tweaks"];
 
     public override string Title => "Windows Tweaks";
-    public override int StepNumber => 9;
+    public override int StepNumber => 7;
 
     public WindowsTweaksStepViewModel(ICatalogService catalogService, WizardState state)
     {

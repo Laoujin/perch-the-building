@@ -12,7 +12,7 @@ public sealed partial class DashboardStepViewModel : WizardStepViewModel
     private string _summary = string.Empty;
 
     public override string Title => "Dashboard";
-    public override int StepNumber => 12;
+    public override int StepNumber => 10;
     public override bool CanSkip => false;
     public override bool CanGoBack => false;
 

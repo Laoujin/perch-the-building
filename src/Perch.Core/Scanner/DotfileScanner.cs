@@ -35,7 +35,8 @@ public sealed class DotfileScanner : IDotfileScanner
             if (File.Exists(fullPath))
             {
                 var info = new FileInfo(fullPath);
-                results.Add(new DetectedDotfile(name, fullPath, group, info.Length, info.LastWriteTimeUtc));
+                bool isSymlink = info.LinkTarget != null;
+                results.Add(new DetectedDotfile(name, fullPath, group, info.Length, info.LastWriteTimeUtc, isSymlink));
             }
         }
 
@@ -46,7 +47,8 @@ public sealed class DotfileScanner : IDotfileScanner
             if (File.Exists(fullPath))
             {
                 var info = new FileInfo(fullPath);
-                results.Add(new DetectedDotfile(name, fullPath, group, info.Length, info.LastWriteTimeUtc));
+                bool isSymlink = info.LinkTarget != null;
+                results.Add(new DetectedDotfile(name, fullPath, group, info.Length, info.LastWriteTimeUtc, isSymlink));
             }
         }
 
