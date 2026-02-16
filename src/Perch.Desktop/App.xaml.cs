@@ -8,7 +8,9 @@ using Wpf.Ui.Appearance;
 using Wpf.Ui.DependencyInjection;
 
 using Perch.Core;
+using Perch.Core.Config;
 using Perch.Desktop.ViewModels;
+using Perch.Desktop.ViewModels.Wizard;
 using Perch.Desktop.Views;
 using Perch.Desktop.Views.Pages;
 
@@ -41,22 +43,50 @@ public partial class App : Application
             services.AddSingleton<SystemTweaksViewModel>();
             services.AddSingleton<SettingsPage>();
             services.AddSingleton<SettingsViewModel>();
+
+            services.AddTransient<WizardShellViewModel>();
+            services.AddTransient<WizardWindow>();
         })
         .Build();
 
+    public static IServiceProvider Services => _host.Services;
+
     protected override async void OnStartup(StartupEventArgs e)
     {
-        await _host.StartAsync();
-
-        var mainWindow = _host.Services.GetRequiredService<INavigationWindow>();
-        mainWindow.ShowWindow();
-        mainWindow.Navigate(typeof(DashboardPage));
-
+        ApplicationThemeManager.Apply(ApplicationTheme.Dark);
         ApplicationAccentColorManager.Apply(
             System.Windows.Media.Color.FromRgb(0x10, 0xB9, 0x81),
             ApplicationTheme.Dark);
 
+        await _host.StartAsync();
+
+        var settings = await Services.GetRequiredService<ISettingsProvider>().LoadAsync();
+        var isFirstRun = string.IsNullOrWhiteSpace(settings.ConfigRepoPath);
+
+        if (isFirstRun)
+        {
+            ShowWizard();
+        }
+        else
+        {
+            ShowMainWindow();
+        }
+
         base.OnStartup(e);
+    }
+
+    public static void ShowWizard()
+    {
+        var wizard = Services.GetRequiredService<WizardWindow>();
+        wizard.WizardCompleted += () => ShowMainWindow();
+        wizard.Show();
+    }
+
+    public static void ShowMainWindow()
+    {
+        var mainWindow = Services.GetRequiredService<INavigationWindow>();
+        mainWindow.ShowWindow();
+        mainWindow.Navigate(typeof(DashboardPage));
     }
 
     protected override async void OnExit(ExitEventArgs e)

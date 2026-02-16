@@ -1,0 +1,262 @@
+<ui:FluentWindow
+    x:Class="Perch.Desktop.Views.WizardWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:vm="clr-namespace:Perch.Desktop.ViewModels.Wizard"
+    xmlns:deploy="clr-namespace:Perch.Core.Deploy;assembly=Perch.Core"
+    d:DataContext="{d:DesignInstance vm:WizardShellViewModel}"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="Perch Setup Wizard"
+    Width="900"
+    Height="650"
+    MinWidth="800"
+    MinHeight="550"
+    WindowStartupLocation="CenterScreen"
+    ExtendsContentIntoTitleBar="True">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Title Bar -->
+        <ui:TitleBar Grid.Row="0" Title="Perch Setup" />
+
+        <!-- Step Content -->
+        <Grid Grid.Row="1">
+            <!-- Step 0: Welcome / Profile Selection -->
+            <Grid Visibility="{Binding CurrentStepIndex, Converter={StaticResource IndexToVisibilityConverter}, ConverterParameter=0}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- Startpage hero -->
+                <Border Grid.Row="0" Height="160" ClipToBounds="True" Margin="24,8,24,0" CornerRadius="8">
+                    <Border.Background>
+                        <ImageBrush ImageSource="/Assets/startpage.png" Stretch="UniformToFill" AlignmentY="Center" />
+                    </Border.Background>
+                    <Border Background="#99000000" Padding="24,0">
+                        <StackPanel VerticalAlignment="Center">
+                            <ui:TextBlock FontTypography="TitleLarge" Foreground="White" Text="Welcome to Perch" />
+                            <ui:TextBlock FontTypography="Body" Foreground="#CCFFFFFF" Margin="0,4,0,0"
+                                Text="Select your profile to get started. This determines which configs and tweaks are suggested for you." />
+                        </StackPanel>
+                    </Border>
+                </Border>
+
+                <ui:TextBlock Grid.Row="1" FontTypography="Subtitle" Margin="24,16,24,8" Text="Choose your profile" />
+
+                <!-- Profile cards -->
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="24,0">
+                    <WrapPanel>
+                        <!-- Developer -->
+                        <Border Width="200" Height="240" Margin="0,0,12,12" CornerRadius="8" ClipToBounds="True"
+                                MouseLeftButtonUp="OnProfileCardClick" Tag="Developer" Cursor="Hand">
+                            <Border.Background>
+                                <ImageBrush ImageSource="/Assets/profile-developer.png" Stretch="UniformToFill" />
+                            </Border.Background>
+                            <Border Padding="16" VerticalAlignment="Bottom">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#00000000" Offset="0" />
+                                        <GradientStop Color="#DD000000" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <StackPanel>
+                                    <Grid>
+                                        <ui:TextBlock FontTypography="BodyStrong" Foreground="White" Text="Developer" />
+                                        <CheckBox HorizontalAlignment="Right" IsChecked="{Binding ProfileSelection.IsDeveloper}" IsHitTestVisible="False" />
+                                    </Grid>
+                                    <ui:TextBlock FontTypography="Caption" Foreground="#AAFFFFFF" TextWrapping="Wrap"
+                                        Text="Full dotfiles, dev tools, shell configs" />
+                                </StackPanel>
+                            </Border>
+                        </Border>
+
+                        <!-- Power User -->
+                        <Border Width="200" Height="240" Margin="0,0,12,12" CornerRadius="8" ClipToBounds="True"
+                                MouseLeftButtonUp="OnProfileCardClick" Tag="PowerUser" Cursor="Hand">
+                            <Border.Background>
+                                <ImageBrush ImageSource="/Assets/profile-power-user.png" Stretch="UniformToFill" />
+                            </Border.Background>
+                            <Border Padding="16" VerticalAlignment="Bottom">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#00000000" Offset="0" />
+                                        <GradientStop Color="#DD000000" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <StackPanel>
+                                    <Grid>
+                                        <ui:TextBlock FontTypography="BodyStrong" Foreground="White" Text="Power User" />
+                                        <CheckBox HorizontalAlignment="Right" IsChecked="{Binding ProfileSelection.IsPowerUser}" IsHitTestVisible="False" />
+                                    </Grid>
+                                    <ui:TextBlock FontTypography="Caption" Foreground="#AAFFFFFF" TextWrapping="Wrap"
+                                        Text="System tweaks, app settings" />
+                                </StackPanel>
+                            </Border>
+                        </Border>
+
+                        <!-- Gamer -->
+                        <Border Width="200" Height="240" Margin="0,0,12,12" CornerRadius="8" ClipToBounds="True"
+                                MouseLeftButtonUp="OnProfileCardClick" Tag="Gamer" Cursor="Hand">
+                            <Border.Background>
+                                <ImageBrush ImageSource="/Assets/profile-gamer.png" Stretch="UniformToFill" />
+                            </Border.Background>
+                            <Border Padding="16" VerticalAlignment="Bottom">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#00000000" Offset="0" />
+                                        <GradientStop Color="#DD000000" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <StackPanel>
+                                    <Grid>
+                                        <ui:TextBlock FontTypography="BodyStrong" Foreground="White" Text="Gamer" />
+                                        <CheckBox HorizontalAlignment="Right" IsChecked="{Binding ProfileSelection.IsGamer}" IsHitTestVisible="False" />
+                                    </Grid>
+                                    <ui:TextBlock FontTypography="Caption" Foreground="#AAFFFFFF" TextWrapping="Wrap"
+                                        Text="Gaming apps, performance tweaks" />
+                                </StackPanel>
+                            </Border>
+                        </Border>
+
+                        <!-- Casual -->
+                        <Border Width="200" Height="240" Margin="0,0,12,12" CornerRadius="8" ClipToBounds="True"
+                                MouseLeftButtonUp="OnProfileCardClick" Tag="Casual" Cursor="Hand">
+                            <Border.Background>
+                                <ImageBrush ImageSource="/Assets/profile-casual2.png" Stretch="UniformToFill" />
+                            </Border.Background>
+                            <Border Padding="16" VerticalAlignment="Bottom">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#00000000" Offset="0" />
+                                        <GradientStop Color="#DD000000" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <StackPanel>
+                                    <Grid>
+                                        <ui:TextBlock FontTypography="BodyStrong" Foreground="White" Text="Casual" />
+                                        <CheckBox HorizontalAlignment="Right" IsChecked="{Binding ProfileSelection.IsCasual}" IsHitTestVisible="False" />
+                                    </Grid>
+                                    <ui:TextBlock FontTypography="Caption" Foreground="#AAFFFFFF" TextWrapping="Wrap"
+                                        Text="Simplified experience, apps only" />
+                                </StackPanel>
+                            </Border>
+                        </Border>
+                    </WrapPanel>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- Step 1: Review -->
+            <Grid Visibility="{Binding CurrentStepIndex, Converter={StaticResource IndexToVisibilityConverter}, ConverterParameter=1}"
+                  Margin="24,16">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="500">
+                    <!-- Empty state image -->
+                    <Image Source="/Assets/wizard-empty.png" Width="200" Height="200" Margin="0,0,0,16"
+                           Visibility="{Binding IsComplete, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
+                    <ui:TextBlock FontTypography="Title" HorizontalAlignment="Center" Text="Ready to deploy" />
+                    <ui:TextBlock FontTypography="Body" Opacity="0.6" HorizontalAlignment="Center" Margin="0,8,0,0"
+                        TextWrapping="Wrap" TextAlignment="Center"
+                        Text="Perch will scan your config repository and create symlinks for all enabled modules. Existing files will be backed up." />
+                </StackPanel>
+            </Grid>
+
+            <!-- Step 2: Deploy / Results -->
+            <Grid Visibility="{Binding CurrentStepIndex, Converter={StaticResource IndexToVisibilityConverter}, ConverterParameter=2}"
+                  Margin="24,16">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- Completion images -->
+                <Grid Grid.Row="0" HorizontalAlignment="Center" Margin="0,0,0,16"
+                      Visibility="{Binding IsComplete, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <Image Source="/Assets/wizard-success.png" Width="180" Height="180"
+                           Visibility="{Binding HasErrors, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
+                    <Image Source="/Assets/wizard-error.png" Width="180" Height="180"
+                           Visibility="{Binding HasErrors, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                </Grid>
+
+                <!-- Progress -->
+                <StackPanel Grid.Row="1" HorizontalAlignment="Center">
+                    <ui:ProgressRing IsIndeterminate="True" Width="32" Height="32" Margin="0,0,0,8"
+                        Visibility="{Binding IsDeploying, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    <ui:TextBlock FontTypography="Subtitle" HorizontalAlignment="Center" Text="{Binding DeployStatusMessage}" />
+                    <ui:TextBlock FontTypography="Caption" Opacity="0.6" HorizontalAlignment="Center" Margin="0,4,0,0">
+                        <ui:TextBlock.Text>
+                            <MultiBinding StringFormat="{}{0} deployed, {1} errors">
+                                <Binding Path="DeployedCount" />
+                                <Binding Path="ErrorCount" />
+                            </MultiBinding>
+                        </ui:TextBlock.Text>
+                    </ui:TextBlock>
+                </StackPanel>
+
+                <!-- Deploy results list -->
+                <ListView Grid.Row="2" Margin="0,16,0,0" ItemsSource="{Binding DeployResults}"
+                    ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListView.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:DeployResultItemViewModel}">
+                            <Grid Margin="0,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <ui:SymbolIcon Grid.Column="0" Margin="0,0,8,0">
+                                    <ui:SymbolIcon.Style>
+                                        <Style TargetType="ui:SymbolIcon">
+                                            <Setter Property="Symbol" Value="CheckmarkCircle24" />
+                                            <Setter Property="Foreground" Value="#34D399" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Level}" Value="{x:Static deploy:ResultLevel.Error}">
+                                                    <Setter Property="Symbol" Value="ErrorCircle24" />
+                                                    <Setter Property="Foreground" Value="#EF4444" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Level}" Value="{x:Static deploy:ResultLevel.Warning}">
+                                                    <Setter Property="Symbol" Value="Warning24" />
+                                                    <Setter Property="Foreground" Value="#F59E0B" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ui:SymbolIcon.Style>
+                                </ui:SymbolIcon>
+                                <ui:TextBlock Grid.Column="1" FontTypography="Caption" Text="{Binding ModuleName}" Margin="0,0,8,0" />
+                                <ui:TextBlock Grid.Column="2" FontTypography="Caption" Opacity="0.6" Text="{Binding Message}" TextTrimming="CharacterEllipsis" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
+        </Grid>
+
+        <!-- Footer navigation -->
+        <Border Grid.Row="2" Padding="24,12" Background="{DynamicResource ControlFillColorDefaultBrush}">
+            <Grid>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                    <ui:Button Content="Back" Command="{Binding GoBackCommand}"
+                        Visibility="{Binding CanGoBack, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <ui:Button Content="Next" Appearance="Primary" Command="{Binding GoNextCommand}"
+                        Visibility="{Binding CanGoNext, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    <ui:Button Content="Deploy" Appearance="Primary" Command="{Binding DeployCommand}"
+                        Visibility="{Binding ShowDeploy, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    <ui:Button Content="Open Dashboard" Appearance="Primary" Click="OnOpenDashboard"
+                        Visibility="{Binding IsComplete, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+
+</ui:FluentWindow>

@@ -15,6 +15,7 @@
             <converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
             <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" />
             <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter" />
+            <converters:IndexToVisibilityConverter x:Key="IndexToVisibilityConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

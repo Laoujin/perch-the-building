@@ -1,3 +1,5 @@
+using System.Reflection;
+
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -31,7 +33,8 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _settingsProvider = settingsProvider;
 
         var assembly = typeof(SettingsViewModel).Assembly;
-        AppVersion = assembly.GetName().Version?.ToString(3) ?? "0.0.0";
+        var infoVersion = assembly.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        AppVersion = infoVersion?.Split('+')[0] ?? assembly.GetName().Version?.ToString(3) ?? "0.0.0";
     }
 
     [RelayCommand]

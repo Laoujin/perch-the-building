@@ -17,54 +17,66 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- Hero Banner -->
+        <!-- Hero Banner with hero.png background -->
         <Border
             Grid.Row="0"
             CornerRadius="8"
-            Padding="24,20"
-            Background="{DynamicResource ControlFillColorDefaultBrush}">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
+            ClipToBounds="True"
+            MinHeight="120">
+            <Border.Background>
+                <ImageBrush
+                    ImageSource="/Assets/hero.png"
+                    Stretch="UniformToFill"
+                    AlignmentX="Center"
+                    AlignmentY="Center" />
+            </Border.Background>
 
-                <ui:TextBlock
-                    Grid.Row="0"
-                    FontTypography="Subtitle"
-                    Text="{Binding HealthMessage}" />
+            <!-- Dark overlay for text readability -->
+            <Border Background="#CC000000" Padding="24,20">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
 
-                <StackPanel
-                    Grid.Row="1"
-                    Orientation="Horizontal"
-                    Margin="0,12,0,0"
-                    Visibility="{Binding HasConfigRepo, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <Border CornerRadius="4" Padding="12,6" Background="#2234D399" Margin="0,0,8,0">
-                        <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="CheckmarkCircle24" Foreground="#34D399" Margin="0,0,6,0" />
-                            <ui:TextBlock Text="{Binding OkCount, StringFormat='{}{0} OK'}" Foreground="#34D399" />
-                        </StackPanel>
-                    </Border>
-                    <Border CornerRadius="4" Padding="12,6" Background="#22F59E0B" Margin="0,0,8,0">
-                        <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="Warning24" Foreground="#F59E0B" Margin="0,0,6,0" />
-                            <ui:TextBlock Text="{Binding MissingCount, StringFormat='{}{0} Missing'}" Foreground="#F59E0B" />
-                        </StackPanel>
-                    </Border>
-                    <Border CornerRadius="4" Padding="12,6" Background="#22F59E0B" Margin="0,0,8,0">
-                        <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="ArrowSync24" Foreground="#F59E0B" Margin="0,0,6,0" />
-                            <ui:TextBlock Text="{Binding DriftCount, StringFormat='{}{0} Drift'}" Foreground="#F59E0B" />
-                        </StackPanel>
-                    </Border>
-                    <Border CornerRadius="4" Padding="12,6" Background="#22EF4444">
-                        <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="ErrorCircle24" Foreground="#EF4444" Margin="0,0,6,0" />
-                            <ui:TextBlock Text="{Binding ErrorCount, StringFormat='{}{0} Errors'}" Foreground="#EF4444" />
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </Grid>
+                    <ui:TextBlock
+                        Grid.Row="0"
+                        FontTypography="Subtitle"
+                        Foreground="White"
+                        Text="{Binding HealthMessage}" />
+
+                    <StackPanel
+                        Grid.Row="1"
+                        Orientation="Horizontal"
+                        Margin="0,12,0,0"
+                        Visibility="{Binding HasConfigRepo, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Border CornerRadius="4" Padding="12,6" Background="#4434D399" Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="CheckmarkCircle24" Foreground="#34D399" Margin="0,0,6,0" />
+                                <ui:TextBlock Text="{Binding OkCount, StringFormat='{}{0} OK'}" Foreground="#34D399" />
+                            </StackPanel>
+                        </Border>
+                        <Border CornerRadius="4" Padding="12,6" Background="#44F59E0B" Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="Warning24" Foreground="#F59E0B" Margin="0,0,6,0" />
+                                <ui:TextBlock Text="{Binding MissingCount, StringFormat='{}{0} Missing'}" Foreground="#F59E0B" />
+                            </StackPanel>
+                        </Border>
+                        <Border CornerRadius="4" Padding="12,6" Background="#44F59E0B" Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="ArrowSync24" Foreground="#F59E0B" Margin="0,0,6,0" />
+                                <ui:TextBlock Text="{Binding DriftCount, StringFormat='{}{0} Drift'}" Foreground="#F59E0B" />
+                            </StackPanel>
+                        </Border>
+                        <Border CornerRadius="4" Padding="12,6" Background="#44EF4444">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="ErrorCircle24" Foreground="#EF4444" Margin="0,0,6,0" />
+                                <ui:TextBlock Text="{Binding ErrorCount, StringFormat='{}{0} Errors'}" Foreground="#EF4444" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </Border>
         </Border>
 
         <!-- Refresh Button + Loading -->
@@ -159,6 +171,18 @@
                 </ListView.ItemTemplate>
             </ListView>
         </Grid>
+
+        <!-- Logo watermark bottom-right -->
+        <Image
+            Grid.Row="2"
+            Source="/Assets/logo.png"
+            Width="48"
+            Height="48"
+            Opacity="0.15"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            Margin="0,0,8,8"
+            IsHitTestVisible="False" />
     </Grid>
 
 </Page>

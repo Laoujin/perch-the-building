@@ -20,4 +20,9 @@ public partial class SettingsPage : Page
         if (ViewModel.LoadCommand.CanExecute(null))
             ViewModel.LoadCommand.Execute(null);
     }
+
+    private void OnLaunchWizard(object sender, RoutedEventArgs e)
+    {
+        App.ShowWizard();
+    }
 }
