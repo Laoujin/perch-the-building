@@ -66,6 +66,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IProcessRunner, DefaultProcessRunner>();
         services.AddSingleton<ITemplateProcessor, TemplateProcessor>();
         services.AddSingleton<IReferenceResolver, OnePasswordResolver>();
+        services.AddSingleton<IVariableResolver, MachineVariableResolver>();
         services.AddSingleton<IAppScanService, AppScanService>();
 
         services.AddSingleton<CatalogParser>();
