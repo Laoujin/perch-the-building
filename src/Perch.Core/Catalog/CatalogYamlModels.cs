@@ -61,12 +61,34 @@ internal sealed class InstallYamlModel
 internal sealed class CatalogConfigYamlModel
 {
     public List<CatalogConfigLinkYamlModel>? Links { get; set; }
+
+    [YamlMember(Alias = "clean-filter")]
+    public CatalogCleanFilterYamlModel? CleanFilter { get; set; }
 }
 
 internal sealed class CatalogConfigLinkYamlModel
 {
     public string? Source { get; set; }
     public Dictionary<string, string>? Target { get; set; }
+
+    [YamlMember(Alias = "link-type")]
+    public string? LinkType { get; set; }
+
+    public List<string>? Platforms { get; set; }
+    public bool Template { get; set; }
+}
+
+internal sealed class CatalogCleanFilterYamlModel
+{
+    public List<string>? Files { get; set; }
+    public List<CatalogFilterRuleYamlModel>? Rules { get; set; }
+}
+
+internal sealed class CatalogFilterRuleYamlModel
+{
+    public string? Type { get; set; }
+    public List<string>? Elements { get; set; }
+    public List<string>? Keys { get; set; }
 }
 
 internal sealed class CatalogExtensionsYamlModel

@@ -1,5 +1,8 @@
 using System.Collections.Immutable;
 
+using Perch.Core.Git;
+using Perch.Core.Modules;
+
 namespace Perch.Core.Catalog;
 
 public sealed record CatalogEntry(
@@ -19,11 +22,20 @@ public sealed record CatalogLinks(string? Website, string? Docs, string? GitHub)
 
 public sealed record InstallDefinition(string? Winget, string? Choco);
 
-public sealed record CatalogConfigDefinition(ImmutableArray<CatalogConfigLink> Links);
+public sealed record CatalogConfigDefinition(
+    ImmutableArray<CatalogConfigLink> Links,
+    CatalogCleanFilter? CleanFilter = null);
 
 public sealed record CatalogConfigLink(
     string Source,
-    ImmutableDictionary<Platform, string> Targets);
+    ImmutableDictionary<Platform, string> Targets,
+    LinkType LinkType = LinkType.Symlink,
+    ImmutableArray<Platform> Platforms = default,
+    bool Template = false);
+
+public sealed record CatalogCleanFilter(
+    ImmutableArray<string> Files,
+    ImmutableArray<FilterRule> Rules);
 
 public sealed record CatalogExtensions(
     ImmutableArray<string> Bundled,

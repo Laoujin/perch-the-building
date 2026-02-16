@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 
+using Perch.Core.Git;
 using Perch.Core.Modules;
 using Perch.Core.Registry;
 
@@ -206,11 +207,75 @@ public sealed class CatalogParser
 
             if (targets.Count > 0)
             {
-                links.Add(new CatalogConfigLink(link.Source, targets.ToImmutableDictionary()));
+                var linkType = ParseLinkType(link.LinkType);
+                var platforms = ParsePlatforms(link.Platforms);
+                links.Add(new CatalogConfigLink(link.Source, targets.ToImmutableDictionary(), linkType, platforms, link.Template));
             }
         }
 
-        return links.Count > 0 ? new CatalogConfigDefinition(links.ToImmutableArray()) : null;
+        if (links.Count == 0)
+        {
+            return null;
+        }
+
+        var cleanFilter = ParseCatalogCleanFilter(model.CleanFilter);
+        return new CatalogConfigDefinition(links.ToImmutableArray(), cleanFilter);
+    }
+
+    private static LinkType ParseLinkType(string? linkType) =>
+        linkType?.ToLowerInvariant() switch
+        {
+            "junction" => LinkType.Junction,
+            _ => LinkType.Symlink,
+        };
+
+    private static ImmutableArray<Platform> ParsePlatforms(List<string>? platforms)
+    {
+        if (platforms == null || platforms.Count == 0)
+        {
+            return default;
+        }
+
+        return platforms
+            .Where(p => Enum.TryParse<Platform>(p, ignoreCase: true, out _))
+            .Select(p => Enum.Parse<Platform>(p, ignoreCase: true))
+            .ToImmutableArray();
+    }
+
+    private static CatalogCleanFilter? ParseCatalogCleanFilter(CatalogCleanFilterYamlModel? model)
+    {
+        if (model?.Files == null || model.Files.Count == 0 || model.Rules == null || model.Rules.Count == 0)
+        {
+            return null;
+        }
+
+        var rules = new List<FilterRule>();
+        foreach (var rule in model.Rules)
+        {
+            if (string.IsNullOrWhiteSpace(rule.Type))
+            {
+                continue;
+            }
+
+            var patterns = rule.Type switch
+            {
+                "strip-xml-elements" => rule.Elements,
+                "strip-ini-keys" => rule.Keys,
+                _ => null,
+            };
+
+            if (patterns != null && patterns.Count > 0)
+            {
+                rules.Add(new FilterRule(rule.Type, patterns.ToImmutableArray()));
+            }
+        }
+
+        if (rules.Count == 0)
+        {
+            return null;
+        }
+
+        return new CatalogCleanFilter(model.Files.ToImmutableArray(), rules.ToImmutableArray());
     }
 
     private static CatalogExtensions? ParseExtensions(CatalogExtensionsYamlModel? model)
