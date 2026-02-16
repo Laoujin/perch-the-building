@@ -1,0 +1,82 @@
+<UserControl
+    x:Class="Perch.Desktop.Views.Controls.ProfileCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Width="200"
+    Height="280"
+    Cursor="Hand"
+    MouseLeftButtonUp="OnCardClick">
+    <Border
+        x:Name="CardBorder"
+        CornerRadius="8"
+        BorderThickness="2"
+        BorderBrush="#2A2A3E"
+        ClipToBounds="True">
+        <Grid>
+            <!-- Hero image background -->
+            <Image
+                x:Name="HeroImage"
+                Stretch="UniformToFill"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center" />
+
+            <!-- Gradient overlay for text readability -->
+            <Border>
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#00000000" Offset="0.0" />
+                        <GradientStop Color="#80000000" Offset="0.5" />
+                        <GradientStop Color="#DD000000" Offset="1.0" />
+                    </LinearGradientBrush>
+                </Border.Background>
+            </Border>
+
+            <!-- Content overlay -->
+            <Grid VerticalAlignment="Bottom" Margin="16">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <TextBlock
+                    Grid.Row="0"
+                    Text="{Binding ProfileName, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                    FontSize="20"
+                    FontWeight="SemiBold"
+                    Foreground="White" />
+
+                <TextBlock
+                    Grid.Row="1"
+                    Text="{Binding Tagline, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                    FontSize="11"
+                    Foreground="#CCCCCC"
+                    TextWrapping="Wrap"
+                    Margin="0,4,0,0" />
+
+                <!-- Selection checkmark -->
+                <Border
+                    Grid.Row="2"
+                    x:Name="SelectionBadge"
+                    Background="#10B981"
+                    CornerRadius="12"
+                    Padding="8,4"
+                    HorizontalAlignment="Left"
+                    Margin="0,8,0,0"
+                    Visibility="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="Checkmark24" FontSize="12" Foreground="White" />
+                        <TextBlock Text="Selected" FontSize="10" Foreground="White" Margin="4,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Dim overlay when not selected (subtle) -->
+            <Border
+                x:Name="DimOverlay"
+                Background="#40000000"
+                Visibility="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
+        </Grid>
+    </Border>
+</UserControl>

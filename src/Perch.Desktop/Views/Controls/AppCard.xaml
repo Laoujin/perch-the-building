@@ -1,0 +1,83 @@
+<UserControl
+    x:Class="Perch.Desktop.Views.Controls.AppCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:controls="clr-namespace:Perch.Desktop.Views.Controls">
+    <Border
+        x:Name="CardBorder"
+        Background="#1A1A2E"
+        BorderBrush="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToBorderBrushConverter}}"
+        BorderThickness="1"
+        CornerRadius="8"
+        Padding="12"
+        MinWidth="180">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Row 0: Status ribbon -->
+            <controls:StatusRibbon
+                Grid.Row="0"
+                Status="{Binding Status, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                Margin="0,0,0,8" />
+
+            <!-- Row 1: Icon + Name + Toggle -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <ui:SymbolIcon
+                    Grid.Column="0"
+                    x:Name="AppIcon"
+                    Symbol="Apps24"
+                    FontSize="24"
+                    Foreground="#888888"
+                    VerticalAlignment="Center"
+                    Margin="0,0,8,0" />
+
+                <TextBlock
+                    Grid.Column="1"
+                    Text="{Binding DisplayLabel, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                    FontSize="13"
+                    FontWeight="SemiBold"
+                    Foreground="White"
+                    VerticalAlignment="Center"
+                    TextTrimming="CharacterEllipsis" />
+
+                <ui:ToggleSwitch
+                    Grid.Column="2"
+                    x:Name="ManageToggle"
+                    IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=TwoWay}"
+                    VerticalAlignment="Center" />
+            </Grid>
+
+            <!-- Row 2: Description -->
+            <TextBlock
+                Grid.Row="2"
+                Text="{Binding Description, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                FontSize="11"
+                Foreground="#888888"
+                TextWrapping="Wrap"
+                TextTrimming="CharacterEllipsis"
+                MaxHeight="32"
+                Margin="0,4,0,0"
+                Visibility="{Binding Description, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource CountToVisibilityConverter}}" />
+
+            <!-- Row 3: Category tag -->
+            <TextBlock
+                Grid.Row="3"
+                Text="{Binding Category, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                FontSize="10"
+                Foreground="#666666"
+                Margin="0,4,0,0" />
+        </Grid>
+    </Border>
+</UserControl>
