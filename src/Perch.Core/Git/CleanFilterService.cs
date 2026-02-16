@@ -26,18 +26,27 @@ public sealed class CleanFilterService : ICleanFilterService
             }
 
             CleanFilterDefinition filter = module.CleanFilter;
-            string scriptAbsolutePath = Path.GetFullPath(Path.Combine(module.ModulePath, filter.Script));
 
-            if (!File.Exists(scriptAbsolutePath))
+            string cleanCommand;
+            if (filter.Script != null)
             {
-                results.Add(new CleanFilterResult(module.Name, ResultLevel.Error, $"Clean filter script not found: {scriptAbsolutePath}"));
-                continue;
+                string scriptAbsolutePath = Path.GetFullPath(Path.Combine(module.ModulePath, filter.Script));
+
+                if (!File.Exists(scriptAbsolutePath))
+                {
+                    results.Add(new CleanFilterResult(module.Name, ResultLevel.Error, $"Clean filter script not found: {scriptAbsolutePath}"));
+                    continue;
+                }
+
+                cleanCommand = Path.GetRelativePath(configRepoPath, scriptAbsolutePath).Replace('\\', '/');
+            }
+            else
+            {
+                cleanCommand = $"perch filter clean {module.Name}";
             }
 
-            string scriptRelativePath = Path.GetRelativePath(configRepoPath, scriptAbsolutePath).Replace('\\', '/');
-
             ProcessRunResult configResult = await _processRunner.RunAsync(
-                "git", $"config --local filter.{filter.Name}.clean \"{scriptRelativePath}\"",
+                "git", $"config --local filter.{filter.Name}.clean \"{cleanCommand}\"",
                 configRepoPath, cancellationToken).ConfigureAwait(false);
 
             if (configResult.ExitCode != 0)

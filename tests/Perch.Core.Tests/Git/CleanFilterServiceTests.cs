@@ -138,4 +138,24 @@ public sealed class CleanFilterServiceTests
         Assert.That(results, Is.Empty);
         await _processRunner.DidNotReceive().RunAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
+
+    [Test]
+    public async Task SetupAsync_RulesBasedFilter_RegistersPerchCommand()
+    {
+        string modulePath = Path.Combine(_tempDir, "npp");
+        Directory.CreateDirectory(modulePath);
+        var rules = ImmutableArray.Create(new FilterRule("strip-xml-elements", ImmutableArray.Create("FindHistory")));
+        var filter = new CleanFilterDefinition("npp-clean", null, ImmutableArray.Create("config.xml"), rules);
+        var module = new AppModule("npp", "npp", true, modulePath, ImmutableArray<Platform>.Empty,
+            ImmutableArray.Create(new LinkEntry("dummy", "dummy", LinkType.Symlink)), CleanFilter: filter);
+        var modules = ImmutableArray.Create(module);
+
+        var results = await _service.SetupAsync(_tempDir, modules);
+
+        Assert.That(results, Has.Length.EqualTo(1));
+        Assert.That(results[0].Level, Is.EqualTo(ResultLevel.Ok));
+        await _processRunner.Received(1).RunAsync("git",
+            Arg.Is<string>(s => s.Contains("perch filter clean npp")),
+            _tempDir, Arg.Any<CancellationToken>());
+    }
 }

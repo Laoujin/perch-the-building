@@ -389,6 +389,91 @@ public sealed class ManifestParserTests
     }
 
     [Test]
+    public void Parse_CleanFilterWithRules_ReturnsRules()
+    {
+        string yaml = """
+            clean-filter:
+              name: notepadplusplus-clean
+              files:
+                - config.xml
+              rules:
+                - type: strip-xml-elements
+                  elements:
+                    - FindHistory
+                    - Session
+            links:
+              - source: config.xml
+                target: "%APPDATA%\\Notepad++\\config.xml"
+            """;
+
+        var result = _parser.Parse(yaml, "notepadplusplus");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Manifest!.CleanFilter, Is.Not.Null);
+            Assert.That(result.Manifest!.CleanFilter!.Name, Is.EqualTo("notepadplusplus-clean"));
+            Assert.That(result.Manifest!.CleanFilter!.Script, Is.Null);
+            Assert.That(result.Manifest!.CleanFilter!.Rules, Has.Length.EqualTo(1));
+            Assert.That(result.Manifest!.CleanFilter!.Rules[0].Type, Is.EqualTo("strip-xml-elements"));
+            Assert.That(result.Manifest!.CleanFilter!.Rules[0].Patterns, Is.EqualTo(new[] { "FindHistory", "Session" }));
+        });
+    }
+
+    [Test]
+    public void Parse_CleanFilterWithMultipleRuleTypes_ParsesAll()
+    {
+        string yaml = """
+            clean-filter:
+              name: app-clean
+              files:
+                - config.xml
+                - settings.ini
+              rules:
+                - type: strip-xml-elements
+                  elements:
+                    - FindHistory
+                - type: strip-ini-keys
+                  keys:
+                    - LastOpened
+                    - WindowPosition
+            links:
+              - source: config.xml
+                target: "%APPDATA%\\App\\config.xml"
+            """;
+
+        var result = _parser.Parse(yaml, "app");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Manifest!.CleanFilter!.Rules, Has.Length.EqualTo(2));
+            Assert.That(result.Manifest!.CleanFilter!.Rules[0].Type, Is.EqualTo("strip-xml-elements"));
+            Assert.That(result.Manifest!.CleanFilter!.Rules[1].Type, Is.EqualTo("strip-ini-keys"));
+            Assert.That(result.Manifest!.CleanFilter!.Rules[1].Patterns, Is.EqualTo(new[] { "LastOpened", "WindowPosition" }));
+        });
+    }
+
+    [Test]
+    public void Parse_CleanFilterNoScriptNoRules_ReturnsNull()
+    {
+        string yaml = """
+            clean-filter:
+              name: empty-filter
+              files:
+                - data.json
+            links:
+              - source: settings.json
+                target: "%APPDATA%\\App\\settings.json"
+            """;
+
+        var result = _parser.Parse(yaml, "myapp");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Manifest!.CleanFilter, Is.Null);
+    }
+
+    [Test]
     public void Parse_GlobalPackagesWithBun_ReturnsParsedPackages()
     {
         string yaml = """

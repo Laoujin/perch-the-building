@@ -31,6 +31,14 @@ internal sealed class CleanFilterYamlModel
     public string? Name { get; set; }
     public string? Script { get; set; }
     public List<string>? Files { get; set; }
+    public List<FilterRuleYamlModel>? Rules { get; set; }
+}
+
+internal sealed class FilterRuleYamlModel
+{
+    public string? Type { get; set; }
+    public List<string>? Elements { get; set; }
+    public List<string>? Keys { get; set; }
 }
 
 internal sealed class LinkYamlModel

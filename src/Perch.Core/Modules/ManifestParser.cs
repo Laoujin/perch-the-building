@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Perch.Core;
+using Perch.Core.Git;
 using Perch.Core.Registry;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -144,12 +145,51 @@ public sealed class ManifestParser
             return null;
         }
 
-        if (string.IsNullOrWhiteSpace(model.Name) || string.IsNullOrWhiteSpace(model.Script) || model.Files == null || model.Files.Count == 0)
+        if (string.IsNullOrWhiteSpace(model.Name) || model.Files == null || model.Files.Count == 0)
         {
             return null;
         }
 
-        return new CleanFilterDefinition(model.Name!, model.Script!, model.Files.ToImmutableArray());
+        bool hasScript = !string.IsNullOrWhiteSpace(model.Script);
+        var rules = ParseFilterRules(model.Rules);
+
+        if (!hasScript && rules.IsDefaultOrEmpty)
+        {
+            return null;
+        }
+
+        return new CleanFilterDefinition(model.Name!, hasScript ? model.Script : null, model.Files.ToImmutableArray(), rules);
+    }
+
+    private static ImmutableArray<FilterRule> ParseFilterRules(List<FilterRuleYamlModel>? rules)
+    {
+        if (rules == null || rules.Count == 0)
+        {
+            return ImmutableArray<FilterRule>.Empty;
+        }
+
+        var result = new List<FilterRule>();
+        foreach (FilterRuleYamlModel rule in rules)
+        {
+            if (string.IsNullOrWhiteSpace(rule.Type))
+            {
+                continue;
+            }
+
+            var patterns = rule.Type switch
+            {
+                "strip-xml-elements" => rule.Elements?.Where(e => !string.IsNullOrWhiteSpace(e)).ToImmutableArray() ?? ImmutableArray<string>.Empty,
+                "strip-ini-keys" => rule.Keys?.Where(k => !string.IsNullOrWhiteSpace(k)).ToImmutableArray() ?? ImmutableArray<string>.Empty,
+                _ => ImmutableArray<string>.Empty,
+            };
+
+            if (patterns.Length > 0)
+            {
+                result.Add(new FilterRule(rule.Type!, patterns));
+            }
+        }
+
+        return result.ToImmutableArray();
     }
 
     private static ImmutableArray<RegistryEntryDefinition> ParseRegistry(List<RegistryYamlModel>? entries)
