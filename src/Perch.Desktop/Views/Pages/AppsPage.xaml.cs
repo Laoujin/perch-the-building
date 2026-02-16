@@ -14,4 +14,10 @@ public partial class AppsPage : Page
         DataContext = viewModel;
         InitializeComponent();
     }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.RefreshCommand.CanExecute(null))
+            ViewModel.RefreshCommand.Execute(null);
+    }
 }
