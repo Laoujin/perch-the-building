@@ -4,6 +4,7 @@ $ScriptDir = $PSScriptRoot
 $ProjectRoot = Resolve-Path "$ScriptDir\..\.."
 $TargetsDir = "$ScriptDir\_targets"
 $ConfigRepo = "$ScriptDir\sample-config-repo"
+$failures = 0
 
 Write-Host "=== Perch Integration Smoke Test ===" -ForegroundColor Cyan
 Write-Host ""
@@ -53,8 +54,10 @@ foreach ($check in $checks) {
         Write-Host "[OK]   $($check.Label) is a symlink" -ForegroundColor Green
     } elseif ($item) {
         Write-Host "[FAIL] $($check.Label) exists but is NOT a symlink" -ForegroundColor Red
+        $failures++
     } else {
         Write-Host "[FAIL] $($check.Label) does not exist" -ForegroundColor Red
+        $failures++
     }
 }
 
@@ -74,6 +77,7 @@ if (-not (Test-Path "$TargetsDir\nonexistent-dir")) {
     Write-Host "[OK]   nonexistent-dir was not created (broken-app correctly skipped)" -ForegroundColor Green
 } else {
     Write-Host "[FAIL] nonexistent-dir was created (broken-app should have been skipped)" -ForegroundColor Red
+    $failures++
 }
 
 # --- RUN 2 ---
@@ -95,6 +99,11 @@ Get-ChildItem $TargetsDir -Recurse -Force | ForEach-Object {
 }
 
 Write-Host ""
-Write-Host "=== Done ===" -ForegroundColor Cyan
+if ($failures -gt 0) {
+    Write-Host "=== FAILED: $failures check(s) failed ===" -ForegroundColor Red
+    exit 1
+} else {
+    Write-Host "=== PASSED: All checks passed ===" -ForegroundColor Green
+}
 Write-Host "Inspect results at: $TargetsDir"
 Write-Host "To clean up: Remove-Item '$TargetsDir' -Recurse -Force"
