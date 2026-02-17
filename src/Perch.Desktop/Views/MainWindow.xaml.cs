@@ -36,4 +36,9 @@ public partial class MainWindow : INavigationWindow
     public void ShowWindow() => Show();
 
     public void CloseWindow() => Close();
+
+    private void PaneToggleButton_Click(object sender, RoutedEventArgs e)
+    {
+        RootNavigation.IsPaneOpen = !RootNavigation.IsPaneOpen;
+    }
 }
