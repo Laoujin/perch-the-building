@@ -22,6 +22,9 @@ public sealed partial class AppsViewModel : ViewModelBase
     private bool _isLoading;
 
     [ObservableProperty]
+    private string? _errorMessage;
+
+    [ObservableProperty]
     private string _searchText = string.Empty;
 
     [ObservableProperty]
@@ -146,6 +149,7 @@ public sealed partial class AppsViewModel : ViewModelBase
     private async Task RefreshAsync(CancellationToken cancellationToken)
     {
         IsLoading = true;
+        ErrorMessage = null;
 
         try
         {
@@ -155,6 +159,10 @@ public sealed partial class AppsViewModel : ViewModelBase
         catch (OperationCanceledException)
         {
             return;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Failed to load applications: {ex.Message}";
         }
         finally
         {

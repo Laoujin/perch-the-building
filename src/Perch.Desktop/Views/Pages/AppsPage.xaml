@@ -50,6 +50,21 @@
             VerticalAlignment="Center"
             Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}" />
 
+        <!-- Error banner -->
+        <Border
+            Grid.Row="1"
+            Background="#331111"
+            CornerRadius="8"
+            Padding="16"
+            Margin="0,16,0,0"
+            VerticalAlignment="Top"
+            Visibility="{Binding ErrorMessage, Converter={StaticResource CountToVisibilityConverter}}">
+            <StackPanel Orientation="Horizontal">
+                <ui:SymbolIcon Symbol="ErrorCircle24" FontSize="16" Foreground="#DC2626" Margin="0,0,8,0" />
+                <TextBlock Text="{Binding ErrorMessage}" Foreground="#DC2626" FontSize="12" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
         <!-- Category grid (visible when no category selected) -->
         <ScrollViewer
             Grid.Row="1"

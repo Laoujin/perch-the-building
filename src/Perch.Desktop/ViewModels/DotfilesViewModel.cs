@@ -20,6 +20,9 @@ public sealed partial class DotfilesViewModel : ViewModelBase
     private bool _isLoading;
 
     [ObservableProperty]
+    private string? _errorMessage;
+
+    [ObservableProperty]
     private string _searchText = string.Empty;
 
     [ObservableProperty]
@@ -95,6 +98,7 @@ public sealed partial class DotfilesViewModel : ViewModelBase
     private async Task RefreshAsync(CancellationToken cancellationToken)
     {
         IsLoading = true;
+        ErrorMessage = null;
 
         try
         {
@@ -104,6 +108,10 @@ public sealed partial class DotfilesViewModel : ViewModelBase
         catch (OperationCanceledException)
         {
             return;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Failed to load dotfiles: {ex.Message}";
         }
         finally
         {

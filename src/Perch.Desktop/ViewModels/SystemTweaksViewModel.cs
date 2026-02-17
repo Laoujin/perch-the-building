@@ -18,6 +18,9 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
     private bool _isLoading;
 
     [ObservableProperty]
+    private string? _errorMessage;
+
+    [ObservableProperty]
     private string _searchText = string.Empty;
 
     [ObservableProperty]
@@ -58,6 +61,7 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
     private async Task RefreshAsync(CancellationToken cancellationToken)
     {
         IsLoading = true;
+        ErrorMessage = null;
 
         try
         {
@@ -85,9 +89,9 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
         {
             return;
         }
-        catch
+        catch (Exception ex)
         {
-            // Detection failure is non-fatal -- show whatever loaded
+            ErrorMessage = $"Failed to load tweaks: {ex.Message}";
             RebuildCategories();
         }
         finally
