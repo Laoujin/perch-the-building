@@ -28,7 +28,6 @@ public partial class WizardWindow : FluentWindow
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(WizardShellViewModel.CurrentStepIndex)
-            or nameof(WizardShellViewModel.IsInitializing)
             or nameof(WizardShellViewModel.HasCrashed))
         {
             UpdateStepVisibility();
@@ -46,7 +45,7 @@ public partial class WizardWindow : FluentWindow
 
     private void UpdateStepVisibility()
     {
-        if (ViewModel.IsInitializing || ViewModel.HasCrashed)
+        if (ViewModel.HasCrashed)
         {
             ProfileStep.Visibility = Visibility.Collapsed;
             ConfigStep.Visibility = Visibility.Collapsed;

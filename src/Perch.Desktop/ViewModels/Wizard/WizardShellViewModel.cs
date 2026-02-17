@@ -46,9 +46,6 @@ public sealed partial class WizardShellViewModel : ViewModelBase
     private bool _isLoadingDetection;
 
     [ObservableProperty]
-    private bool _isInitializing = true;
-
-    [ObservableProperty]
     private string _configRepoPath = string.Empty;
 
     [ObservableProperty]
@@ -198,10 +195,6 @@ public sealed partial class WizardShellViewModel : ViewModelBase
         catch
         {
             // Settings load failure is non-fatal
-        }
-        finally
-        {
-            IsInitializing = false;
         }
     }
 

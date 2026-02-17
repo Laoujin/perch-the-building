@@ -33,8 +33,7 @@
         <ui:TitleBar Grid.Row="0" Title="Perch Setup" />
 
         <!-- Step indicator -->
-        <Border Grid.Row="1" Padding="24,8"
-                Visibility="{Binding IsInitializing, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+        <Border Grid.Row="1" Padding="24,8">
             <ListBox
                 x:Name="StepListBox"
                 ItemsSource="{Binding StepNames}"
@@ -88,23 +87,6 @@
 
         <!-- Step Content -->
         <Grid Grid.Row="2">
-
-            <!-- Loading / Splash screen (shown while initializing) -->
-            <Grid x:Name="LoadingOverlay"
-                  Visibility="{Binding IsInitializing, Converter={StaticResource BooleanToVisibilityConverter}}">
-                <Image Source="/Assets/startpage.png" Stretch="UniformToFill" VerticalAlignment="Center"
-                       HorizontalAlignment="Center" Opacity="0.6" />
-                <Border Background="#CC000000">
-                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <Image Source="/Assets/logo-small-transparant.png" Width="64" Height="64" Margin="0,0,0,16" />
-                        <TextBlock FontSize="24" FontWeight="SemiBold" Foreground="White"
-                                   HorizontalAlignment="Center" Text="Perch" />
-                        <TextBlock FontSize="13" Foreground="#AAFFFFFF" Margin="0,8,0,16"
-                                   HorizontalAlignment="Center" Text="Loading gallery and scanning your system..." />
-                        <ui:ProgressRing IsIndeterminate="True" Width="32" Height="32" />
-                    </StackPanel>
-                </Border>
-            </Grid>
 
             <!-- Crash page -->
             <Grid x:Name="CrashOverlay"
@@ -850,8 +832,7 @@
         </Grid>
 
         <!-- Footer navigation -->
-        <Border Grid.Row="3" Padding="24,12" Background="#16162A"
-                Visibility="{Binding IsInitializing, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+        <Border Grid.Row="3" Padding="24,12" Background="#16162A">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
