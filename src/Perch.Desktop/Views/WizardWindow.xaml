@@ -16,9 +16,10 @@
     Width="1050"
     Height="720"
     MinWidth="800"
-    MinHeight="550"
+    MinHeight="800"
     WindowStartupLocation="CenterScreen"
-    ExtendsContentIntoTitleBar="True">
+    ExtendsContentIntoTitleBar="True"
+    WindowBackdropType="Mica">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -32,22 +33,57 @@
         <ui:TitleBar Grid.Row="0" Title="Perch Setup" />
 
         <!-- Step indicator -->
-        <Border Grid.Row="1" Background="#16162A" Padding="24,8"
+        <Border Grid.Row="1" Padding="24,8"
                 Visibility="{Binding IsInitializing, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
-            <ItemsControl ItemsSource="{Binding StepNames}">
-                <ItemsControl.ItemsPanel>
+            <ListBox
+                x:Name="StepListBox"
+                ItemsSource="{Binding StepNames}"
+                SelectedIndex="{Binding CurrentStepIndex, Mode=OneWay}"
+                SelectionChanged="OnStepSelectionChanged"
+                Background="Transparent"
+                BorderThickness="0"
+                ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.ItemsPanel>
                     <ItemsPanelTemplate>
                         <StackPanel Orientation="Horizontal" />
                     </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="Padding" Value="12,6" />
+                        <Setter Property="Margin" Value="0,0,4,0" />
+                        <Setter Property="Cursor" Value="Hand" />
+                        <Setter Property="Foreground" Value="#666666" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListBoxItem">
+                                    <Border
+                                        x:Name="StepBd"
+                                        Background="Transparent"
+                                        Padding="{TemplateBinding Padding}"
+                                        CornerRadius="4">
+                                        <ContentPresenter />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="StepBd" Property="Background" Value="#2610B981" />
+                                            <Setter Property="Foreground" Value="#10B981" />
+                                        </Trigger>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="StepBd" Property="Background" Value="#1AFFFFFF" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <Border Padding="12,6" Margin="0,0,4,0" CornerRadius="4">
-                            <TextBlock Text="{Binding}" FontSize="11" Foreground="#888888" />
-                        </Border>
+                        <TextBlock Text="{Binding}" FontSize="12" FontWeight="SemiBold" />
                     </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                </ListBox.ItemTemplate>
+            </ListBox>
         </Border>
 
         <!-- Step Content -->
@@ -158,7 +194,7 @@
                                HorizontalAlignment="Center" Text="Where is your config?" />
                     <TextBlock FontSize="13" Foreground="#888888" TextWrapping="Wrap" TextAlignment="Center"
                                Margin="0,8,0,24"
-                               Text="Point to your perch-config repository containing your module manifests and config files." />
+                               Text="Point to the location where you want to save your configuration." />
 
                     <!-- Select a folder -->
                     <Border Background="#1A1A2E" CornerRadius="8" Padding="16" Margin="0,0,0,12">
@@ -209,12 +245,25 @@
                     </Border>
 
                     <!-- Clone option -->
-                    <Border Background="#1A1A2E" CornerRadius="8" Padding="16" Margin="0,12,0,0" Opacity="0.6">
+                    <Border Background="#1A1A2E" CornerRadius="8" Padding="16" Margin="0,12,0,0">
                         <StackPanel>
                             <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="White"
-                                       Text="Clone a repository" Margin="0,0,0,4" />
-                            <TextBlock FontSize="11" Foreground="#888888"
-                                       Text="Coming soon — clone a perch-config repo from GitHub." />
+                                       Text="Clone a repository" Margin="0,0,0,8" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ui:TextBox Grid.Column="0"
+                                    PlaceholderText="https://github.com/you/perch-config.git"
+                                    Text="{Binding CloneUrl, UpdateSourceTrigger=PropertyChanged}" />
+                                <ui:Button Grid.Column="1" Content="Clone" Margin="8,0,0,0"
+                                    Command="{Binding CloneConfigRepoCommand}"
+                                    IsEnabled="{Binding IsCloning, Converter={StaticResource InverseBooleanConverter}}" />
+                            </Grid>
+                            <ui:ProgressRing IsIndeterminate="True" Width="20" Height="20" Margin="0,8,0,0"
+                                HorizontalAlignment="Left"
+                                Visibility="{Binding IsCloning, Converter={StaticResource BooleanToVisibilityConverter}}" />
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -243,6 +292,11 @@
                 <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto"
                               Visibility="{Binding IsLoadingDetection, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
                     <ItemsControl ItemsSource="{Binding Dotfiles}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type models:DotfileCardModel}">
                                 <Border
@@ -251,28 +305,66 @@
                                     BorderThickness="1"
                                     CornerRadius="8"
                                     Padding="12"
-                                    Margin="0,0,0,8">
+                                    Width="240"
+                                    Margin="0,0,12,12">
                                     <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
 
-                                        <ui:SymbolIcon Grid.Column="0" Symbol="Document24" FontSize="20" Foreground="#888888"
-                                                       VerticalAlignment="Center" Margin="0,0,12,0" />
+                                        <controls:StatusRibbon
+                                            Grid.Row="0"
+                                            Status="{Binding Status}"
+                                            Margin="0,0,0,8" />
 
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" Foreground="White" />
-                                            <TextBlock Text="{Binding FullPath}" FontSize="10" Foreground="#666666" TextTrimming="CharacterEllipsis" />
-                                        </StackPanel>
+                                        <Grid Grid.Row="1">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
 
-                                        <controls:StatusRibbon Grid.Column="2" Status="{Binding Status}"
-                                                               VerticalAlignment="Center" Margin="8,0" />
+                                            <ui:SymbolIcon
+                                                Grid.Column="0"
+                                                Symbol="Document24"
+                                                FontSize="20"
+                                                Foreground="#888888"
+                                                VerticalAlignment="Center"
+                                                Margin="0,0,8,0" />
 
-                                        <ui:ToggleSwitch Grid.Column="3" IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                                         VerticalAlignment="Center" />
+                                            <TextBlock
+                                                Grid.Column="1"
+                                                Text="{Binding Name}"
+                                                FontSize="13"
+                                                FontWeight="SemiBold"
+                                                Foreground="White"
+                                                VerticalAlignment="Center"
+                                                TextTrimming="CharacterEllipsis" />
+
+                                            <ui:ToggleSwitch
+                                                Grid.Column="2"
+                                                IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                VerticalAlignment="Center" />
+                                        </Grid>
+
+                                        <TextBlock
+                                            Grid.Row="2"
+                                            Text="{Binding Group}"
+                                            FontSize="11"
+                                            Foreground="#888888"
+                                            Margin="0,4,0,0"
+                                            Visibility="{Binding Group, Converter={StaticResource CountToVisibilityConverter}}" />
+
+                                        <TextBlock
+                                            Grid.Row="3"
+                                            Text="{Binding FullPath}"
+                                            FontSize="10"
+                                            Foreground="#666666"
+                                            TextTrimming="CharacterEllipsis"
+                                            Margin="0,4,0,0" />
                                     </Grid>
                                 </Border>
                             </DataTemplate>

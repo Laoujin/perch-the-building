@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -53,6 +54,12 @@ public sealed partial class WizardShellViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _configPathNotGitWarning;
+
+    [ObservableProperty]
+    private string _cloneUrl = string.Empty;
+
+    [ObservableProperty]
+    private bool _isCloning;
 
     [ObservableProperty]
     private string _crashErrorMessage = string.Empty;
@@ -195,6 +202,52 @@ public sealed partial class WizardShellViewModel : ViewModelBase
 
         if (dialog.ShowDialog() == true)
             ConfigRepoPath = dialog.FolderName;
+    }
+
+    [RelayCommand]
+    private async Task CloneConfigRepoAsync(CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(CloneUrl))
+            return;
+
+        var dialog = new Microsoft.Win32.OpenFolderDialog
+        {
+            Title = "Select folder to clone into",
+        };
+
+        if (dialog.ShowDialog() != true)
+            return;
+
+        var repoName = ExtractRepoName(CloneUrl);
+        var targetDir = Path.Combine(dialog.FolderName, repoName);
+
+        IsCloning = true;
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo("git", $"clone \"{CloneUrl}\" \"{targetDir}\"")
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            })!;
+            await process.WaitForExitAsync(cancellationToken);
+
+            if (process.ExitCode == 0)
+                ConfigRepoPath = targetDir;
+        }
+        finally
+        {
+            IsCloning = false;
+        }
+    }
+
+    private static string ExtractRepoName(string url)
+    {
+        var name = url.TrimEnd('/');
+        if (name.EndsWith(".git", StringComparison.OrdinalIgnoreCase))
+            name = name[..^4];
+
+        var lastSep = Math.Max(name.LastIndexOf('/'), name.LastIndexOf(':'));
+        return lastSep >= 0 ? name[(lastSep + 1)..] : "perch-config";
     }
 
     [RelayCommand]

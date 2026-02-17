@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Windows.Controls;
 
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
@@ -64,5 +65,19 @@ public partial class WizardWindow : FluentWindow
     {
         WizardCompleted?.Invoke();
         Close();
+    }
+
+    private void OnStepSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (sender is not ListBox lb)
+            return;
+
+        if (lb.SelectedIndex < 0 || lb.SelectedIndex == ViewModel.CurrentStepIndex)
+            return;
+
+        if (lb.SelectedIndex < ViewModel.CurrentStepIndex)
+            ViewModel.CurrentStepIndex = lb.SelectedIndex;
+        else
+            lb.SelectedIndex = ViewModel.CurrentStepIndex;
     }
 }

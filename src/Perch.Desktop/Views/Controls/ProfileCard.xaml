@@ -10,7 +10,7 @@
     <Border
         x:Name="CardBorder"
         CornerRadius="8"
-        BorderThickness="2"
+        BorderThickness="3"
         BorderBrush="#2A2A3E"
         ClipToBounds="True">
         <Grid>
@@ -33,44 +33,36 @@
             </Border>
 
             <!-- Content overlay -->
-            <Grid VerticalAlignment="Bottom" Margin="16">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-
+            <StackPanel VerticalAlignment="Bottom" Margin="16">
                 <TextBlock
-                    Grid.Row="0"
                     Text="{Binding ProfileName, RelativeSource={RelativeSource AncestorType=UserControl}}"
                     FontSize="20"
                     FontWeight="SemiBold"
                     Foreground="White" />
 
                 <TextBlock
-                    Grid.Row="1"
                     Text="{Binding Tagline, RelativeSource={RelativeSource AncestorType=UserControl}}"
                     FontSize="11"
                     Foreground="#CCCCCC"
                     TextWrapping="Wrap"
                     Margin="0,4,0,0" />
+            </StackPanel>
 
-                <!-- Selection checkmark -->
-                <Border
-                    Grid.Row="2"
-                    x:Name="SelectionBadge"
-                    Background="#10B981"
-                    CornerRadius="12"
-                    Padding="8,4"
-                    HorizontalAlignment="Left"
-                    Margin="0,8,0,0"
-                    Visibility="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <StackPanel Orientation="Horizontal">
-                        <ui:SymbolIcon Symbol="Checkmark24" FontSize="12" Foreground="White" />
-                        <TextBlock Text="Selected" FontSize="10" Foreground="White" Margin="4,0,0,0" VerticalAlignment="Center" />
-                    </StackPanel>
-                </Border>
-            </Grid>
+            <!-- Selection badge: top-right -->
+            <Border
+                x:Name="SelectionBadge"
+                Background="#10B981"
+                CornerRadius="12"
+                Padding="8,4"
+                VerticalAlignment="Top"
+                HorizontalAlignment="Right"
+                Margin="8"
+                Visibility="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <StackPanel Orientation="Horizontal">
+                    <ui:SymbolIcon Symbol="Checkmark24" FontSize="12" Foreground="White" />
+                    <TextBlock Text="Selected" FontSize="10" Foreground="White" Margin="4,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
+            </Border>
 
             <!-- Dim overlay when not selected (subtle) -->
             <Border

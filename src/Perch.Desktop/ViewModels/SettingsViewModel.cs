@@ -5,8 +5,6 @@ using CommunityToolkit.Mvvm.Input;
 
 using Perch.Core.Config;
 
-using Wpf.Ui.Appearance;
-
 namespace Perch.Desktop.ViewModels;
 
 public sealed partial class SettingsViewModel : ViewModelBase
@@ -15,9 +13,6 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _configRepoPath = string.Empty;
-
-    [ObservableProperty]
-    private bool _isDarkTheme = true;
 
     [ObservableProperty]
     private bool _isSaving;
@@ -43,7 +38,6 @@ public sealed partial class SettingsViewModel : ViewModelBase
         var settings = await _settingsProvider.LoadAsync(cancellationToken);
         ConfigRepoPath = settings.ConfigRepoPath ?? string.Empty;
 
-        IsDarkTheme = ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark;
     }
 
     [RelayCommand]
@@ -89,9 +83,4 @@ public sealed partial class SettingsViewModel : ViewModelBase
         }
     }
 
-    partial void OnIsDarkThemeChanged(bool value)
-    {
-        var theme = value ? ApplicationTheme.Dark : ApplicationTheme.Light;
-        ApplicationThemeManager.Apply(theme);
-    }
 }
