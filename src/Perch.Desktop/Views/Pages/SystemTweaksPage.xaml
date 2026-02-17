@@ -241,7 +241,6 @@
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*" />
                                                     <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="Auto" />
                                                 </Grid.ColumnDefinitions>
 
                                                 <TextBlock
@@ -253,18 +252,8 @@
                                                     TextTrimming="CharacterEllipsis"
                                                     VerticalAlignment="Center" />
 
-                                                <ui:Button
-                                                    Grid.Column="1"
-                                                    Icon="{ui:SymbolIcon Eye24}"
-                                                    Command="{Binding PreviewCommand}"
-                                                    ToolTip="Preview font"
-                                                    Padding="4"
-                                                    Margin="4,0"
-                                                    VerticalAlignment="Center"
-                                                    Visibility="{Binding FullPath, Converter={StaticResource CountToVisibilityConverter}}" />
-
                                                 <ui:ToggleSwitch
-                                                    Grid.Column="2"
+                                                    Grid.Column="1"
                                                     IsChecked="{Binding IsSelected, Mode=TwoWay}"
                                                     VerticalAlignment="Center" />
                                             </Grid>
@@ -275,12 +264,21 @@
                                                 FontSize="11"
                                                 Foreground="#888888"
                                                 TextTrimming="CharacterEllipsis"
-                                                Margin="0,4,0,0" />
+                                                Margin="0,4,0,0"
+                                                Visibility="{Binding Description, Converter={StaticResource CountToVisibilityConverter}}" />
 
-                                            <controls:StatusRibbon
-                                                Grid.Row="2"
-                                                Status="{Binding Status}"
-                                                Margin="0,4,0,0" />
+                                            <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,4,0,0">
+                                                <controls:StatusRibbon Status="{Binding Status}" />
+                                                <ui:Button
+                                                    Content="Show Font"
+                                                    Icon="{ui:SymbolIcon Eye24}"
+                                                    Command="{Binding PreviewCommand}"
+                                                    Padding="6,2"
+                                                    FontSize="11"
+                                                    Margin="8,0,0,0"
+                                                    VerticalAlignment="Center"
+                                                    Visibility="{Binding FullPath, Converter={StaticResource CountToVisibilityConverter}}" />
+                                            </StackPanel>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>

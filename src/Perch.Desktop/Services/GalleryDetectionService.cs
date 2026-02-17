@@ -230,7 +230,7 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
             detected.Add(new FontCardModel(
                 matchedGallery?.Id ?? font.Name,
                 matchedGallery?.Name ?? font.Name,
-                matchedGallery?.Description ?? font.FullPath,
+                matchedGallery?.Description,
                 matchedGallery?.PreviewText,
                 font.FullPath,
                 FontCardSource.Detected,
