@@ -20,7 +20,7 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Grid Grid.Row="0">
+        <Grid Grid.Row="0" Margin="0,0,0,16">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
@@ -41,7 +41,7 @@
                 </ui:TextBlock>
             </StackPanel>
 
-            <StackPanel Grid.Column="1" Orientation="Horizontal">
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Bottom">
                 <ui:TextBox
                     PlaceholderText="Search dotfiles..."
                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
@@ -63,13 +63,17 @@
             VerticalAlignment="Center"
             Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}" />
 
-        <!-- Dotfile card list -->
+        <!-- Dotfile cards (card layout like Apps) -->
         <ScrollViewer
             Grid.Row="1"
-            Margin="0,16,0,0"
             VerticalScrollBarVisibility="Auto"
             Visibility="{Binding IsLoading, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
             <ItemsControl ItemsSource="{Binding Dotfiles}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type models:DotfileCardModel}">
                         <Border
@@ -78,46 +82,66 @@
                             BorderThickness="1"
                             CornerRadius="8"
                             Padding="12"
-                            Margin="0,0,0,8">
+                            Width="240"
+                            Margin="0,0,12,12">
                             <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
 
-                                <ui:SymbolIcon
-                                    Grid.Column="0"
-                                    Symbol="Document24"
-                                    FontSize="20"
-                                    Foreground="#888888"
-                                    VerticalAlignment="Center"
-                                    Margin="0,0,12,0" />
+                                <controls:StatusRibbon
+                                    Grid.Row="0"
+                                    Status="{Binding Status}"
+                                    Margin="0,0,0,8" />
 
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <Grid Grid.Row="1">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <ui:SymbolIcon
+                                        Grid.Column="0"
+                                        Symbol="Document24"
+                                        FontSize="20"
+                                        Foreground="#888888"
+                                        VerticalAlignment="Center"
+                                        Margin="0,0,8,0" />
+
                                     <TextBlock
+                                        Grid.Column="1"
                                         Text="{Binding Name}"
                                         FontSize="13"
                                         FontWeight="SemiBold"
-                                        Foreground="White" />
-                                    <TextBlock
-                                        Text="{Binding FullPath}"
-                                        FontSize="10"
-                                        Foreground="#666666"
+                                        Foreground="White"
+                                        VerticalAlignment="Center"
                                         TextTrimming="CharacterEllipsis" />
-                                </StackPanel>
 
-                                <controls:StatusRibbon
-                                    Grid.Column="2"
-                                    Status="{Binding Status}"
-                                    VerticalAlignment="Center"
-                                    Margin="8,0" />
+                                    <ui:ToggleSwitch
+                                        Grid.Column="2"
+                                        IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                        VerticalAlignment="Center" />
+                                </Grid>
 
-                                <ui:ToggleSwitch
-                                    Grid.Column="3"
-                                    IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                    VerticalAlignment="Center" />
+                                <TextBlock
+                                    Grid.Row="2"
+                                    Text="{Binding Group}"
+                                    FontSize="11"
+                                    Foreground="#888888"
+                                    Margin="0,4,0,0"
+                                    Visibility="{Binding Group, Converter={StaticResource CountToVisibilityConverter}}" />
+
+                                <TextBlock
+                                    Grid.Row="3"
+                                    Text="{Binding FullPath}"
+                                    FontSize="10"
+                                    Foreground="#666666"
+                                    TextTrimming="CharacterEllipsis"
+                                    Margin="0,4,0,0" />
                             </Grid>
                         </Border>
                     </DataTemplate>

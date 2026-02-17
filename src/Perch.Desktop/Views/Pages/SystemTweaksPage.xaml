@@ -70,7 +70,7 @@
                             BorderThickness="1"
                             CornerRadius="8"
                             Padding="12"
-                            MinWidth="220"
+                            Width="240"
                             Margin="0,0,12,12">
                             <Grid>
                                 <Grid.RowDefinitions>

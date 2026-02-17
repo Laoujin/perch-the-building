@@ -1,5 +1,5 @@
-using System.Collections.Immutable;
 using System.Collections.ObjectModel;
+using System.IO;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -43,13 +43,30 @@ public sealed partial class WizardShellViewModel : ViewModelBase
     private bool _isLoadingDetection;
 
     [ObservableProperty]
+    private bool _isInitializing = true;
+
+    [ObservableProperty]
     private string _configRepoPath = string.Empty;
+
+    [ObservableProperty]
+    private bool _configIsGitRepo;
+
+    [ObservableProperty]
+    private bool _configPathNotGitWarning;
+
+    [ObservableProperty]
+    private string _crashErrorMessage = string.Empty;
+
+    [ObservableProperty]
+    private string _crashStackTrace = string.Empty;
+
+    [ObservableProperty]
+    private bool _hasCrashed;
 
     private readonly HashSet<UserProfile> _selectedProfiles = [];
 
     public ObservableCollection<string> StepNames { get; } = [];
 
-    // Profile selection state
     [ObservableProperty]
     private bool _isDeveloper = true;
 
@@ -62,7 +79,6 @@ public sealed partial class WizardShellViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isCasual;
 
-    // Detected items from gallery
     public ObservableCollection<DotfileCardModel> Dotfiles { get; } = [];
     public ObservableCollection<AppCardModel> YourApps { get; } = [];
     public ObservableCollection<AppCardModel> SuggestedApps { get; } = [];
@@ -92,13 +108,13 @@ public sealed partial class WizardShellViewModel : ViewModelBase
         _settingsProvider = settingsProvider;
         _detectionService = detectionService;
 
-        _ = LoadConfigRepoPathAsync();
         RebuildSteps();
+        _ = InitializeAsync();
     }
 
-    public bool CanGoBack => CurrentStepIndex > 0 && !IsDeploying && !IsComplete;
-    public bool CanGoNext => CurrentStepIndex < StepNames.Count - 2 && !IsDeploying && !IsComplete;
-    public bool ShowDeploy => CurrentStepIndex == StepNames.Count - 2 && !IsDeploying && !IsComplete;
+    public bool CanGoBack => CurrentStepIndex > 0 && !IsDeploying && !IsComplete && !HasCrashed;
+    public bool CanGoNext => CurrentStepIndex < StepNames.Count - 2 && !IsDeploying && !IsComplete && !HasCrashed;
+    public bool ShowDeploy => CurrentStepIndex == StepNames.Count - 2 && !IsDeploying && !IsComplete && !HasCrashed;
 
     partial void OnCurrentStepIndexChanged(int value)
     {
@@ -122,6 +138,7 @@ public sealed partial class WizardShellViewModel : ViewModelBase
 
         StepNames.Clear();
         StepNames.Add("Profile");
+        StepNames.Add("Config");
         if (ShowDotfilesStep) StepNames.Add("Dotfiles");
         StepNames.Add("Apps");
         StepNames.Add("System Tweaks");
@@ -134,11 +151,39 @@ public sealed partial class WizardShellViewModel : ViewModelBase
         OnPropertyChanged(nameof(ShowDeploy));
     }
 
-    private async Task LoadConfigRepoPathAsync()
+    private async Task InitializeAsync()
     {
-        var settings = await _settingsProvider.LoadAsync();
-        ConfigRepoPath = settings.ConfigRepoPath ?? string.Empty;
+        try
+        {
+            var settings = await _settingsProvider.LoadAsync();
+            ConfigRepoPath = settings.ConfigRepoPath ?? string.Empty;
+            ValidateConfigPath();
+        }
+        catch
+        {
+            // Settings load failure is non-fatal
+        }
+        finally
+        {
+            IsInitializing = false;
+        }
     }
+
+    private void ValidateConfigPath()
+    {
+        if (string.IsNullOrWhiteSpace(ConfigRepoPath))
+        {
+            ConfigIsGitRepo = false;
+            ConfigPathNotGitWarning = false;
+            return;
+        }
+
+        var gitDir = Path.Combine(ConfigRepoPath, ".git");
+        ConfigIsGitRepo = Directory.Exists(gitDir) || File.Exists(gitDir);
+        ConfigPathNotGitWarning = Directory.Exists(ConfigRepoPath) && !ConfigIsGitRepo;
+    }
+
+    partial void OnConfigRepoPathChanged(string value) => ValidateConfigPath();
 
     [RelayCommand]
     private void BrowseConfigRepo()
@@ -165,20 +210,33 @@ public sealed partial class WizardShellViewModel : ViewModelBase
         if (!CanGoNext)
             return;
 
-        // Save config and run detection when leaving Profile step
-        if (CurrentStepIndex == 0)
+        try
         {
-            if (string.IsNullOrWhiteSpace(ConfigRepoPath))
-                return;
+            var stepName = GetCurrentStepName();
 
-            var settings = await _settingsProvider.LoadAsync(cancellationToken);
-            if (!string.Equals(settings.ConfigRepoPath, ConfigRepoPath, StringComparison.Ordinal))
-                await _settingsProvider.SaveAsync(settings with { ConfigRepoPath = ConfigRepoPath }, cancellationToken);
+            // Save config when leaving Config step
+            if (stepName == "Config")
+            {
+                if (string.IsNullOrWhiteSpace(ConfigRepoPath))
+                    return;
 
-            await RunDetectionAsync(cancellationToken);
+                var settings = await _settingsProvider.LoadAsync(cancellationToken);
+                if (!string.Equals(settings.ConfigRepoPath, ConfigRepoPath, StringComparison.Ordinal))
+                    await _settingsProvider.SaveAsync(settings with { ConfigRepoPath = ConfigRepoPath }, cancellationToken);
+
+                await RunDetectionAsync(cancellationToken);
+            }
+
+            CurrentStepIndex++;
         }
-
-        CurrentStepIndex++;
+        catch (OperationCanceledException)
+        {
+            // cancelled — don't show crash page
+        }
+        catch (Exception ex)
+        {
+            ShowCrash(ex);
+        }
     }
 
     private async Task RunDetectionAsync(CancellationToken cancellationToken)
@@ -209,16 +267,22 @@ public sealed partial class WizardShellViewModel : ViewModelBase
             foreach (var tweak in tweakResult) Tweaks.Add(tweak);
             foreach (var df in dotfileResult) { df.IsSelected = df.IsSymlink; Dotfiles.Add(df); }
         }
-        catch (OperationCanceledException)
-        {
-            // cancelled
-        }
         finally
         {
             IsLoadingDetection = false;
         }
 
         NotifySelectionCounts();
+    }
+
+    public void ShowCrash(Exception ex)
+    {
+        CrashErrorMessage = ex.Message;
+        CrashStackTrace = ex.ToString();
+        HasCrashed = true;
+        OnPropertyChanged(nameof(CanGoBack));
+        OnPropertyChanged(nameof(CanGoNext));
+        OnPropertyChanged(nameof(ShowDeploy));
     }
 
     [RelayCommand]
@@ -239,7 +303,6 @@ public sealed partial class WizardShellViewModel : ViewModelBase
         ErrorCount = 0;
         DeployStatusMessage = "Deploying...";
 
-        // Collect selected module names from detected apps that have config
         var selectedModules = YourApps.Concat(SuggestedApps).Concat(OtherApps)
             .Where(a => a.IsSelected && a.Config is not null)
             .Select(a => a.Id)
@@ -296,7 +359,6 @@ public sealed partial class WizardShellViewModel : ViewModelBase
             ? $"Completed with {ErrorCount} error{(ErrorCount == 1 ? "" : "s")}. {DeployedCount} items deployed."
             : $"All done! {DeployedCount} configs linked successfully.";
 
-        // Move to deploy results step
         CurrentStepIndex = StepNames.Count - 1;
 
         OnPropertyChanged(nameof(CanGoBack));

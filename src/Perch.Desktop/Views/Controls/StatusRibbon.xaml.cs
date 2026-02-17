@@ -32,31 +32,19 @@ public partial class StatusRibbon : UserControl
 
     private void UpdateVisual(CardStatus status)
     {
-        var (text, fg, bg) = status switch
+        var (text, bg) = status switch
         {
-            CardStatus.Linked => ("Linked", "#34D399", "rgba(52,211,153,0.15)"),
-            CardStatus.Detected => ("Detected", "#F59E0B", "rgba(245,158,11,0.15)"),
-            CardStatus.Selected => ("Selected", "#10B981", "rgba(16,185,129,0.15)"),
-            CardStatus.Drift => ("Drift", "#F59E0B", "rgba(245,158,11,0.15)"),
-            CardStatus.Broken => ("Broken", "#EF4444", "rgba(239,68,68,0.15)"),
-            CardStatus.Error => ("Error", "#EF4444", "rgba(239,68,68,0.15)"),
-            _ => ("Not installed", "#3B82F6", "rgba(59,130,246,0.15)"),
+            CardStatus.Linked => ("Linked", "#059669"),
+            CardStatus.Detected => ("Detected", "#B45309"),
+            CardStatus.Selected => ("Selected", "#047857"),
+            CardStatus.Drift => ("Drift", "#D97706"),
+            CardStatus.Broken => ("Broken", "#DC2626"),
+            CardStatus.Error => ("Error", "#DC2626"),
+            _ => ("Not installed", "#2563EB"),
         };
 
         RibbonText.Text = text;
-        RibbonText.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString(fg));
-        RibbonBorder.Background = ParseRgba(bg);
-    }
-
-    private static SolidColorBrush ParseRgba(string rgba)
-    {
-        // Parse rgba(r,g,b,a) format
-        var inner = rgba.Replace("rgba(", "").Replace(")", "");
-        var parts = inner.Split(',');
-        return new SolidColorBrush(Color.FromArgb(
-            (byte)(double.Parse(parts[3].Trim()) * 255),
-            byte.Parse(parts[0].Trim()),
-            byte.Parse(parts[1].Trim()),
-            byte.Parse(parts[2].Trim())));
+        RibbonText.Foreground = new SolidColorBrush(Colors.White);
+        RibbonBorder.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(bg)!);
     }
 }

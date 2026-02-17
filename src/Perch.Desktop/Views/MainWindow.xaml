@@ -5,7 +5,7 @@
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     xmlns:pages="clr-namespace:Perch.Desktop.Views.Pages"
     Title="Perch"
-    Icon="/Assets/logo.png"
+    Icon="/Assets/logo-small-transparant.png"
     Width="1200" Height="850"
     MinWidth="900" MinHeight="600"
     WindowStartupLocation="CenterScreen"
@@ -16,7 +16,8 @@
         <ui:NavigationView
             x:Name="RootNavigation"
             PaneDisplayMode="Left"
-            IsBackButtonVisible="Collapsed">
+            IsBackButtonVisible="Collapsed"
+            Margin="0,40,0,0">
 
             <ui:NavigationView.MenuItems>
                 <ui:NavigationViewItem

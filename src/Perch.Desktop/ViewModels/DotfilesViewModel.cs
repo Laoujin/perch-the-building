@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -11,6 +12,8 @@ namespace Perch.Desktop.ViewModels;
 public sealed partial class DotfilesViewModel : ViewModelBase
 {
     private readonly IGalleryDetectionService _detectionService;
+
+    private ImmutableArray<DotfileCardModel> _allDotfiles = [];
 
     [ObservableProperty]
     private bool _isLoading;
@@ -43,11 +46,7 @@ public sealed partial class DotfilesViewModel : ViewModelBase
 
         try
         {
-            var all = await _detectionService.DetectDotfilesAsync(cancellationToken);
-            Dotfiles.Clear();
-            foreach (var df in all)
-                Dotfiles.Add(df);
-
+            _allDotfiles = await _detectionService.DetectDotfilesAsync(cancellationToken);
             ApplyFilter();
         }
         catch (OperationCanceledException)
@@ -62,19 +61,26 @@ public sealed partial class DotfilesViewModel : ViewModelBase
 
     private void ApplyFilter()
     {
-        LinkedCount = Dotfiles.Count(d => d.Status == CardStatus.Linked);
-        TotalCount = Dotfiles.Count;
+        Dotfiles.Clear();
+        foreach (var df in _allDotfiles)
+        {
+            if (df.MatchesSearch(SearchText))
+                Dotfiles.Add(df);
+        }
+
+        LinkedCount = _allDotfiles.Count(d => d.Status == CardStatus.Linked);
+        TotalCount = _allDotfiles.Length;
         UpdateSelectedCount();
     }
 
     public void UpdateSelectedCount()
     {
-        SelectedCount = Dotfiles.Count(d => d.IsSelected);
+        SelectedCount = _allDotfiles.Count(d => d.IsSelected);
     }
 
     public void ClearSelection()
     {
-        foreach (var df in Dotfiles)
+        foreach (var df in _allDotfiles)
             df.IsSelected = false;
         SelectedCount = 0;
     }

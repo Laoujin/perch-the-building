@@ -12,7 +12,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     Title="Perch Setup Wizard"
-    Icon="/Assets/logo.png"
+    Icon="/Assets/logo-small-transparant.png"
     Width="1050"
     Height="720"
     MinWidth="800"
@@ -31,8 +31,9 @@
         <!-- Title Bar -->
         <ui:TitleBar Grid.Row="0" Title="Perch Setup" />
 
-        <!-- Step indicator (name-based, since step count varies) -->
-        <Border Grid.Row="1" Background="#16162A" Padding="24,8">
+        <!-- Step indicator -->
+        <Border Grid.Row="1" Background="#16162A" Padding="24,8"
+                Visibility="{Binding IsInitializing, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
             <ItemsControl ItemsSource="{Binding StepNames}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -52,88 +53,174 @@
         <!-- Step Content -->
         <Grid Grid.Row="2">
 
+            <!-- Loading / Splash screen (shown while initializing) -->
+            <Grid x:Name="LoadingOverlay"
+                  Visibility="{Binding IsInitializing, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <Image Source="/Assets/startpage.png" Stretch="UniformToFill" VerticalAlignment="Center"
+                       HorizontalAlignment="Center" Opacity="0.6" />
+                <Border Background="#CC000000">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <Image Source="/Assets/logo-small-transparant.png" Width="64" Height="64" Margin="0,0,0,16" />
+                        <TextBlock FontSize="24" FontWeight="SemiBold" Foreground="White"
+                                   HorizontalAlignment="Center" Text="Perch" />
+                        <TextBlock FontSize="13" Foreground="#AAFFFFFF" Margin="0,8,0,16"
+                                   HorizontalAlignment="Center" Text="Loading gallery and scanning your system..." />
+                        <ui:ProgressRing IsIndeterminate="True" Width="32" Height="32" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Crash page -->
+            <Grid x:Name="CrashOverlay"
+                  Visibility="{Binding HasCrashed, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="24,16">
+                    <StackPanel HorizontalAlignment="Center" MaxWidth="600">
+                        <Image Source="/Assets/wizard-error.png" Width="180" Height="180" Margin="0,16,0,16"
+                               Stretch="Uniform" />
+                        <TextBlock FontSize="20" FontWeight="SemiBold" Foreground="#EF4444"
+                                   HorizontalAlignment="Center" Text="Something went wrong" />
+                        <TextBlock FontSize="13" Foreground="#CCCCCC" TextWrapping="Wrap"
+                                   Margin="0,12,0,0" Text="{Binding CrashErrorMessage}" />
+                        <Border Background="#1A1A2E" CornerRadius="8" Padding="16" Margin="0,16,0,0">
+                            <TextBlock FontSize="10" Foreground="#888888" FontFamily="Consolas"
+                                       TextWrapping="Wrap" Text="{Binding CrashStackTrace}" />
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+
             <!-- Step: Profile Selection (always index 0) -->
-            <Grid Visibility="{Binding CurrentStepIndex, Converter={StaticResource IndexToVisibilityConverter}, ConverterParameter=0}">
+            <Grid x:Name="ProfileStep">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <!-- Welcome hero -->
-                <Border Grid.Row="0" Height="160" ClipToBounds="True" Margin="24,8,24,0" CornerRadius="8">
-                    <Border.Background>
-                        <ImageBrush ImageSource="/Assets/startpage.png" Stretch="UniformToFill" AlignmentY="Center" />
-                    </Border.Background>
-                    <Border Background="#88000000" Padding="24,0">
-                        <StackPanel VerticalAlignment="Center">
-                            <TextBlock FontSize="24" FontWeight="SemiBold" Foreground="White" Text="Welcome to Perch" />
-                            <TextBlock FontSize="13" Foreground="#CCFFFFFF" Margin="0,4,0,0"
-                                Text="Select your profile(s), then Perch will scan your system and show what it found." />
-                        </StackPanel>
-                    </Border>
+                <!-- Welcome hero — full height of hero.png -->
+                <Border Grid.Row="0" ClipToBounds="True" Margin="24,8,24,0" CornerRadius="8"
+                        MaxHeight="300">
+                    <Grid>
+                        <Image Source="/Assets/hero.png" Stretch="UniformToFill"
+                               VerticalAlignment="Center" HorizontalAlignment="Center" />
+                        <Border Background="#88000000" Padding="24,0">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock FontSize="24" FontWeight="SemiBold" Foreground="White"
+                                           Text="Welcome to Perch" />
+                                <TextBlock FontSize="13" Foreground="#CCFFFFFF" Margin="0,4,0,0"
+                                    Text="Select your profile(s), then Perch will scan your system and show what it found." />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
                 </Border>
 
-                <!-- Config repo path -->
-                <StackPanel Grid.Row="1" Margin="24,16,24,0">
-                    <TextBlock FontSize="16" FontWeight="SemiBold" Foreground="White" Text="Config Repository" Margin="0,0,0,4" />
-                    <TextBlock FontSize="11" Foreground="#888888" Margin="0,0,0,8"
-                        Text="Path to your perch-config repository containing module manifests." />
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <ui:TextBox Grid.Column="0"
-                            PlaceholderText="e.g. C:\Users\you\perch-config"
-                            Text="{Binding ConfigRepoPath, UpdateSourceTrigger=PropertyChanged}" />
-                        <ui:Button Grid.Column="1" Content="Browse" Margin="8,0,0,0"
-                            Command="{Binding BrowseConfigRepoCommand}" />
-                    </Grid>
-                </StackPanel>
-
-                <TextBlock Grid.Row="2" FontSize="16" FontWeight="SemiBold" Foreground="White" Margin="24,16,24,8"
+                <TextBlock Grid.Row="1" FontSize="16" FontWeight="SemiBold" Foreground="White" Margin="24,16,24,8"
                     Text="Choose your profile(s)" />
 
-                <!-- Profile cards using ProfileCard control -->
-                <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" Margin="24,0">
-                    <WrapPanel>
-                        <controls:ProfileCard
-                            ProfileName="Developer"
-                            Tagline="Full dotfiles, dev tools, shell configs"
-                            HeroImageSource="/Assets/profile-developer.png"
-                            IsSelected="{Binding IsDeveloper, Mode=TwoWay}"
-                            Margin="0,0,12,12" />
+                <!-- Profile cards — fill available space -->
+                <UniformGrid Grid.Row="2" Columns="4" Margin="24,0" VerticalAlignment="Stretch">
+                    <controls:ProfileCard
+                        ProfileName="Developer"
+                        Tagline="Full dotfiles, dev tools, shell configs"
+                        HeroImageSource="/Assets/profile-developer.png"
+                        IsSelected="{Binding IsDeveloper, Mode=TwoWay}"
+                        Margin="0,0,12,12" />
 
-                        <controls:ProfileCard
-                            ProfileName="Power User"
-                            Tagline="System tweaks, app settings, productivity"
-                            HeroImageSource="/Assets/profile-power-user.png"
-                            IsSelected="{Binding IsPowerUser, Mode=TwoWay}"
-                            Margin="0,0,12,12" />
+                    <controls:ProfileCard
+                        ProfileName="Power User"
+                        Tagline="System tweaks, app settings, productivity"
+                        HeroImageSource="/Assets/profile-power-user.png"
+                        IsSelected="{Binding IsPowerUser, Mode=TwoWay}"
+                        Margin="0,0,12,12" />
 
-                        <controls:ProfileCard
-                            ProfileName="Gamer"
-                            Tagline="Gaming apps, performance tweaks"
-                            HeroImageSource="/Assets/profile-gamer.png"
-                            IsSelected="{Binding IsGamer, Mode=TwoWay}"
-                            Margin="0,0,12,12" />
+                    <controls:ProfileCard
+                        ProfileName="Gamer"
+                        Tagline="Gaming apps, performance tweaks"
+                        HeroImageSource="/Assets/profile-gamer.png"
+                        IsSelected="{Binding IsGamer, Mode=TwoWay}"
+                        Margin="0,0,12,12" />
 
-                        <controls:ProfileCard
-                            ProfileName="Casual"
-                            Tagline="Simplified experience, apps only"
-                            HeroImageSource="/Assets/profile-casual2.png"
-                            IsSelected="{Binding IsCasual, Mode=TwoWay}"
-                            Margin="0,0,12,12" />
-                    </WrapPanel>
-                </ScrollViewer>
+                    <controls:ProfileCard
+                        ProfileName="Casual"
+                        Tagline="Simplified experience, apps only"
+                        HeroImageSource="/Assets/profile-casual2.png"
+                        IsSelected="{Binding IsCasual, Mode=TwoWay}"
+                        Margin="0,0,0,12" />
+                </UniformGrid>
             </Grid>
 
-            <!-- Dynamic steps: content switches based on GetCurrentStepName() -->
-            <!-- We use a simple approach: show content based on step name match -->
+            <!-- Step: Config Path Selection -->
+            <Grid x:Name="ConfigStep" Margin="24,16">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="550">
+                    <ui:SymbolIcon Symbol="FolderOpen24" FontSize="48" Foreground="#10B981" Margin="0,0,0,16"
+                                   HorizontalAlignment="Center" />
+                    <TextBlock FontSize="20" FontWeight="SemiBold" Foreground="White"
+                               HorizontalAlignment="Center" Text="Where is your config?" />
+                    <TextBlock FontSize="13" Foreground="#888888" TextWrapping="Wrap" TextAlignment="Center"
+                               Margin="0,8,0,24"
+                               Text="Point to your perch-config repository containing your module manifests and config files." />
 
-            <!-- Dotfiles Step (visible when step name is "Dotfiles") -->
+                    <!-- Select a folder -->
+                    <Border Background="#1A1A2E" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" FontSize="13" FontWeight="SemiBold" Foreground="White"
+                                       Text="Select a folder" Margin="0,0,0,8" />
+                            <Grid Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ui:TextBox Grid.Column="0"
+                                    PlaceholderText="e.g. C:\Users\you\perch-config"
+                                    Text="{Binding ConfigRepoPath, UpdateSourceTrigger=PropertyChanged}" />
+                                <ui:Button Grid.Column="1" Content="Browse" Margin="8,0,0,0"
+                                    Command="{Binding BrowseConfigRepoCommand}" />
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <!-- Git repo status -->
+                    <Border Background="#261EAA54" CornerRadius="6" Padding="12,8" Margin="0,0,0,8"
+                            Visibility="{Binding ConfigIsGitRepo, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="CheckmarkCircle24" FontSize="16" Foreground="#34D399" />
+                            <TextBlock FontSize="12" Foreground="#34D399" Margin="8,0,0,0"
+                                       VerticalAlignment="Center" Text="This is a git repository. Good to go!" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="#26F59E0B" CornerRadius="6" Padding="12,8" Margin="0,0,0,8"
+                            Visibility="{Binding ConfigPathNotGitWarning, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="Warning24" FontSize="16" Foreground="#F59E0B" />
+                                <TextBlock FontSize="12" Foreground="#F59E0B" Margin="8,0,0,0"
+                                           VerticalAlignment="Center" FontWeight="SemiBold"
+                                           Text="This is not a git repository" />
+                            </StackPanel>
+                            <TextBlock FontSize="11" Foreground="#CCCCCC" Margin="24,4,0,0" TextWrapping="Wrap"
+                                       Text="Consider backing up your config folder by putting it on a cloud drive (Dropbox, OneDrive, Google Drive) or initializing a git repo." />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Clone option -->
+                    <Border Background="#1A1A2E" CornerRadius="8" Padding="16" Margin="0,12,0,0" Opacity="0.6">
+                        <StackPanel>
+                            <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="White"
+                                       Text="Clone a repository" Margin="0,0,0,4" />
+                            <TextBlock FontSize="11" Foreground="#888888"
+                                       Text="Coming soon — clone a perch-config repo from GitHub." />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
+
+            <!-- Dotfiles Step -->
             <Grid x:Name="DotfilesStep" Margin="24,16">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -341,8 +428,6 @@
                         <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,24">
                             <TextBlock FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="White"
                                        Text="Ready to deploy" />
-                            <TextBlock FontSize="13" Foreground="#AAFFFFFF" HorizontalAlignment="Center" Margin="0,4,0,0"
-                                       Text="{Binding TotalSelectedCount, StringFormat='{}{0} items selected'}" />
                         </StackPanel>
                     </Grid>
 
@@ -448,20 +533,16 @@
         </Grid>
 
         <!-- Footer navigation -->
-        <Border Grid.Row="3" Padding="24,12" Background="#16162A">
+        <Border Grid.Row="3" Padding="24,12" Background="#16162A"
+                Visibility="{Binding IsInitializing, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <!-- Selected count -->
-                <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="11" Foreground="#888888"
-                           Text="{Binding TotalSelectedCount, StringFormat='{}{0} items selected'}" />
-
                 <!-- Nav buttons -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <ui:Button Content="Back" Command="{Binding GoBackCommand}" Margin="0,0,8,0"
                         Visibility="{Binding CanGoBack, Converter={StaticResource BooleanToVisibilityConverter}}" />
                     <ui:Button Content="Next" Appearance="Primary" Command="{Binding GoNextCommand}"

@@ -100,5 +100,15 @@ public partial class App : Application
 
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
+        // Route unhandled exceptions to the wizard crash page if a wizard is active
+        foreach (var window in Current.Windows)
+        {
+            if (window is Views.WizardWindow wizard)
+            {
+                wizard.ViewModel.ShowCrash(e.Exception);
+                e.Handled = true;
+                return;
+            }
+        }
     }
 }
