@@ -40,10 +40,15 @@ public sealed partial class DotfilesViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isLoadingDetail;
 
+    [ObservableProperty]
+    private bool _showRawEditor;
+
     public bool ShowCardGrid => SelectedDotfile is null;
     public bool ShowDetailView => SelectedDotfile is not null;
     public bool HasModule => Detail?.OwningModule is not null;
     public bool HasNoModule => Detail is not null && Detail.OwningModule is null;
+    public bool ShowStructuredView => HasModule && !ShowRawEditor;
+    public bool ShowEditorView => HasModule && ShowRawEditor;
 
     public ObservableCollection<DotfileCardModel> Dotfiles { get; } = [];
 
@@ -65,6 +70,14 @@ public sealed partial class DotfilesViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(HasModule));
         OnPropertyChanged(nameof(HasNoModule));
+        OnPropertyChanged(nameof(ShowStructuredView));
+        OnPropertyChanged(nameof(ShowEditorView));
+    }
+
+    partial void OnShowRawEditorChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowStructuredView));
+        OnPropertyChanged(nameof(ShowEditorView));
     }
 
     [RelayCommand]
@@ -93,7 +106,11 @@ public sealed partial class DotfilesViewModel : ViewModelBase
     {
         SelectedDotfile = null;
         Detail = null;
+        ShowRawEditor = false;
     }
+
+    [RelayCommand]
+    private void ToggleEditor() => ShowRawEditor = !ShowRawEditor;
 
     [RelayCommand]
     private async Task RefreshAsync(CancellationToken cancellationToken)

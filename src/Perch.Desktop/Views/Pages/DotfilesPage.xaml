@@ -267,6 +267,99 @@
                             </StackPanel>
                         </Grid>
                     </Border>
+
+                    <!-- UI / YAML toggle (only when module found) -->
+                    <StackPanel
+                        Orientation="Horizontal"
+                        Margin="0,0,0,12"
+                        Visibility="{Binding HasModule, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <ui:Button
+                            Content="UI"
+                            Margin="0,0,4,0"
+                            Padding="12,4"
+                            Command="{Binding ToggleEditorCommand}"
+                            IsEnabled="{Binding ShowRawEditor}" />
+                        <ui:Button
+                            Content="YAML"
+                            Padding="12,4"
+                            Command="{Binding ToggleEditorCommand}"
+                            IsEnabled="{Binding ShowRawEditor, Converter={StaticResource InverseBooleanConverter}}" />
+                    </StackPanel>
+
+                    <!-- Structured view (links, hooks, registry) -->
+                    <Border
+                        Background="#1A1A2E"
+                        CornerRadius="8"
+                        Padding="16"
+                        Margin="0,0,0,12"
+                        Visibility="{Binding ShowStructuredView, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <StackPanel>
+                            <!-- Links -->
+                            <TextBlock Text="Links" FontSize="13" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,8" />
+                            <ItemsControl ItemsSource="{Binding Detail.Manifest.Links}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                            <TextBlock Text="{Binding Source}" FontSize="11" Foreground="#10B981" />
+                                            <TextBlock Text=" → " FontSize="11" Foreground="#666666" />
+                                            <TextBlock Text="{Binding Target}" FontSize="11" Foreground="#888888" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- Hooks -->
+                            <StackPanel
+                                Margin="0,12,0,0"
+                                Visibility="{Binding Detail.Manifest.Hooks, Converter={StaticResource NullToVisibilityConverter}}">
+                                <TextBlock Text="Hooks" FontSize="13" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,8" />
+                                <TextBlock FontSize="11" Foreground="#888888">
+                                    <Run Text="pre-deploy: " /><Run Text="{Binding Detail.Manifest.Hooks.PreDeploy, Mode=OneWay}" Foreground="#10B981" />
+                                </TextBlock>
+                                <TextBlock FontSize="11" Foreground="#888888">
+                                    <Run Text="post-deploy: " /><Run Text="{Binding Detail.Manifest.Hooks.PostDeploy, Mode=OneWay}" Foreground="#10B981" />
+                                </TextBlock>
+                            </StackPanel>
+
+                            <!-- Registry entries -->
+                            <StackPanel Margin="0,12,0,0">
+                                <StackPanel.Visibility>
+                                    <Binding Path="Detail.Manifest.Registry.Length" Converter="{StaticResource CountToVisibilityConverter}" FallbackValue="Collapsed" />
+                                </StackPanel.Visibility>
+                                <TextBlock Text="Registry" FontSize="13" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,8" />
+                                <ItemsControl ItemsSource="{Binding Detail.Manifest.Registry}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock FontSize="11" Foreground="#888888" TextWrapping="Wrap" Margin="0,0,0,4">
+                                                <Run Text="{Binding Key, Mode=OneWay}" /><Run Text="\" /><Run Text="{Binding Name, Mode=OneWay}" Foreground="#10B981" />
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- YAML editor view -->
+                    <Border
+                        Background="#1A1A2E"
+                        CornerRadius="8"
+                        Padding="16"
+                        Margin="0,0,0,12"
+                        Visibility="{Binding ShowEditorView, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBox
+                            Text="{Binding Detail.ManifestYaml, Mode=OneWay}"
+                            AcceptsReturn="True"
+                            IsReadOnly="True"
+                            FontFamily="Consolas"
+                            FontSize="12"
+                            Foreground="#CCCCCC"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            TextWrapping="Wrap"
+                            MaxHeight="400"
+                            VerticalScrollBarVisibility="Auto" />
+                    </Border>
                 </StackPanel>
             </ScrollViewer>
         </Grid>
