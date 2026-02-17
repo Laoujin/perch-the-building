@@ -271,12 +271,13 @@
                                                 Visibility="{Binding Description, Converter={StaticResource CountToVisibilityConverter}}" />
 
                                             <Grid Grid.Row="2" Margin="0,4,0,0">
-                                                <controls:StatusRibbon Status="{Binding Status}" HorizontalAlignment="Left" />
+                                                <controls:StatusRibbon Status="{Binding Status}" HorizontalAlignment="Left" VerticalAlignment="Center" />
                                                 <ui:Button
-                                                    Icon="{ui:SymbolIcon Eye24}"
+                                                    Icon="{ui:SymbolIcon Eye16}"
                                                     Command="{Binding PreviewCommand}"
                                                     ToolTip="View Font"
-                                                    Padding="4"
+                                                    Padding="2"
+                                                    Height="22"
                                                     HorizontalAlignment="Right"
                                                     VerticalAlignment="Center"
                                                     Visibility="{Binding FullPath, Converter={StaticResource CountToVisibilityConverter}}" />
