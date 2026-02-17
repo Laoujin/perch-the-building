@@ -6,8 +6,8 @@ public sealed class DotfileScanner : IDotfileScanner
 {
     private static readonly (string Name, string RelativePath, string Group)[] KnownDotfiles =
     [
-        (".gitconfig", ".gitconfig", "Git"),
-        (".gitignore_global", ".gitignore_global", "Git"),
+        (".gitconfig", ".gitconfig", "git"),
+        (".gitignore_global", ".gitignore_global", "git"),
         (".npmrc", ".npmrc", "Node.js"),
         (".vimrc", ".vimrc", "Editors"),
         (".bashrc", ".bashrc", "Shell"),
@@ -19,8 +19,8 @@ public sealed class DotfileScanner : IDotfileScanner
     [
         ("PowerShell profile", "%USERPROFILE%/Documents/PowerShell/Microsoft.PowerShell_profile.ps1", "Shell"),
         ("Windows Terminal settings", "%LOCALAPPDATA%/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json", "Shell"),
-        ("VS Code settings.json", "%APPDATA%/Code/User/settings.json", "Editors"),
-        ("VS Code keybindings.json", "%APPDATA%/Code/User/keybindings.json", "Editors"),
+        ("VS Code settings.json", "%APPDATA%/Code/User/settings.json", "vscode"),
+        ("VS Code keybindings.json", "%APPDATA%/Code/User/keybindings.json", "vscode"),
     ];
 
     public Task<ImmutableArray<DetectedDotfile>> ScanAsync(CancellationToken cancellationToken = default)

@@ -142,10 +142,8 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
         var dotfiles = await _dotfileScanner.ScanAsync(cancellationToken);
         var settings = await _settingsProvider.LoadAsync(cancellationToken);
         var configRepoPath = settings.ConfigRepoPath;
-        var galleryPaths = await BuildGalleryPathSetAsync(cancellationToken);
 
         return dotfiles
-            .Where(d => !galleryPaths.Contains(Path.GetFullPath(d.FullPath)))
             .Select(d =>
             {
                 var model = new DotfileCardModel(d);
@@ -167,30 +165,6 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
                 return model;
             })
             .ToImmutableArray();
-    }
-
-    private async Task<HashSet<string>> BuildGalleryPathSetAsync(CancellationToken cancellationToken)
-    {
-        var allApps = await _catalog.GetAllAppsAsync(cancellationToken);
-        var platform = _platformDetector.CurrentPlatform;
-        var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var app in allApps)
-        {
-            if (app.Config is null || app.Config.Links.IsDefaultOrEmpty)
-                continue;
-
-            foreach (var link in app.Config.Links)
-            {
-                if (link.Targets.TryGetValue(platform, out var targetPath))
-                {
-                    var resolved = Environment.ExpandEnvironmentVariables(targetPath.Replace('/', '\\'));
-                    paths.Add(Path.GetFullPath(resolved));
-                }
-            }
-        }
-
-        return paths;
     }
 
     public async Task<FontDetectionResult> DetectFontsAsync(CancellationToken cancellationToken = default)
