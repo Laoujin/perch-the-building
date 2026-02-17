@@ -32,12 +32,11 @@
                         VerticalContentAlignment="Center">
                         <ui:SymbolIcon Symbol="LineHorizontal320" FontSize="16" />
                     </ui:Button>
-                    <TextBlock
-                        Text="Perch"
-                        FontSize="12"
-                        FontWeight="SemiBold"
-                        VerticalAlignment="Center"
-                        Margin="12,0,0,0" />
+                    <TextBlock VerticalAlignment="Center" Margin="12,0,0,0">
+                        <Run Text="Perch" FontSize="16" FontWeight="SemiBold" />
+                        <Run Text="  " />
+                        <Run Text="Make yourself at home." FontSize="11" Foreground="{DynamicResource TextFillColorTertiaryBrush}" FontStyle="Italic" />
+                    </TextBlock>
                 </StackPanel>
             </ui:TitleBar.Header>
         </ui:TitleBar>
