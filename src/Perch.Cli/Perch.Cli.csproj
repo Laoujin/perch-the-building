@@ -6,6 +6,7 @@
     <ToolCommandName>perch</ToolCommandName>
     <PackageId>Perch.Cli</PackageId>
     <Version>0.1.0</Version>
+    <ApplicationIcon>perch.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
