@@ -1,6 +1,5 @@
 using Wpf.Ui;
 using Wpf.Ui.Abstractions;
-using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 
 using Perch.Desktop.ViewModels;
@@ -21,8 +20,6 @@ public partial class MainWindow : INavigationWindow
         InitializeComponent();
 
         _navigationService.SetNavigationControl(RootNavigation);
-
-        SystemThemeWatcher.Watch(this);
     }
 
     public INavigationView GetNavigation() => RootNavigation;

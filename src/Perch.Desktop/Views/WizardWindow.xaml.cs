@@ -2,7 +2,6 @@ using System.ComponentModel;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 
 using Perch.Desktop.Models;
@@ -21,7 +20,6 @@ public partial class WizardWindow : FluentWindow
         ViewModel = viewModel;
         DataContext = viewModel;
         InitializeComponent();
-        SystemThemeWatcher.Watch(this);
 
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
         UpdateStepVisibility();
