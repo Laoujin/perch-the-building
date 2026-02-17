@@ -491,9 +491,18 @@ public sealed class DeployService : IDeployService
                 continue;
             }
 
-            _registryProvider.SetValue(entry.Key, entry.Name, entry.Value, entry.Kind);
-            progress?.Report(new DeployResult(module.DisplayName, "", $"{entry.Key}\\{entry.Name}",
-                ResultLevel.Ok, $"Set {entry.Name} to {entry.Value}"));
+            if (entry.Value == null)
+            {
+                _registryProvider.DeleteValue(entry.Key, entry.Name);
+                progress?.Report(new DeployResult(module.DisplayName, "", $"{entry.Key}\\{entry.Name}",
+                    ResultLevel.Ok, $"Deleted {entry.Name}"));
+            }
+            else
+            {
+                _registryProvider.SetValue(entry.Key, entry.Name, entry.Value, entry.Kind);
+                progress?.Report(new DeployResult(module.DisplayName, "", $"{entry.Key}\\{entry.Name}",
+                    ResultLevel.Ok, $"Set {entry.Name} to {entry.Value}"));
+            }
         }
     }
 

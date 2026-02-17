@@ -616,4 +616,79 @@ public sealed class CatalogParserTests
         Assert.That(result.IsSuccess, Is.True);
         Assert.That(result.Value!.Registry[0].DefaultValue, Is.EqualTo("510"));
     }
+
+    [Test]
+    public void ParseApp_WithTweaks_ParsesAppOwnedTweaks()
+    {
+        string yaml = """
+            name: Spotify
+            category: Media/Players
+            tags: [music]
+            tweaks:
+              - id: disable-autostart
+                name: Disable Auto-Start
+                description: Prevent Spotify from launching at startup
+                registry:
+                  - key: HKCU\Software\Microsoft\Windows\CurrentVersion\Run
+                    name: Spotify
+                    value: null
+                    type: string
+                    default-value: null
+            """;
+
+        var result = _parser.ParseApp(yaml, "spotify");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value!.Tweaks, Has.Length.EqualTo(1));
+        var tweak = result.Value!.Tweaks[0];
+        Assert.Multiple(() =>
+        {
+            Assert.That(tweak.Id, Is.EqualTo("disable-autostart"));
+            Assert.That(tweak.Name, Is.EqualTo("Disable Auto-Start"));
+            Assert.That(tweak.Registry, Has.Length.EqualTo(1));
+            Assert.That(tweak.Registry[0].Value, Is.Null);
+        });
+    }
+
+    [Test]
+    public void ParseApp_WithoutTweaks_TweaksIsEmpty()
+    {
+        string yaml = """
+            name: TestApp
+            category: Test
+            """;
+
+        var result = _parser.ParseApp(yaml, "testapp");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value!.Tweaks, Is.Empty);
+    }
+
+    [Test]
+    public void ParseApp_WithScriptTweak_ParsesScripts()
+    {
+        string yaml = """
+            name: Cmder
+            category: Development/Terminals
+            tags: [terminal]
+            tweaks:
+              - id: open-here
+                name: Open Cmder Here
+                description: Add context menu entry
+                script: |
+                  New-Item -Path 'HKCR:\test' -Force
+                undo-script: |
+                  Remove-Item -Path 'HKCR:\test' -Recurse
+            """;
+
+        var result = _parser.ParseApp(yaml, "cmder");
+
+        Assert.That(result.IsSuccess, Is.True);
+        var tweak = result.Value!.Tweaks[0];
+        Assert.Multiple(() =>
+        {
+            Assert.That(tweak.Script, Does.Contain("New-Item"));
+            Assert.That(tweak.UndoScript, Does.Contain("Remove-Item"));
+        });
+    }
 }

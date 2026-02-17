@@ -51,7 +51,8 @@ public sealed class CatalogParser
             ParseInstall(model.Install),
             ParseConfig(model.Config),
             ParseExtensions(model.Extensions),
-            ParseKind(model.Kind));
+            ParseKind(model.Kind),
+            ParseAppOwnedTweaks(model.Tweaks));
 
         return CatalogParseResult<CatalogEntry>.Ok(entry);
     }
@@ -303,6 +304,33 @@ public sealed class CatalogParser
             ToImmutableTags(model.Recommended));
     }
 
+    private static ImmutableArray<AppOwnedTweak> ParseAppOwnedTweaks(List<AppOwnedTweakYamlModel>? tweaks)
+    {
+        if (tweaks == null || tweaks.Count == 0)
+        {
+            return ImmutableArray<AppOwnedTweak>.Empty;
+        }
+
+        var result = new List<AppOwnedTweak>();
+        foreach (var tweak in tweaks)
+        {
+            if (string.IsNullOrWhiteSpace(tweak.Id) || string.IsNullOrWhiteSpace(tweak.Name))
+            {
+                continue;
+            }
+
+            result.Add(new AppOwnedTweak(
+                tweak.Id!,
+                tweak.Name!,
+                tweak.Description,
+                ParseTweakRegistry(tweak.Registry),
+                tweak.Script,
+                tweak.UndoScript));
+        }
+
+        return result.ToImmutableArray();
+    }
+
     private static ImmutableArray<RegistryEntryDefinition> ParseTweakRegistry(List<TweakRegistryYamlModel>? entries)
     {
         if (entries == null || entries.Count == 0)
@@ -313,13 +341,13 @@ public sealed class CatalogParser
         var result = new List<RegistryEntryDefinition>();
         foreach (var entry in entries)
         {
-            if (string.IsNullOrWhiteSpace(entry.Key) || entry.Name == null || entry.Value == null)
+            if (string.IsNullOrWhiteSpace(entry.Key) || entry.Name == null)
             {
                 continue;
             }
 
             var kind = ParseRegistryValueType(entry.Type);
-            object value = CoerceRegistryValue(entry.Value, kind);
+            object? value = entry.Value != null ? CoerceRegistryValue(entry.Value, kind) : null;
             object? defaultValue = entry.HasDefaultValue && entry.DefaultValue != null
                 ? CoerceRegistryValue(entry.DefaultValue, kind)
                 : null;
