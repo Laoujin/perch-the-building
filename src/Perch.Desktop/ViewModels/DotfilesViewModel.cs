@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -111,6 +112,12 @@ public sealed partial class DotfilesViewModel : ViewModelBase
 
     [RelayCommand]
     private void ToggleEditor() => ShowRawEditor = !ShowRawEditor;
+
+    [RelayCommand]
+    private void AddDroppedFiles(string[] files)
+    {
+        Trace.TraceInformation("{0} file(s) queued for linking", files.Length);
+    }
 
     [RelayCommand]
     private async Task RefreshAsync(CancellationToken cancellationToken)
