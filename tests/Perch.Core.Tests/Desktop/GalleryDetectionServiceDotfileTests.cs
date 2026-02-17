@@ -189,6 +189,137 @@ public sealed class GalleryDetectionServiceDotfileTests
         Assert.That(result, Is.Empty);
     }
 
+    [Test]
+    public async Task DetectDotfilesAsync_SymlinkPointsOutsideConfigRepo_StatusDrift()
+    {
+        var configDir = Path.Combine(_tempDir, "config");
+        var outsideDir = Path.Combine(_tempDir, "outside");
+        Directory.CreateDirectory(configDir);
+        Directory.CreateDirectory(outsideDir);
+
+        var sourceFile = Path.Combine(outsideDir, ".gitconfig");
+        File.WriteAllText(sourceFile, "");
+
+        var symlinkPath = Path.Combine(_tempDir, ".gitconfig");
+        File.CreateSymbolicLink(symlinkPath, sourceFile);
+
+        _settingsProvider.LoadAsync(Arg.Any<CancellationToken>())
+            .Returns(new PerchSettings { ConfigRepoPath = configDir });
+        _symlinkProvider.IsSymlink(symlinkPath).Returns(true);
+
+        var entry = MakeEntry("git", "Git", CatalogKind.Dotfile,
+            MakeLink(".gitconfig", symlinkPath));
+
+        _catalog.GetAllDotfileAppsAsync(Arg.Any<CancellationToken>())
+            .Returns(ImmutableArray.Create(entry));
+
+        var result = await _service.DetectDotfilesAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result[0].Files[0].Status, Is.EqualTo(CardStatus.Drift));
+            Assert.That(result[0].Status, Is.EqualTo(CardStatus.Drift));
+        });
+    }
+
+    [Test]
+    public async Task DetectDotfilesAsync_SymlinkPointsInsideConfigRepo_StatusLinked()
+    {
+        var configDir = Path.Combine(_tempDir, "config");
+        Directory.CreateDirectory(configDir);
+
+        var sourceFile = Path.Combine(configDir, "git", ".gitconfig");
+        Directory.CreateDirectory(Path.GetDirectoryName(sourceFile)!);
+        File.WriteAllText(sourceFile, "");
+
+        var symlinkPath = Path.Combine(_tempDir, ".gitconfig");
+        File.CreateSymbolicLink(symlinkPath, sourceFile);
+
+        _settingsProvider.LoadAsync(Arg.Any<CancellationToken>())
+            .Returns(new PerchSettings { ConfigRepoPath = configDir });
+        _symlinkProvider.IsSymlink(symlinkPath).Returns(true);
+
+        var entry = MakeEntry("git", "Git", CatalogKind.Dotfile,
+            MakeLink(".gitconfig", symlinkPath));
+
+        _catalog.GetAllDotfileAppsAsync(Arg.Any<CancellationToken>())
+            .Returns(ImmutableArray.Create(entry));
+
+        var result = await _service.DetectDotfilesAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result[0].Files[0].Status, Is.EqualTo(CardStatus.Linked));
+            Assert.That(result[0].Status, Is.EqualTo(CardStatus.Linked));
+        });
+    }
+
+    [Test]
+    public async Task DetectDotfilesAsync_NullConfigRepoPath_SkipsDriftCheck_StaysLinked()
+    {
+        var sourceFile = Path.Combine(_tempDir, "source", ".gitconfig");
+        Directory.CreateDirectory(Path.GetDirectoryName(sourceFile)!);
+        File.WriteAllText(sourceFile, "");
+
+        var symlinkPath = Path.Combine(_tempDir, ".gitconfig");
+        File.CreateSymbolicLink(symlinkPath, sourceFile);
+
+        _settingsProvider.LoadAsync(Arg.Any<CancellationToken>())
+            .Returns(new PerchSettings { ConfigRepoPath = null });
+        _symlinkProvider.IsSymlink(symlinkPath).Returns(true);
+
+        var entry = MakeEntry("git", "Git", CatalogKind.Dotfile,
+            MakeLink(".gitconfig", symlinkPath));
+
+        _catalog.GetAllDotfileAppsAsync(Arg.Any<CancellationToken>())
+            .Returns(ImmutableArray.Create(entry));
+
+        var result = await _service.DetectDotfilesAsync();
+
+        Assert.That(result[0].Files[0].Status, Is.EqualTo(CardStatus.Linked));
+    }
+
+    [Test]
+    public async Task DetectDotfilesAsync_OneDriftFile_GroupStatusDrift()
+    {
+        var configDir = Path.Combine(_tempDir, "config");
+        var outsideDir = Path.Combine(_tempDir, "outside");
+        Directory.CreateDirectory(configDir);
+        Directory.CreateDirectory(outsideDir);
+        Directory.CreateDirectory(Path.Combine(configDir, "git"));
+
+        var insideSource = Path.Combine(configDir, "git", ".gitconfig");
+        File.WriteAllText(insideSource, "");
+        var outsideSource = Path.Combine(outsideDir, ".gitignore_global");
+        File.WriteAllText(outsideSource, "");
+
+        var symlink1 = Path.Combine(_tempDir, ".gitconfig");
+        var symlink2 = Path.Combine(_tempDir, ".gitignore_global");
+        File.CreateSymbolicLink(symlink1, insideSource);
+        File.CreateSymbolicLink(symlink2, outsideSource);
+
+        _settingsProvider.LoadAsync(Arg.Any<CancellationToken>())
+            .Returns(new PerchSettings { ConfigRepoPath = configDir });
+        _symlinkProvider.IsSymlink(symlink1).Returns(true);
+        _symlinkProvider.IsSymlink(symlink2).Returns(true);
+
+        var entry = MakeEntry("git", "Git", CatalogKind.Dotfile,
+            MakeLink(".gitconfig", symlink1),
+            MakeLink(".gitignore_global", symlink2));
+
+        _catalog.GetAllDotfileAppsAsync(Arg.Any<CancellationToken>())
+            .Returns(ImmutableArray.Create(entry));
+
+        var result = await _service.DetectDotfilesAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result[0].Files[0].Status, Is.EqualTo(CardStatus.Linked));
+            Assert.That(result[0].Files[1].Status, Is.EqualTo(CardStatus.Drift));
+            Assert.That(result[0].Status, Is.EqualTo(CardStatus.Drift));
+        });
+    }
+
     private static CatalogConfigLink MakeLink(string source, string target) =>
         new(source,
             new Dictionary<Platform, string>
