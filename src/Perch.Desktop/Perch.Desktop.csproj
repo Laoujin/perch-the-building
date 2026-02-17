@@ -5,6 +5,7 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\..\src\Perch.Cli\perch.ico</ApplicationIcon>
     <Version>0.1.0</Version>
   </PropertyGroup>
 
