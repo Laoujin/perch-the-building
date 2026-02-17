@@ -28,23 +28,35 @@
             HealthPercent="{Binding HealthPercent}"
             StatusMessage="{Binding StatusMessage}" />
 
-        <!-- Refresh + Loading -->
-        <StackPanel
-            Grid.Row="1"
-            Orientation="Horizontal"
-            Margin="0,0,0,12">
+        <!-- Refresh + Loading + Wizard -->
+        <Grid Grid.Row="1" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
             <ui:Button
+                Grid.Column="0"
                 Content="Refresh"
                 Icon="{ui:SymbolIcon ArrowClockwise24}"
                 Command="{Binding RefreshCommand}"
                 IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBooleanConverter}}" />
             <ui:ProgressRing
+                Grid.Column="1"
                 IsIndeterminate="True"
                 Width="20"
                 Height="20"
                 Margin="12,0,0,0"
+                VerticalAlignment="Center"
                 Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}" />
-        </StackPanel>
+            <ui:Button
+                Grid.Column="3"
+                Content="Setup Wizard"
+                Icon="{ui:SymbolIcon Wand24}"
+                Click="OnLaunchWizard" />
+        </Grid>
 
         <!-- No config message -->
         <ui:TextBlock

@@ -20,4 +20,9 @@ public partial class DashboardPage : Page
         if (ViewModel.RefreshCommand.CanExecute(null))
             ViewModel.RefreshCommand.Execute(null);
     }
+
+    private void OnLaunchWizard(object sender, RoutedEventArgs e)
+    {
+        App.ShowWizard();
+    }
 }

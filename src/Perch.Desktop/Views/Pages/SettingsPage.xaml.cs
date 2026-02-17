@@ -21,8 +21,4 @@ public partial class SettingsPage : Page
             ViewModel.LoadCommand.Execute(null);
     }
 
-    private void OnLaunchWizard(object sender, RoutedEventArgs e)
-    {
-        App.ShowWizard();
-    }
 }
