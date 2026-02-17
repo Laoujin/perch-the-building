@@ -4,6 +4,7 @@ inputDocuments:
   - '_bmad-output/planning-artifacts/prd.md'
   - '_bmad-output/planning-artifacts/architecture.md'
   - '_bmad-output/planning-artifacts/ux-design-specification.md'
+  - '_bmad-output/brainstorming/brainstorming-session-2026-02-17.md'
 ---
 
 # Perch - Epic Breakdown
@@ -71,18 +72,39 @@ This document provides the complete epic and story breakdown for Perch, decompos
 **Machine Configuration**
 - FR31: User can define base config values with per-machine overrides [Scope 3]
 - FR32: User can specify which modules apply to which machines [Scope 3]
-- FR33: User can manage Windows registry settings declaratively [Scope 3]
-- FR34: System applies and reports on registry state (context menus, default programs, power settings, etc.) [Scope 3]
+- FR33: User can manage Windows registry settings declaratively via multi-mechanism definitions (registry YAML + PowerShell script + undo_script) [Scope 3]
+- FR34: System applies and reports on registry state using three-value model (default_value / captured machine state / desired value) across all mechanism types [Scope 3]
+- FR59: Gallery entries can declare `suggests:` (soft) and `requires:` (hard) dependency links. Execution order derives from the dependency graph, replacing the `priority` field [Scope 3]
+- FR60: App gallery entries own their tweaks — bad behavior (context menus, startup entries, telemetry) as toggleable sub-items within the app entry [Scope 3]
+- FR61: On first deploy, system captures current value of each managed registry key per machine before applying. User can revert to "restore my previous" or "restore Windows default" [Scope 3]
+- FR62: System detects current machine state first (detect-first flow) — scans existing registry/app/font state and matches against gallery before configuring [Scope 3]
 
 **Secrets Management**
 - FR43: System can inject secrets from a supported password manager into config files at deploy time, producing generated (non-symlinked) files [Scope 3]
 - FR44: User can define secret placeholders in config templates that are resolved from a configured password manager during deploy [Scope 3]
 - FR45: System manages any config file containing secret placeholders as a generated (non-symlinked) file [Scope 3]
 
+**Gallery Schema & Taxonomy**
+- FR63: Gallery is the source of truth for defaults. User manifests store only deviations plus captured old values [Scope 3]
+- FR64: Gallery uses a unified tree taxonomy with deep category paths. Tree depth matches content density [Scope 3]
+- FR65: Gallery entries declare a `type:` field (app, tweak, font) with shared base schema [Scope 3]
+- FR66: Gallery entries declare `windows_versions: [10, 11]` for OS-aware filtering. Desktop hides entries for wrong OS [Scope 3]
+- FR67: Gallery categories declare a `sort:` value controlling display order in the tree [Scope 3]
+- FR68: Gallery entries can declare `restart_required: true` [Scope 3]
+- FR69: `index.yaml` is auto-generated from catalog folder contents [Scope 3]
+
+**Import & Sourcing**
+- FR70: One-time WinUtil importer — parse `tweaks.json`, generate gallery YAML stubs for human review (~65 tweaks) [Scope 3]
+- FR71: One-time Sophia Script importer (~270 functions) with deduplication against existing entries [Scope 3]
+- FR72: Import pipeline checks LICENSE files of source repos for compliance [Scope 3]
+- FR73: CI GitHub Action validates every registry path in the gallery on a matrix of Windows versions [Scope 3]
+
 **Desktop UI (WPF)**
-- FR35: User can view sync status of all managed modules in a visual dashboard [Scope 3]
+- FR35: User can view sync status of all managed modules in a visual dashboard with mechanism-aware smart status [Scope 3]
 - FR36: User can interactively explore an app's filesystem to find config locations [Scope 3]
 - FR37: User can generate and edit module manifests via a visual interface [Scope 3]
+- FR74: Desktop tweak cards show inline current/desired/default values and universal "Open Location" button (regedit, Explorer, services.msc, Fonts folder) [Scope 3]
+- FR75: Desktop gallery/tree browser is the primary discovery UX. Website is marketing only [Scope 3]
 
 **Plugin Lifecycle**
 - FR38: User can define pre-deploy and post-deploy hooks per module [Scope 2]
@@ -138,11 +160,13 @@ This document provides the complete epic and story breakdown for Perch, decompos
 - Desktop rendering boundary: WPF/XAML only in Perch.Desktop, never in Core. Core returns data; Desktop renders via bindings
 
 **From UX Design Specification:**
-- Custom components: StatusRibbon, ProfileCard, AppCard, DriftHeroBanner, DeployBar, TierSectionHeader
+- Custom components: StatusRibbon (mechanism-aware), ProfileCard, AppCard (with app-owned tweaks), DriftHeroBanner, DeployBar, TierSectionHeader, GalleryTreeView, TweakDetailPanel
 - Design system: WPF UI Fluent 2 dark theme, forest green (#10B981) accent, status colors (green/yellow/red/blue)
 - Card-based interaction model: detection-first, three-tier layout (detected/suggested/other), card toggle + expand
-- Wizard steps: Profile Selection → Dotfiles → Apps → System Tweaks → Review & Deploy (dynamic based on profile)
-- Dashboard: Drift hero banner + attention cards on Home, card gallery views on sidebar pages
+- Wizard steps: Profile Selection → Dotfiles → Apps → System Tweaks (detect-first scan) → Review & Deploy (dynamic based on profile)
+- Dashboard: Drift hero banner + mechanism-aware smart status cards on Home, GalleryTreeView for unified tree browsing, TweakDetailPanel with three-value display + Open Location
+- Unified tree taxonomy: apps, tweaks, fonts, dotfiles in one navigable tree with deep category paths
+- OS-version-aware: entries for wrong Windows version are hidden (not greyed out)
 
 ### FR Coverage Map
 
@@ -181,10 +205,27 @@ This document provides the complete epic and story breakdown for Perch, decompos
 | FR31 | 6 | Per-machine overrides |
 | FR32 | 6 | Module-to-machine filtering |
 | FR33 | 6 | Declarative registry management |
-| FR34 | 6 | Registry state reporting |
-| FR35 | 11 | Desktop drift dashboard with hero banner, attention cards, one-click fix |
+| FR34 | 6 | Registry state reporting (three-value model, all mechanism types) |
+| FR35 | 11 | Desktop drift dashboard with hero banner, smart status cards, one-click fix |
 | FR36 | 11 | Desktop filesystem explorer (future) |
 | FR37 | 11 | Desktop manifest editor (future) |
+| FR59 | 6 | Gallery dependency links (suggests/requires) |
+| FR60 | 6 | App-owned tweaks (bad behavior as sub-items) |
+| FR61 | 6 | State capture per machine on first deploy |
+| FR62 | 6+10 | Detect-first flow (scan before configure) |
+| FR63 | 14 | Gallery as source of truth, manifests store deviations |
+| FR64 | 14 | Unified tree taxonomy with deep category paths |
+| FR65 | 14 | Gallery type field (app, tweak, font) |
+| FR66 | 14 | OS-version-aware gallery filtering |
+| FR67 | 14 | Category sort order field |
+| FR68 | 14 | Restart required field |
+| FR69 | 14 | Auto-generated index.yaml |
+| FR70 | 15 | WinUtil importer |
+| FR71 | 15 | Sophia Script importer with dedup |
+| FR72 | 15 | License compliance check |
+| FR73 | 15 | CI registry path validation matrix |
+| FR74 | 11 | Inline tweak values + Open Location button |
+| FR75 | 10+11 | Gallery tree browser as primary discovery UX |
 | FR38 | 5 | Pre/post-deploy lifecycle hooks |
 | FR39 | 1 | Config repo path via CLI argument |
 | FR40 | 1 | Persisted config repo path |
@@ -232,9 +273,9 @@ Developer tracks installed packages across chocolatey/winget, discovers which in
 Developer can suppress noisy config diffs via per-app git clean filters, diff filesystem changes before/after app tweaks, and run custom pre/post-deploy scripts per module.
 **FRs covered:** FR25, FR26, FR38
 
-### Epic 6: Multi-Machine & Registry Management (Scope 3)
-Developer can define per-machine overrides (different fonts, git email, module subsets per hostname) and declaratively manage Windows registry settings (dark mode, context menus, power settings) as part of their config repo.
-**FRs covered:** FR31, FR32, FR33, FR34
+### Epic 6: Multi-Machine & System Tweaks Engine (Scope 3)
+Developer can define per-machine overrides and declaratively manage system tweaks via multi-mechanism definitions (registry YAML + PowerShell scripts + fonts). Uses a three-value model (default / captured / desired) for drift detection and revert. App gallery entries own their tweaks (context menus, startup entries, telemetry). Detect-first flow scans current machine state before configuring. Dependency graph replaces priority field.
+**FRs covered:** FR31, FR32, FR33, FR34, FR59, FR60, FR61, FR62
 
 ### Epic 7: Secrets Management (Scope 3)
 Developer can manage configs containing secrets (NuGet tokens, npm tokens, SSH config, API keys) via template placeholders resolved from 1Password at deploy time. Secret-containing files are generated (not symlinked) and git-ignored.
@@ -249,14 +290,14 @@ Developer can discover config locations for new apps via AI lookup and Windows S
 **FRs covered:** FR5, FR6, FR28, FR29, FR30
 
 ### Epic 10: Desktop Wizard & Onboarding (Scope 3)
-User launches Perch Desktop for the first time and is guided through a wizard: profile selection, system detection of installed apps and dotfiles, card-based browsing and toggling, and deploy. The wizard is a complete standalone experience — many users will run it once and never open the app again. Built with WPF UI + HandyControl on the shared Perch.Core engine.
-**FRs covered:** FR35 (partial — wizard deploy + status), FR49, FR50, FR51 (partial), FR52 (partial), FR53 (partial)
+User launches Perch Desktop for the first time and is guided through a wizard: profile selection, detect-first scan of current machine state, card-based browsing and toggling in a unified tree (apps, tweaks, fonts), and deploy. System Tweaks step shows mechanism-aware smart status. The wizard is a complete standalone experience. Built with WPF UI + HandyControl on the shared Perch.Core engine.
+**FRs covered:** FR35 (partial — wizard deploy + status), FR49, FR50, FR51 (partial), FR52 (partial), FR53 (partial), FR62 (detect-first), FR75 (partial — gallery tree as primary UX)
 **NFRs addressed:** NFR4-5 (Core interfaces, MVVM testability), NFR13
 
 ### Epic 11: Desktop Dashboard & Drift (Scope 3)
-Returning user opens Perch Desktop and sees a drift-focused dashboard: hero banner with config health summary, attention cards for broken/missing/drifted configs, one-click fix actions. Sidebar navigation into card gallery views (Dotfiles, Apps, System Tweaks) for deeper management. Same shared card views used in wizard.
-**Requires:** Epic 3 (drift detection via FR10) — dashboard drift summary depends on Core-level status checking to determine linked/attention/broken state per module.
-**FRs covered:** FR35, FR36 (future), FR37 (future), FR51 (partial), FR52 (partial), FR53 (partial)
+Returning user opens Perch Desktop and sees a drift-focused dashboard: hero banner with config health summary, mechanism-aware smart status cards for all types (dotfiles, apps, tweaks, fonts), one-click fix actions. Sidebar navigation into GalleryTreeView for unified tree browsing. TweakDetailPanel shows three-value inline display and Open Location button. App-owned tweak sub-items are toggleable within app cards. Same shared card views used in wizard.
+**Requires:** Epic 3 (drift detection via FR10), Epic 6 (three-value model, app-owned tweaks).
+**FRs covered:** FR35, FR36 (future), FR37 (future), FR51 (partial), FR52 (partial), FR53 (partial), FR74, FR75 (partial)
 
 ### Epic 12: Migration Tools (Scope 4)
 Users of chezmoi, Dotbot, or Dotter can import their dotfiles repo into Perch format, and Perch users can export back — enabling two-way migration.
@@ -265,6 +306,14 @@ Users of chezmoi, Dotbot, or Dotter can import their dotfiles repo into Perch fo
 ### Epic 13: Scoop Integration (Scope 5)
 Developer manages dev tools via Scoop from the config repo. Buckets and apps are declared in `scoop.yaml`, installed idempotently, and exportable. Scoop's predictable `~/scoop/apps/<name>/current/` paths integrate with config module discovery.
 **FRs covered:** FR54, FR55, FR56, FR57, FR58
+
+### Epic 14: Gallery Schema Evolution (Scope 3)
+Gallery YAML format evolves to support the unified tree taxonomy, type system (`app | tweak | font`), OS-aware filtering, dependency graph (`suggests`/`requires`), sort order, restart tracking, and auto-generated index. Gallery becomes the source of truth — user manifests store only deviations from gallery defaults.
+**FRs covered:** FR63, FR64, FR65, FR66, FR67, FR68, FR69
+
+### Epic 15: Gallery Import & Sourcing (Scope 3)
+One-time import tooling to populate the gallery from external sources. WinUtil importer (~65 tweaks from `tweaks.json`), Sophia Script importer (~270 functions with dedup). License compliance checks. CI GitHub Action validates registry paths on a matrix of Windows versions.
+**FRs covered:** FR70, FR71, FR72, FR73
 
 ---
 
@@ -838,9 +887,9 @@ So that I can automate setup tasks like importing plugin lists or running app-sp
 **When** the deploy engine attempts to run it
 **Then** the module reports an Error result identifying the missing script
 
-## Epic 6: Multi-Machine & Registry Management
+## Epic 6: Multi-Machine & System Tweaks Engine
 
-Developer can define per-machine overrides (different fonts, git email, module subsets per hostname) and declaratively manage Windows registry settings as part of their config repo.
+Developer can define per-machine overrides, declaratively manage system tweaks via multi-mechanism definitions (registry YAML + PowerShell scripts + fonts), use the three-value model for drift detection and revert, and have app gallery entries own their tweaks. Detect-first flow scans current machine state before configuring.
 
 ### Story 6.1: Per-Machine Overrides
 
@@ -883,45 +932,118 @@ So that my work laptop skips gaming tools and my desktop skips work-only modules
 **When** deploy runs
 **Then** all modules are processed (default behavior)
 
-### Story 6.3: Declarative Registry Management
+### Story 6.3: Multi-Mechanism Tweak Definitions
 
 As a developer,
-I want to define Windows registry settings in my config repo and have Perch apply them,
-So that dark mode, context menu entries, and power settings are managed declaratively.
+I want to define system tweaks using registry YAML, PowerShell scripts, or both in a single entry,
+So that tweaks like context menus (registry) and telemetry (PowerShell) use the same config model.
 
 **Acceptance Criteria:**
 
-**Given** a `registry.yaml` file defining registry keys and values (e.g., `HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize\AppsUseLightTheme: 0`)
-**When** the user runs `perch deploy` on Windows
+**Given** a gallery entry with `registry:` keys defining HKCU/HKLM paths, names, values, and types
+**When** the tweak engine processes the entry on Windows
 **Then** the specified registry values are applied
+
+**Given** a gallery entry with `script:` and `undo_script:` fields (PowerShell)
+**When** the tweak engine processes the entry
+**Then** the script runs to apply the tweak, and undo_script is stored for revert
+
+**Given** a gallery entry with both `registry:` and `script:` sections
+**When** the tweak engine processes the entry
+**Then** both mechanisms are applied in order (registry first, then script)
 
 **Given** a registry key already has the desired value
 **When** deploy runs
-**Then** no change is made (idempotent) and result is Info "already set"
-
-**Given** a registry value differs from the desired state
-**When** deploy runs
-**Then** the old value is recorded in the deploy results (Warning level) and the new value is set
+**Then** no change is made (idempotent) and status is "Applied"
 
 **Given** the engine is running on Linux or macOS
-**When** registry entries are encountered
-**Then** they are skipped with an Info result ("registry — Windows only")
+**When** registry/Windows tweak entries are encountered
+**Then** they are skipped with an Info result ("Windows only")
 
-### Story 6.4: Registry State Reporting
+### Story 6.4: Three-Value Model & State Capture
 
 As a developer,
-I want to see the current state of managed registry settings compared to desired state,
-So that I can detect registry drift.
+I want each managed registry key to track three values: Windows default, captured machine state (pre-Perch), and desired value,
+So that I can detect drift and revert to either "my previous" or "Windows default".
 
 **Acceptance Criteria:**
 
-**Given** managed registry settings defined in config
-**When** the user runs `perch status` on Windows
-**Then** each registry entry is compared: matching (ok), mismatched (drift), or missing (not set)
+**Given** a gallery entry with `default_value:` (Windows default) and desired value defined
+**When** Perch deploys to a machine for the first time
+**Then** the current machine value is captured and stored in the per-machine manifest as the captured state before applying the desired value
 
-**Given** all registry entries match desired state
+**Given** a previously deployed tweak where the current registry value differs from desired
+**When** the user runs `perch status`
+**Then** the entry shows status "Drifted" with current, desired, and default values
+
+**Given** a drifted or applied tweak
+**When** the user reverts it
+**Then** they can choose "restore my previous" (captured value) or "restore Windows default" (default_value)
+
+**Given** all managed tweaks match desired state
 **When** status runs
-**Then** registry section shows all entries as "ok"
+**Then** all entries show status "Applied"
+
+### Story 6.5: Dependency Graph
+
+As a developer,
+I want gallery entries to declare `suggests:` (soft) and `requires:` (hard) dependency links,
+So that Perch applies tweaks in the correct order and surfaces related items.
+
+**Acceptance Criteria:**
+
+**Given** a gallery entry with `requires: [other-entry-id]`
+**When** the deploy engine builds the execution plan
+**Then** the required entry is applied before the dependent entry
+
+**Given** a gallery entry with `suggests: [other-entry-id]`
+**When** the entry is displayed in the UI
+**Then** suggested entries are shown as related recommendations (not enforced at deploy time)
+
+**Given** a circular dependency in `requires:` chains
+**When** the dependency resolver builds the graph
+**Then** a validation error is reported identifying the cycle
+
+### Story 6.6: App-Owned Tweaks
+
+As a developer,
+I want app gallery entries to include their bad behavior (context menu additions, startup entries, telemetry) as toggleable sub-items,
+So that installing an app and cleaning up after it are managed together.
+
+**Acceptance Criteria:**
+
+**Given** an app gallery entry with a `tweaks:` section listing sub-items (e.g., "Disable context menu", "Remove startup entry")
+**When** the entry is displayed in the UI
+**Then** each sub-item appears as a toggleable child item under the app
+
+**Given** the user enables an app-owned tweak sub-item
+**When** deploy runs
+**Then** the tweak is applied using its defined mechanism (registry or script)
+
+**Given** the user disables an app-owned tweak sub-item
+**When** the undo runs
+**Then** the tweak is reverted using undo_script or by restoring the captured/default value
+
+### Story 6.7: Detect-First Flow
+
+As a developer,
+I want Perch to scan my machine's current state before configuring,
+So that on a new machine I can see what's already in place and only change what needs changing.
+
+**Acceptance Criteria:**
+
+**Given** a new machine with no prior Perch deploy
+**When** the user runs `perch status` or launches the desktop wizard
+**Then** the system scans installed apps, current registry values, existing symlinks, and installed fonts
+**And** matches findings against gallery entries to show what's already in the desired state
+
+**Given** an existing registry value matches a gallery entry's desired value
+**When** detect-first scan runs
+**Then** the entry shows status "Applied" (already correct, no action needed)
+
+**Given** detect-first scan completes
+**When** results are displayed
+**Then** the user sees a clear summary: N already applied, M need attention, K not present
 
 ## Epic 7: Secrets Management
 
@@ -1248,6 +1370,7 @@ So that I can choose which configs to manage through an intuitive browsing exper
 **Given** the user clicks a card body (not the toggle)
 **When** the card expands via `CardExpander`
 **Then** config file paths, target paths, and options are shown inline
+**And** for app entries with owned tweaks, toggleable sub-items (context menus, startup entries) are shown
 
 **Given** a search term is entered in the search bar
 **When** the filter applies
@@ -1275,6 +1398,11 @@ So that my machine is configured and I feel a sense of completion.
 **And** Back/Next/Skip buttons appear in the footer
 **And** step count and labels are dynamic based on profile selection (e.g., 4 steps for Developer, 3 for Casual)
 
+**Given** the System Tweaks wizard step loads
+**When** the detect-first scan runs
+**Then** current machine state (registry values, installed fonts, startup entries) is scanned and matched against gallery
+**And** tweaks already in desired state show "Applied" status; others show "Not Applied" with mechanism-aware StatusRibbon
+
 **Given** the user reaches the Review & Deploy step
 **When** the review page loads
 **Then** a summary shows all selected items across all steps: "X dotfiles, Y apps, Z tweaks selected"
@@ -1297,7 +1425,7 @@ So that my machine is configured and I feel a sense of completion.
 
 ## Epic 11: Desktop Dashboard & Drift
 
-Returning user opens Perch Desktop and sees a drift-focused dashboard: hero banner with config health summary, attention cards for broken/missing/drifted configs, one-click fix actions. Sidebar navigation into card gallery views for deeper management.
+Returning user opens Perch Desktop and sees a drift-focused dashboard: hero banner with config health summary, mechanism-aware smart status cards, one-click fix actions. GalleryTreeView for unified tree browsing. TweakDetailPanel with three-value inline display and Open Location. App-owned tweak sub-items toggleable within app cards.
 
 ### Story 11.1: Dashboard Home & Drift Summary
 
@@ -1316,6 +1444,7 @@ So that I can instantly assess my config health and resolve any issues.
 **When** the drift check completes
 **Then** a `DriftHeroBanner` spans the top showing aggregate counts: "X linked - Y attention - Z broken"
 **And** the banner state reflects health: all green = calm ("Everything looks good"), issues = attention/critical styling
+**And** status uses mechanism-aware vocabulary: Linked/Broken for dotfiles, Applied/Drifted for tweaks, Installed for apps/fonts
 
 **Given** modules with issues exist
 **When** the Dashboard Home loads
@@ -1341,8 +1470,17 @@ So that I can browse and manage specific config categories in detail.
 
 **Given** the dashboard is active
 **When** the user clicks "Apps" in the NavigationView sidebar
-**Then** the `AppsPage` loads, hosting the shared `AppsView` UserControl (same component used in wizard)
-**And** cards show current status (linked/not linked/drifted) via `StatusRibbon`
+**Then** the `AppsPage` loads with `GalleryTreeView` for category navigation and `AppCard` controls with mechanism-aware `StatusRibbon`
+**And** app entries with owned tweaks show expandable sub-items for their bad behavior toggles
+
+**Given** the user clicks "System Tweaks" in the sidebar
+**When** the `SystemTweaksPage` loads
+**Then** `GalleryTreeView` shows the tweak category tree (Explorer, Privacy, Power, Context Menus, Startup, etc.)
+**And** selecting a tweak shows `TweakDetailPanel` with three-value inline display (current / desired / default) and an "Open Location" button
+
+**Given** the user clicks "Open Location" on a tweak
+**When** the action executes
+**Then** the appropriate tool opens: regedit for registry tweaks, Explorer for startup folder, services.msc for services, Fonts folder for fonts
 
 **Given** the user clicks "Dotfiles" in the sidebar
 **When** the `DotfilesPage` loads
@@ -1355,7 +1493,7 @@ So that I can browse and manage specific config categories in detail.
 **And** clicking Deploy runs `IDeployService.DeployAsync()` with the same progress/feedback pattern as the wizard
 
 **Given** sidebar navigation between pages
-**When** the user switches from Apps to Dotfiles and back
+**When** the user switches between pages
 **Then** page state is preserved (scroll position, expanded cards, selections) via Singleton page lifetime
 
 ### Story 11.3: Settings & Configuration
@@ -1527,3 +1665,203 @@ So that onboarding a Scoop-installed app's config is easier.
 **Given** the app stores config outside the Scoop directory (e.g., in `%AppData%`)
 **When** discovery runs
 **Then** both the Scoop install path and standard config locations are checked
+
+## Epic 14: Gallery Schema Evolution
+
+Gallery YAML format evolves to support the unified tree taxonomy, type system, OS-aware filtering, and dependency graph. Gallery becomes the source of truth — user manifests store only deviations. Index auto-generated.
+
+### Story 14.1: Gallery Source of Truth & Manifest Deviations
+
+As a developer,
+I want the gallery to define all defaults so my personal manifest only stores what I've changed,
+So that my config stays minimal and gallery updates flow through automatically.
+
+**Acceptance Criteria:**
+
+**Given** a gallery entry defining `desired_value: 0` for a tweak
+**When** the user's manifest has no override for that entry
+**Then** the gallery value is used as the desired value
+
+**Given** a user's manifest with an override `desired_value: 1` for the same entry
+**When** the merge engine resolves the final config
+**Then** the user's override takes precedence over the gallery default
+
+**Given** the gallery updates a default value
+**When** the user has no override for that entry
+**Then** the new gallery default is automatically picked up on next deploy
+
+### Story 14.2: Unified Type Field & Base Schema
+
+As a developer,
+I want gallery entries to declare `type: app | tweak | font` with a shared base schema,
+So that the system knows how to process each entry while keeping the format consistent.
+
+**Acceptance Criteria:**
+
+**Given** a gallery entry with `type: tweak`
+**When** the schema validator processes it
+**Then** tweak-specific fields (`registry:`, `script:`, `undo_script:`, `default_value:`) are expected
+
+**Given** a gallery entry with `type: app`
+**When** the schema validator processes it
+**Then** app-specific fields (`package:`, `tweaks:`) are expected alongside shared fields (name, description, category)
+
+**Given** a gallery entry with `type: font`
+**When** the schema validator processes it
+**Then** font-specific fields (font family, file path) are expected
+
+**Given** a gallery entry missing the `type:` field
+**When** the schema validator processes it
+**Then** a validation error is reported
+
+### Story 14.3: Tree Taxonomy & Category Paths
+
+As a developer,
+I want gallery entries organized in deep category paths with sort order,
+So that the unified tree is navigable and logically structured.
+
+**Acceptance Criteria:**
+
+**Given** gallery entries with `category: Apps/Languages/.NET/Editors/Visual Studio`
+**When** the tree builder processes all entries
+**Then** a navigable tree is constructed with proper parent-child nesting
+
+**Given** categories with `sort: 10`, `sort: 20`, etc.
+**When** the tree is displayed
+**Then** categories appear in sort-value order, not alphabetical
+
+**Given** a category with only 2 entries
+**When** the tree is constructed
+**Then** the convention of "don't create subcategories for 2 items" is flagged as a validation warning (not enforced at runtime)
+
+### Story 14.4: OS Version & Restart Metadata
+
+As a developer,
+I want gallery entries to declare supported Windows versions and restart requirements,
+So that the UI can filter irrelevant entries and warn about restarts.
+
+**Acceptance Criteria:**
+
+**Given** a gallery entry with `windows_versions: [11]` on a Windows 10 machine
+**When** the Desktop UI loads the tree
+**Then** the entry is hidden (not greyed out, fully absent from the tree)
+
+**Given** a gallery entry with `windows_versions: [10, 11]` on a Windows 11 machine
+**When** the Desktop UI loads
+**Then** the entry is visible
+
+**Given** a gallery entry with `restart_required: true`
+**When** the entry is displayed in the UI
+**Then** a restart indicator is shown on the card/detail view
+
+**Given** multiple entries with `restart_required: true` are selected for deploy
+**When** deploy completes
+**Then** a summary notification indicates a restart is needed
+
+### Story 14.5: Auto-Generated Index
+
+As a developer,
+I want `index.yaml` to be automatically generated from the catalog folder structure,
+So that I never need to manually maintain it.
+
+**Acceptance Criteria:**
+
+**Given** a catalog folder with app/, tweak/, font/ subdirectories containing YAML files
+**When** the index generator runs (as a build step or pre-commit hook)
+**Then** `index.yaml` is generated listing all entries with their type, name, and category path
+
+**Given** a new gallery entry is added to the catalog
+**When** the index generator re-runs
+**Then** the new entry appears in the generated index
+
+**Given** `index.yaml` already exists with stale content
+**When** the generator runs
+**Then** it is overwritten with current contents (not appended)
+
+## Epic 15: Gallery Import & Sourcing
+
+One-time import tooling to populate the gallery from external sources (WinUtil, Sophia Script). License compliance checks. CI validation of registry paths across Windows versions.
+
+### Story 15.1: WinUtil Importer
+
+As a developer,
+I want a script that parses WinUtil's `tweaks.json` and generates gallery YAML stubs,
+So that I can import ~65 tweak definitions for human review without manual transcription.
+
+**Acceptance Criteria:**
+
+**Given** WinUtil's `tweaks.json` file as input
+**When** the importer script runs
+**Then** each tweak entry is converted to a gallery YAML file with: name, description, category, mechanism (registry/script), registry keys, original values, and undo information
+
+**Given** a WinUtil entry with multiple mechanisms (registry + service + scheduledTask)
+**When** the importer processes it
+**Then** registry entries go into `registry:` section, service/task logic goes into `script:` and `undo_script:` sections
+
+**Given** generated YAML stubs
+**When** a human reviewer inspects them
+**Then** each stub is marked as `verified: false` requiring manual testing before inclusion in the gallery
+
+### Story 15.2: Sophia Script Importer
+
+As a developer,
+I want to import Sophia Script's ~270 PowerShell functions as gallery entries,
+So that the gallery covers a broad range of Windows tweaks beyond what WinUtil provides.
+
+**Acceptance Criteria:**
+
+**Given** Sophia Script source files as input
+**When** the importer parses -Enable/-Disable function pairs
+**Then** each pair generates a gallery entry with `script:` (Enable function body) and `undo_script:` (Disable function body)
+
+**Given** an imported Sophia entry that overlaps with an existing gallery entry (from WinUtil or manual)
+**When** the dedup check runs
+**Then** the overlap is flagged for human review (same registry key, similar description, etc.)
+
+**Given** Sophia's 8 Windows version variants
+**When** the importer processes entries
+**Then** `windows_versions:` is populated based on which variants include the function
+
+### Story 15.3: License & Compliance Check
+
+As a developer,
+I want the import pipeline to check LICENSE files of source repos,
+So that I know which entries can be included in the gallery and under what terms.
+
+**Acceptance Criteria:**
+
+**Given** a source repo with an MIT license
+**When** the license checker runs
+**Then** the result indicates compatible license with attribution required
+
+**Given** a source repo with a restrictive or missing license
+**When** the license checker runs
+**Then** the result flags the repo as requiring manual review before importing entries
+
+**Given** imported entries from a licensed source
+**When** the gallery YAML is generated
+**Then** source attribution is included in the entry metadata
+
+### Story 15.4: CI Registry Path Validation
+
+As a developer,
+I want a GitHub Action that validates every registry path in the gallery exists on real Windows versions,
+So that stale or wrong registry paths are caught automatically.
+
+**Acceptance Criteria:**
+
+**Given** a GitHub Actions workflow with a matrix of Windows versions (10, 11)
+**When** the validation job runs
+**Then** every `registry:` key path in the gallery is checked for existence on that Windows version
+
+**Given** a registry path that exists on Windows 11 but not Windows 10
+**When** the validation runs on Windows 10
+**Then** the path is reported as missing, but only fails if the entry claims `windows_versions: [10]`
+
+**Given** all registry paths validate successfully
+**When** the CI job completes
+**Then** the job passes with a summary: "N registry paths validated on Windows X"
+
+**Given** the validation runs on a schedule (e.g., monthly)
+**When** a previously valid path no longer exists (Windows update removed it)
+**Then** the CI fails and an issue is flagged for review

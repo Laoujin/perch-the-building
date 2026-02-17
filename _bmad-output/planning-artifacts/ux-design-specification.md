@@ -10,6 +10,7 @@ inputDocuments:
   - '_bmad-output/planning-artifacts/epics.md'
   - '_bmad-output/planning-artifacts/competitive-research.md'
   - '_bmad-output/planning-artifacts/chezmoi-comparison.md'
+  - '_bmad-output/brainstorming/brainstorming-session-2026-02-17.md'
 ---
 
 # UX Design Specification Perch
@@ -41,7 +42,10 @@ Profile selection at onboarding (with Midjourney-generated hero image cards) dri
 - **Component library:** Evaluating WPF UI (lepoco/wpfui), UI.WPF.Modern (iNKORE-NET), and HandyControl. Need sidebar NavigationView, card controls, step indicators, badges.
 - **Drift-focused dashboard:** The daily-driver view. Shows config health at a glance — what's linked, what's broken, what needs attention. Not a settings panel; a verification tool.
 - **Reusable views:** Dotfiles, Applications, and System Tweaks are UserControls used in both wizard (step-by-step with stepper) and dashboard (standalone via sidebar navigation) contexts.
-- **Smart detection:** App and dotfile cards are populated by scanning the system. Detected items shown prominently with status ribbons. Gallery items shown as suggestions below. Full gallery searchable.
+- **Unified tree taxonomy:** Everything Perch manages — apps, dotfiles, tweaks, fonts — lives in one navigable, drillable tree with deep category paths (e.g., `Apps/Languages/.NET/Editors/Visual Studio`). The WPF tree browser is the primary gallery discovery UX. The Astro website is marketing only.
+- **Smart detection:** App and dotfile cards are populated by scanning the system (detect-first flow). Detected items shown prominently with status ribbons. Gallery items shown as suggestions below. Full gallery searchable. On new machines, Perch scans existing state first and shows what's already in place before configuring.
+- **Mechanism-aware smart status:** Status is type-specific — registry tweaks show Applied/Drifted/Not Applied/Reverted/Error; apps show Installed/Not Installed/Update Available; dotfiles show Linked/Broken/Not Linked/Modified; fonts show Installed/Not Installed. Cross-cutting: Skipped (excluded for machine), hidden (wrong OS).
+- **App-owned tweaks:** Apps own their bad behavior in the tree. Visual Studio's telemetry keys, context menu additions, and startup entries are toggleable sub-items under the VS node, not separate tweak entries.
 - **Visual polish:** Midjourney-generated hero images for profile cards. Real app icons/logos for app cards. Perch logo (bird silhouette concept) in sidebar. Dark theme.
 - **Startup loading:** Module/drift state loaded once at startup, no real-time file watching needed.
 
@@ -51,13 +55,19 @@ Profile selection at onboarding (with Midjourney-generated hero image cards) dri
 - Card information density: status ribbon, app icon, name, description, and action menu must be scannable without clutter
 - Wizard-to-dashboard transition: same components must feel natural in both guided (wizard) and standalone (dashboard) contexts
 - Gallery dependency: detection-first design must degrade gracefully when the app gallery is unavailable or incomplete
+- Unified tree depth: deep category paths (`Apps/Languages/.NET/Editors/Visual Studio`) must feel navigable, not overwhelming. Tree depth should match content density — no subcategories for 2 items
+- Multi-mechanism tweak cards: registry tweaks, PowerShell tweaks, and fonts need consistent card UX despite different underlying mechanisms. Inline value display (current/desired/default) must be clear without clutter
+- App-owned tweaks: app cards that also contain toggleable tweak sub-items need clear visual hierarchy — the app is the parent, its tweaks are nested actions
 
 ### Design Opportunities
 
 - Profile-driven filtering eliminates irrelevant options and reduces cognitive load
-- Drift dashboard as a "config health control center" — unique value no CLI can replicate
+- Drift dashboard as a "config health control center" — unique value no CLI can replicate. Three-value model (current/desired/default) makes drift tangible and actionable
 - Detection-first card layout ("here's what you have") feels intelligent rather than asking users to configure from scratch
 - Card-based UI is inherently visual and can showcase the Midjourney/icon artwork
+- Unified tree as a "single pane of glass" for everything Perch manages — apps, dotfiles, tweaks, fonts in one browsable hierarchy
+- "Open Location" deep links from tweak cards (regedit, Explorer, services.msc) bridge the gap between visual management and system-level control
+- App-owned tweaks make the connection between "I installed this app" and "it did these things to my system" visible and manageable
 
 ## Core User Experience
 
@@ -334,11 +344,12 @@ The **detection-first card grid** is Perch Desktop's defining experience. The mo
 - Subtle: rgba(16, 185, 129, 0.15) with #10B981 text
 - Used for: buttons, active sidebar items, selected card borders, links, deploy CTA
 
-**Status Colors:**
-- OK/Linked: #34D399 text on rgba(52, 211, 153, 0.15) background — shifted lighter than accent to maintain distinction
-- Warning/Attention: #F59E0B text on rgba(245, 158, 11, 0.15) background
-- Error/Broken: #EF4444 text on rgba(239, 68, 68, 0.15) background
-- Info/Not installed: #3B82F6 text on rgba(59, 130, 246, 0.15) background
+**Status Colors (mechanism-aware):**
+- OK/Applied/Linked/Installed: #34D399 text on rgba(52, 211, 153, 0.15) background — shifted lighter than accent to maintain distinction
+- Warning/Drifted/Modified/Attention: #F59E0B text on rgba(245, 158, 11, 0.15) background
+- Error/Broken/Reverted: #EF4444 text on rgba(239, 68, 68, 0.15) background
+- Info/Not installed/Not Applied/Not Linked: #3B82F6 text on rgba(59, 130, 246, 0.15) background
+- Skipped (excluded for machine): #888888 text on rgba(136, 136, 136, 0.1) background
 
 **Surface Colors:**
 - Background: #1A1A2E (deep navy-black)
@@ -441,6 +452,8 @@ Four complementary visual directions were explored as HTML mockups (`ux-design-d
 - `DotfilesView` / `AppsView` / `SystemTweaksView` are UserControls used in both wizard content area and dashboard content area
 - Each view supports card grid (default) and compact list (toggle) display modes
 - Three-tier layout (Detected / Suggested / Other) with search bar is consistent across card gallery views
+- `GalleryTreeView` provides drillable category navigation within Apps and System Tweaks views — clicking a tree node filters the adjacent card grid to that category
+- `TweakDetailPanel` is the expanded content for tweak-type cards across all views
 
 **Density toggle:**
 - Grid/list icon toggle in view toolbar switches between card gallery and compact list within any view
@@ -481,8 +494,10 @@ flowchart TD
     J -->|Yes| K[Step 4: System Tweaks]
     J -->|No| L[Step 5: Review & Deploy]
 
-    K --> K1[Windows settings cards:<br/>dark mode, context menu, etc.]
-    K1 --> K2[User toggles cards on/off]
+    K --> K0[Detect-first: scan current<br/>registry, fonts, startup items]
+    K0 --> K1[Three-tier tweak cards:<br/>Your Tweaks / Suggested / Other]
+    K1 --> K1a[Cards show mechanism-aware status:<br/>Applied/Not Applied + current values]
+    K1a --> K2[User toggles cards on/off]
     K2 --> L
 
     L --> L1[Summary: X dotfiles, Y apps,<br/>Z tweaks selected]
@@ -523,6 +538,7 @@ flowchart TD
     G --> H[Card: .gitconfig<br/>Status: File exists but not linked]
     G --> I[Card: VS Code settings<br/>Status: Symlink target missing]
     G --> J[Card: Terminal config<br/>Status: File modified outside Perch]
+    G --> K2[Card: Show File Extensions<br/>Status: Drifted — current: 1, desired: 0]
 
     H --> H1[Click card → expand]
     H1 --> H2[Action: Link this file]
@@ -536,9 +552,14 @@ flowchart TD
     J1 --> J2[Shows: diff between<br/>linked file and repo]
     J2 --> J3[Action: Accept changes /<br/>Restore from repo]
 
+    K2 --> K2a[Click card → TweakDetailPanel]
+    K2a --> K2b[Shows: current=1, desired=0, default=1<br/>Open Location → regedit]
+    K2b --> K2c[Action: Apply desired /<br/>Restore default / Restore previous]
+
     H3 --> K[Hero updates:<br/>13 linked · 1 attention · 0 broken]
     I3 --> K
     J3 --> K
+    K2c --> K
 
     K --> L{More issues?}
     L -->|Yes| G
@@ -657,10 +678,16 @@ flowchart TD
 
 **1. StatusRibbon**
 
-**Purpose:** Visual status indicator strip on cards — communicates config health at a glance.
-**Content:** Status text ("Linked", "Not linked", "Broken", "Not installed") + colored background.
-**States:** OK (green), Warning (amber), Error (red), Info (blue), Selected (accent green).
-**Implementation:** Custom `UserControl` — a slim horizontal strip at the top or side of a card with status text and background color bound to a `ResultLevel` enum. Uses our status color tokens.
+**Purpose:** Visual status indicator strip on cards — communicates config health at a glance. Mechanism-aware: displays type-specific status text.
+**Content:** Status text + colored background. Text varies by mechanism type:
+- Registry tweaks: "Applied", "Drifted", "Not Applied", "Reverted", "Error"
+- Apps: "Installed", "Not Installed", "Update Available"
+- Dotfiles/Config: "Linked", "Broken", "Not Linked", "Modified"
+- Fonts: "Installed", "Not Installed"
+- Cross-cutting: "Skipped" (excluded for this machine)
+
+**States:** OK (green), Warning/Drifted (amber), Error/Broken (red), Info/Not installed (blue), Selected (accent green).
+**Implementation:** Custom `UserControl` — a slim horizontal strip at the top or side of a card with status text and background color bound to a status enum. Uses our status color tokens. Status enum is mechanism-aware — `CardStatus` includes all variants, ViewModel maps Core result types to the appropriate display status.
 **Accessibility:** Status communicated via text, not color alone.
 
 **2. ProfileCard**
@@ -673,11 +700,11 @@ flowchart TD
 
 **3. AppCard**
 
-**Purpose:** The primary interaction unit — represents a detected/gallery app or dotfile module.
-**Content:** App icon (24-32px), name, one-line description, `StatusRibbon`, toggle/action area.
-**States:** Default, Hover (elevated shadow), Selected (accent border), Expanded (shows `CardExpander` detail), Disabled (not installed, grayed).
-**Actions:** Toggle manage on/off, expand for detail, context menu (link/unlink/fix/ignore).
-**Implementation:** Custom `UserControl` composing WPF UI `Card` + `CardExpander` + `ToggleSwitch`. Uses `DataTemplate` for binding to an `AppCardViewModel`.
+**Purpose:** The primary interaction unit — represents a detected/gallery app, dotfile module, tweak, or font.
+**Content:** App icon (24-32px), name, one-line description, `StatusRibbon` (mechanism-aware), toggle/action area. For apps with owned tweaks: sub-item count badge ("3 tweaks").
+**States:** Default, Hover (elevated shadow), Selected (accent border), Expanded (shows `CardExpander` detail — `TweakDetailPanel` for tweaks, config paths for apps/dotfiles), Disabled (not installed / wrong OS, grayed or hidden).
+**Actions:** Toggle manage on/off, expand for detail, context menu (link/unlink/fix/ignore). For tweak cards: Apply/Revert, Open Location. For app-owned tweaks: expandable sub-item list with individual toggles.
+**Implementation:** Custom `UserControl` composing WPF UI `Card` + `CardExpander` + `ToggleSwitch`. Uses `DataTemplate` for binding to an `AppCardViewModel`. Tweak-type cards embed `TweakDetailPanel` in the expanded area. App cards with owned tweaks show a nested list of toggleable tweak sub-items in the expanded area.
 **Variants:** Grid mode (square-ish, icon-prominent) and List mode (horizontal row, compact).
 
 **4. DriftHeroBanner**
@@ -702,6 +729,28 @@ flowchart TD
 **States:** Expanded (default), Collapsed (cards hidden, header only).
 **Implementation:** Simple `UserControl` — styled `TextBlock` + count badge + chevron toggle. Minimal custom code.
 
+**7. GalleryTreeView**
+
+**Purpose:** Unified tree browser for navigating everything Perch manages — apps, dotfiles, tweaks, fonts in one drillable hierarchy.
+**Content:** TreeView with category nodes derived from gallery entry `category:` paths (e.g., `Apps/Languages/.NET/Editors/Visual Studio`). Leaf nodes are gallery entries. Categories show item counts. Entries show mechanism-aware StatusRibbon.
+**States:** Node expanded/collapsed, node selected (shows cards for that category in the adjacent content area), empty category (hidden — tree depth matches content density).
+**Implementation:** Custom `UserControl` wrapping WPF `TreeView` with `HierarchicalDataTemplate`. Category nodes are virtual — generated from the set of `category:` paths across all gallery entries. OS-version-aware: entries for wrong Windows version are hidden, not shown. Categories declare a `sort:` value for display ordering.
+**Interaction:** Click a category → content area shows card grid filtered to that category. Click a leaf entry → content area shows expanded card detail. Supports BreadcrumbBar above content area for "back to parent" navigation.
+
+**8. TweakDetailPanel**
+
+**Purpose:** Expanded detail view for system tweak cards — shows the three-value model inline and provides mechanism-aware deep links.
+**Content:**
+- **Value display:** Current value, desired value, default value (Windows default) — three columns. Drifted values highlighted in amber.
+- **"Open Location" button:** Mechanism-aware deep link — opens regedit at the specific registry key, Explorer at the startup folder, services.msc, or Fonts folder as appropriate.
+- **Apply/Revert actions:** "Apply desired value", "Restore my previous", "Restore Windows default" — three revert options from the three-value model.
+- **Metadata:** `restart_required` badge, `windows_versions` tag, `suggests:` links to related tweaks.
+- **App-owned context:** When the tweak is a sub-item of an app, show the parent app name and a link back to the app card.
+
+**States:** Applied (values match, calm green), Drifted (current differs from desired, amber highlight on changed values), Not Applied (desired shown but not yet deployed), Error (couldn't apply, red with error message).
+**Implementation:** Custom `UserControl` used as the expanded content of a `CardExpander` for tweak-type cards. Three-column value grid uses styled `TextBlock` elements with conditional formatting. "Open Location" button dispatches to the appropriate system tool via `Process.Start`.
+**Accessibility:** Value labels include screen-reader context: "Current value: 0, Desired value: 1, Windows default: 1".
+
 ### Component Implementation Strategy
 
 **Build on library primitives:** Every custom component composes WPF UI controls (`Card`, `Button`, `SymbolIcon`, `ToggleSwitch`) rather than building from scratch. This ensures visual consistency with the Fluent theme without fighting the library.
@@ -723,12 +772,16 @@ flowchart TD
 - HandyControl `StepBar` integration — wizard step indicator
 
 **Phase 2 — Dashboard:**
-- `DriftHeroBanner` — dashboard home view
+- `DriftHeroBanner` — dashboard home view with mechanism-aware drift summary
 - `AppCard` (list variant) — compact density mode
+- `GalleryTreeView` — unified tree browser for sidebar navigation into category-filtered card views
 - WPF UI `NavigationView` shell — sidebar navigation
 - `InfoBar` / `Snackbar` integration — deploy feedback
 
-**Phase 3 — Polish:**
+**Phase 3 — System Tweaks & Polish:**
+- `TweakDetailPanel` — three-value inline display + Open Location deep links
+- App-owned tweak sub-items — nested toggleable tweak list within app cards
+- Mechanism-aware `StatusRibbon` — full status vocabulary (Applied/Drifted/Linked/Broken/Installed etc.)
 - Card hover animations and transitions
 - `CardExpander` detail panels for advanced card actions
 - `SearchBar` integration with gallery filtering
@@ -769,11 +822,11 @@ flowchart TD
 
 ### Navigation Patterns
 
-**Dashboard navigation:** WPF UI `NavigationView` sidebar. Icon-only when collapsed, icon + label when expanded. Sections: Home, Dotfiles (Developer profiles only), Apps, System Tweaks, Settings. Footer: Settings.
+**Dashboard navigation:** WPF UI `NavigationView` sidebar. Icon-only when collapsed, icon + label when expanded. Sections: Home, Dotfiles (Developer profiles only), Apps, System Tweaks, Settings. Footer: Settings. Within Apps and System Tweaks, a `GalleryTreeView` panel enables drillable category navigation (e.g., `Apps/Languages/.NET → Editors → Visual Studio`). BreadcrumbBar above content area shows current tree position.
 
 **Wizard navigation:** HandyControl `StepBar` at top. Back/Next/Skip buttons in footer. Steps are dynamic based on profile selection — skipped steps don't appear in the stepper, they're omitted entirely.
 
-**Card-to-detail navigation:** Click card body → `CardExpander` opens inline (no page navigation). Card stays in context within the grid. Close expander → card returns to compact state.
+**Card-to-detail navigation:** Click card body → `CardExpander` opens inline (no page navigation). Card stays in context within the grid. Close expander → card returns to compact state. For tweak-type cards, the expanded area shows `TweakDetailPanel` with three-value display and Open Location. For app cards with owned tweaks, the expanded area shows a nested list of toggleable tweak sub-items.
 
 **View transitions:** Dashboard sidebar switches swap the content area (page navigation via `NavigationView.TargetPageType`). No slide animations between pages — instant swap, consistent with Windows 11 Fluent behavior.
 

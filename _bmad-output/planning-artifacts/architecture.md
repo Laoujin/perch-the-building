@@ -11,6 +11,7 @@ inputDocuments:
   - '_bmad-output/planning-artifacts/ux-design-specification.md'
   - '_bmad-output/brainstorming/brainstorming-session-2026-02-08.md'
   - '_bmad-output/brainstorming/brainstorming-session-2026-02-14.md'
+  - '_bmad-output/brainstorming/brainstorming-session-2026-02-17.md'
 workflowType: 'architecture'
 project_name: 'Perch'
 user_name: 'Wouter'
@@ -27,16 +28,19 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 **Functional Requirements:**
 
-48 FRs across 12 categories. Scope 1 (MVP) FRs are well-defined and tightly scoped:
+75 FRs across 15 categories. Scope 1 (MVP) FRs are well-defined and tightly scoped:
 
 - **Manifest & Module Management** (FR1-FR3, FR41-FR42): Convention-over-config discovery, co-located manifests with platform-aware target paths
 - **Symlink Engine** (FR7-FR8): Create symlinks/junctions, backup existing files, re-runnable (additive only)
 - **CLI Interface** (FR14-FR17): Deploy command, colored streaming output, clean exit codes, graceful Ctrl+C
 - **Engine Configuration** (FR39-FR40): Config repo location via CLI argument, persisted for subsequent runs
 
-Scope 2-3 FRs add surface area (cross-platform, registry, secrets, desktop UI, package management, lifecycle hooks) but don't change the core architectural shape — they extend it.
+Scope 2-3 FRs add surface area (cross-platform, system tweaks, gallery schema, import tooling, secrets, desktop UI, package management, lifecycle hooks) but don't change the core architectural shape — they extend it.
 
-- **Desktop UI** (FR35-FR37): WPF desktop app — wizard onboarding, drift dashboard, card-based config management. Replaces the originally planned MAUI app (Windows-only is acceptable; CLI handles cross-platform)
+- **Machine Configuration** (FR31-FR34, FR59-FR62): Multi-mechanism system tweaks (registry + PowerShell + fonts), three-value model (default/captured/desired), app-owned tweaks, detect-first flow
+- **Gallery Schema & Taxonomy** (FR63-FR69): Gallery as source of truth, unified tree taxonomy, dependency links, OS version awareness, auto-generated index
+- **Import & Sourcing** (FR70-FR73): WinUtil/Sophia import tooling, deduplication, license checks, CI registry validation
+- **Desktop UI** (FR35-FR37, FR49-FR53, FR74-FR75): WPF desktop app — wizard onboarding, drift dashboard with mechanism-aware smart status cards, unified tree browser, inline value display, Open Location deep links
 
 **Non-Functional Requirements:**
 
@@ -163,6 +167,14 @@ dotnet add tests/Perch.Desktop.Tests package NSubstitute --version 5.3.0
 | 10 | Desktop MVVM | CommunityToolkit.Mvvm | Source-generated [ObservableProperty]/[RelayCommand]. Proven in prior Avalonia prototype |
 | 11 | Desktop app modes | Wizard (first-run) + Dashboard (ongoing) sharing reusable views | Two distinct experiences backed by same card-based UserControls and Core engine |
 | 12 | Desktop DI host | Microsoft.Extensions.Hosting via Generic Host | Consistent with CLI DI approach, WPF UI docs recommend this pattern |
+| 13 | System tweak mechanisms | Registry YAML + PowerShell script/undo_script + font install. .reg retired | Covers ~95% of tweaks. Services/tasks/GPO deferred — add when needed |
+| 14 | Registry value model | Three-value: default_value (Windows default), captured (pre-Perch machine state), desired | Enables drift detection, revert-to-default, revert-to-previous without prior deploy |
+| 15 | Gallery role | Source of truth for defaults. Manifest stores only deviations + captured old values | Minimal configs, clean diffs. Gallery YAML is canonical |
+| 16 | Content taxonomy | Unified tree with deep category paths (e.g., `Apps/Languages/.NET/Editors/Visual Studio`) | One navigable tree for everything Perch manages — apps, tweaks, fonts, dotfiles |
+| 17 | Gallery entry dependencies | `suggests:` (soft) and `requires:` (hard) links. Replaces `priority:` field | Execution order derives from dependency graph, not manual numbers |
+| 18 | App-owned tweaks | App gallery entries own their bad behavior (context menus, startup, telemetry) as sub-items | No artificial separation between installing an app and cleaning up after it |
+| 19 | Import strategy | One-time scripts per source (WinUtil, Sophia). Not a framework | Pragmatic — sources change rarely. Human review required anyway |
+| 20 | Gallery primary UX | WPF tree browser is the primary discovery UI. Astro website is marketing only | Desktop app is where users interact with the catalog |
 
 ### Manifest Schema (YAML)
 
@@ -244,6 +256,153 @@ CommunityToolkit.Mvvm with `ObservableObject` base, `[ObservableProperty]` for b
 - Pages + ViewModels: Singleton for cached pages (Dashboard, Settings), Transient for pages recreated per navigation (wizard steps)
 - `INavigationWindow` → `MainWindow`
 
+### System Tweaks Engine (Scope 3)
+
+Multi-mechanism tweak application and drift detection. Lives in `Perch.Core/Tweaks/`.
+
+**Mechanism types:**
+
+| Mechanism | Apply | Revert | Drift Detection |
+|-----------|-------|--------|-----------------|
+| Registry YAML | Write registry key/value | Restore captured or default value | Compare current vs desired |
+| PowerShell script | Execute `script:` | Execute `undo_script:` | Re-run detection script or check expected state |
+| Font install | Copy to Fonts dir + register, or `winget install` | Uninstall font | Check font registry key exists |
+
+**Three-value model per registry entry:**
+
+```yaml
+registry:
+  - key: HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+    name: HideFileExt
+    value: 0              # desired
+    default_value: 1      # Windows default (baked into gallery)
+    type: dword
+```
+
+Captured machine state (pre-Perch value) stored per-machine in `machines/<hostname>/captured-state.yaml` in the config repo. Populated on first deploy.
+
+**Detect-first flow:**
+
+```
+1. Scan machine: read current registry values, installed fonts, app state
+2. Match against gallery: "you already have these applied"
+3. Show diff: what matches desired, what doesn't, what's unknown
+4. User selects what to manage → deploy only the delta
+```
+
+**App-owned tweaks:** An app gallery entry can include a `tweaks:` section with toggleable sub-items:
+
+```yaml
+name: Visual Studio
+category: Apps/Languages/.NET/Editors/Visual Studio
+install:
+  winget: Microsoft.VisualStudio.2022.Community
+config:
+  links:
+    - source: settings/CurrentSettings.vssettings
+      target:
+        windows: "%LocalAppData%/Microsoft/VisualStudio/..."
+tweaks:
+  - name: Disable telemetry
+    registry:
+      - key: HKCU\Software\Microsoft\VisualStudio\Telemetry
+        name: TurnOffSwitch
+        value: 1
+        default_value: 0
+        type: dword
+  - name: Remove context menu entry
+    registry:
+      - key: HKCR\Directory\Background\shell\AnyCode
+        name: ""
+        value: null          # delete key
+        default_value: exist  # key exists by default
+```
+
+### Gallery Schema Evolution (Scope 3)
+
+Gallery YAML entries gain new fields. Backwards-compatible — new fields are optional.
+
+**New fields:**
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| `type` | `app \| tweak \| font` | Unified type discriminator |
+| `windows_versions` | `[10, 11]` | OS-aware filtering. Desktop hides non-matching entries |
+| `restart_required` | `bool` | Shown on card. No risk levels — just restart info |
+| `sort` | `int` | Category display order in tree |
+| `suggests` | `[entry-id, ...]` | Soft dependency — "you might also want" |
+| `requires` | `[entry-id, ...]` | Hard dependency — must be applied first |
+| `script` | `string` | PowerShell command to apply (non-registry tweaks) |
+| `undo_script` | `string` | PowerShell command to revert |
+| `default_value` | per registry entry | Windows default for three-value model |
+
+**Removed fields:** `priority` (replaced by `requires:` dependency graph)
+
+**Gallery as source of truth:** User manifests in perch-config reference gallery entries by ID and store only deviations:
+
+```yaml
+# perch-config module manifest (minimal)
+gallery: show-file-extensions
+# no other fields needed — gallery has all defaults
+
+# or with deviation:
+gallery: dark-mode
+overrides:
+  enabled: false  # I prefer light mode on this machine
+```
+
+**Unified tree taxonomy:** Category paths define the tree structure. Depth matches content density:
+
+```
+Apps/Browsers/Firefox
+Apps/Languages/.NET/SDKs
+Apps/Languages/.NET/Editors/Visual Studio
+Apps/Languages/Node/nvm
+Windows Tweaks/Explorer
+Windows Tweaks/Context Menus
+Windows Tweaks/Startup Items
+Windows Tweaks/Fonts/Nerd Fonts
+```
+
+**Auto-generated index.yaml:** CI or build step scans `catalog/` and regenerates `index.yaml`. Never manually edited.
+
+### Smart Status Model (Scope 3)
+
+Mechanism-aware status for Desktop cards and CLI reporting:
+
+| Type | Statuses |
+|------|----------|
+| Registry tweaks | Applied, Drifted, Not Applied, Reverted, Error |
+| Apps | Installed, Not Installed, Update Available |
+| Dotfiles/Config | Linked, Broken, Not Linked, Modified |
+| Fonts | Installed, Not Installed |
+| Cross-cutting | Skipped (excluded per machine), hidden (wrong OS) |
+
+Status drives card visuals: color accent, icon, action buttons. "Open Location" button is mechanism-aware — opens regedit, Explorer, services.msc, or Fonts folder as appropriate.
+
+### Import Pipeline Architecture (Scope 3)
+
+One-time scripts, not a framework. Each source gets a standalone script:
+
+```
+tools/
+├── import-winutil.ps1      # Parses config/tweaks.json → gallery YAML stubs
+├── import-sophia.ps1       # Parses Sophia functions → gallery YAML stubs
+└── dedup-gallery.ps1       # Compares entries, flags overlaps for review
+```
+
+**WinUtil importer flow:**
+1. Clone/download WinUtil `config/tweaks.json`
+2. Parse each tweak: extract registry, service, scheduledTask, InvokeScript/UndoScript
+3. Map to gallery YAML format: registry entries → `registry:`, InvokeScript → `script:`, UndoScript → `undo_script:`
+4. Map WinUtil categories to Perch tree paths
+5. Set `default_value` from WinUtil's `OriginalValue`
+6. Output YAML stubs to `catalog/tweaks/` for human review
+
+**Sophia importer:** Runs after WinUtil. `dedup-gallery.ps1` compares new Sophia entries against existing gallery entries, flags overlaps showing both definitions side-by-side.
+
+**Quality gates:** License check per source repo. Human visual testing for each imported tweak. CI validates registry paths exist on clean Windows runners.
+
 ## Implementation Patterns & Consistency Rules
 
 ### Naming Patterns
@@ -265,7 +424,10 @@ Perch.Core/
 ├── Symlinks/       # ISymlinkProvider, WindowsSymlinkProvider, symlink logic
 ├── Deploy/         # DeployService, DeployResult, pipeline orchestration
 ├── Config/         # Settings loading/persistence, path resolution
-└── Backup/         # File backup before symlink creation
+├── Backup/         # File backup before symlink creation
+├── Tweaks/         # ITweakProvider, RegistryTweakProvider, ScriptTweakProvider, FontTweakProvider (Scope 3)
+├── Gallery/        # Gallery schema models, gallery loader, manifest-gallery merging (Scope 3)
+└── Detection/      # Machine state scanning, detect-first flow, drift comparison (Scope 3)
 ```
 
 Interfaces live in the same feature folder as their implementations.
@@ -297,13 +459,16 @@ Perch.Desktop/
 │       ├── TierSectionHeader.xaml(.cs)
 │       ├── AppsView.xaml(.cs)          # Shared card grid — wizard + dashboard
 │       ├── DotfilesView.xaml(.cs)      # Shared card grid — wizard + dashboard
-│       └── SystemTweaksView.xaml(.cs)  # Shared card grid — wizard + dashboard
+│       ├── SystemTweaksView.xaml(.cs)  # Shared card grid — wizard + dashboard
+│       ├── GalleryTreeView.xaml(.cs)   # Unified tree browser — drillable category navigation
+│       └── TweakDetailPanel.xaml(.cs)  # Inline current/desired/default values + Open Location
 ├── ViewModels/
 │   ├── MainWindowViewModel.cs
 │   ├── DashboardViewModel.cs
 │   ├── AppsViewModel.cs
 │   ├── DotfilesViewModel.cs
 │   ├── SystemTweaksViewModel.cs
+│   ├── GalleryTreeViewModel.cs
 │   ├── SettingsViewModel.cs
 │   └── Wizard/
 │       ├── WizardShellViewModel.cs
@@ -368,6 +533,20 @@ Perch.sln
 │   │   │   ├── DeployResult.cs        # Result record + ResultLevel enum
 │   │   │   ├── IDeployService.cs
 │   │   │   └── DeployService.cs       # Pipeline orchestration
+│   │   ├── Tweaks/                    # Scope 3: multi-mechanism tweak engine
+│   │   │   ├── ITweakProvider.cs      # Interface for apply/revert/detect per mechanism
+│   │   │   ├── RegistryTweakProvider.cs
+│   │   │   ├── ScriptTweakProvider.cs # PowerShell script execution
+│   │   │   ├── FontTweakProvider.cs
+│   │   │   └── TweakStateCapture.cs   # Three-value model: capture/compare machine state
+│   │   ├── Gallery/                   # Scope 3: gallery schema & taxonomy
+│   │   │   ├── GalleryEntry.cs        # Unified model (app/tweak/font)
+│   │   │   ├── GalleryLoader.cs       # Load + parse gallery YAML catalog
+│   │   │   ├── GalleryMerger.cs       # Merge manifest deviations over gallery defaults
+│   │   │   └── DependencyResolver.cs  # suggests/requires graph resolution
+│   │   ├── Detection/                 # Scope 3: detect-first flow
+│   │   │   ├── IMachineStateScanner.cs
+│   │   │   └── WindowsMachineStateScanner.cs  # Registry/font/app state detection
 │   │   └── ServiceCollectionExtensions.cs  # AddPerchCore() DI registration
 │   ├── Perch.Cli/
 │   │   ├── Perch.Cli.csproj
@@ -399,13 +578,16 @@ Perch.sln
 │       │       ├── TierSectionHeader.xaml(.cs)
 │       │       ├── AppsView.xaml(.cs)
 │       │       ├── DotfilesView.xaml(.cs)
-│       │       └── SystemTweaksView.xaml(.cs)
+│       │       ├── SystemTweaksView.xaml(.cs)
+│       │       ├── GalleryTreeView.xaml(.cs)    # Unified tree browser — drillable categories
+│       │       └── TweakDetailPanel.xaml(.cs)   # Inline values + Open Location
 │       ├── ViewModels/
 │       │   ├── MainWindowViewModel.cs
 │       │   ├── DashboardViewModel.cs
 │       │   ├── AppsViewModel.cs
 │       │   ├── DotfilesViewModel.cs
 │       │   ├── SystemTweaksViewModel.cs
+│       │   ├── GalleryTreeViewModel.cs
 │       │   ├── SettingsViewModel.cs
 │       │   └── Wizard/
 │       │       ├── WizardShellViewModel.cs
@@ -428,8 +610,15 @@ Perch.sln
     │   │   └── DeployServiceTests.cs
     │   ├── Config/
     │   │   └── YamlSettingsProviderTests.cs
-    │   └── Symlinks/
-    │       └── WindowsSymlinkProviderTests.cs  # Real filesystem tests
+    │   ├── Symlinks/
+    │   │   └── WindowsSymlinkProviderTests.cs  # Real filesystem tests
+    │   ├── Tweaks/                              # Scope 3
+    │   │   ├── RegistryTweakProviderTests.cs
+    │   │   └── TweakStateCaptureTests.cs
+    │   └── Gallery/                             # Scope 3
+    │       ├── GalleryLoaderTests.cs
+    │       ├── GalleryMergerTests.cs
+    │       └── DependencyResolverTests.cs
     └── Perch.Desktop.Tests/
         ├── Perch.Desktop.Tests.csproj
         └── ViewModels/
@@ -437,6 +626,10 @@ Perch.sln
             ├── AppsViewModelTests.cs
             └── Wizard/
                 └── WizardShellViewModelTests.cs
+├── tools/                                       # Scope 3: one-time import scripts
+│   ├── import-winutil.ps1                       # WinUtil tweaks.json → gallery YAML stubs
+│   ├── import-sophia.ps1                        # Sophia Script functions → gallery YAML stubs
+│   └── dedup-gallery.ps1                        # Compare entries, flag overlaps for review
 ```
 
 ### FR to Structure Mapping
@@ -446,11 +639,17 @@ Perch.sln
 | FR1-FR3 Manifest & Module Management | `Perch.Core/Modules/` |
 | FR7-FR8 Symlink Engine | `Perch.Core/Symlinks/` + `Perch.Core/Backup/` |
 | FR14-FR17 CLI Interface | `Perch.Cli/Commands/` |
+| FR33-FR34 Multi-mechanism tweaks | `Perch.Core/Tweaks/` (RegistryTweakProvider, ScriptTweakProvider, FontTweakProvider) |
 | FR35 Sync status dashboard | `Perch.Desktop/Views/Pages/DashboardPage` + `DriftHeroBanner` control |
 | FR36 Filesystem explorer for config discovery | `Perch.Desktop/Views/Pages/` (future) |
 | FR37 Visual manifest editor | `Perch.Desktop/Views/Pages/` (future) |
 | FR39-FR40 Engine Configuration | `Perch.Core/Config/` |
 | FR41-FR42 Platform-aware manifests | `Perch.Core/Modules/AppManifest.cs` (Scope 2 paths) |
+| FR59-FR62 Tweak dependencies, app-owned tweaks, detect-first | `Perch.Core/Tweaks/` + `Perch.Core/Detection/` |
+| FR63-FR69 Gallery schema & taxonomy | `Perch.Core/Gallery/` |
+| FR70-FR73 Import & sourcing | `tools/import-winutil.ps1`, `tools/import-sophia.ps1`, `tools/dedup-gallery.ps1` |
+| FR74 Tweak detail panel + Open Location | `Perch.Desktop/Views/Controls/TweakDetailPanel` |
+| FR75 Gallery tree browser | `Perch.Desktop/Views/Controls/GalleryTreeView` + `GalleryTreeViewModel` |
 
 ### Architectural Boundaries
 
@@ -496,16 +695,22 @@ WizardShellViewModel manages step navigation (StepBar binding)
 
 ## Architecture Validation
 
-**Coherence:** Pass — all technology choices, patterns, and structure aligned. Core engine remains UI-agnostic. CLI and Desktop are independent UI hosts sharing the same `AddPerchCore()` registration.
+**Coherence:** Pass — all technology choices, patterns, and structure aligned. Core engine remains UI-agnostic. CLI and Desktop are independent UI hosts sharing the same `AddPerchCore()` registration. New Scope 3 modules (Tweaks, Gallery, Detection) follow the same interface-first pattern.
 
 **Scope 1 FR Coverage:** All 11 Scope 1 FRs mapped to specific architectural components (CLI path).
 
-**Desktop FR Coverage:** FR35-FR37 (previously MAUI) mapped to WPF Desktop project. UX Design Specification provides detailed component strategy, user journeys, and visual design foundation.
+**Scope 3 Windows Tweaks Coverage:** FR33-34 (multi-mechanism tweaks), FR59-62 (dependencies, app-owned tweaks, state capture, detect-first), FR63-69 (gallery schema evolution), FR70-73 (import tooling, CI validation), FR74-75 (desktop tweak detail, tree browser) — all mapped to `Perch.Core/Tweaks/`, `Perch.Core/Gallery/`, `Perch.Core/Detection/`, `Perch.Desktop/Views/Controls/`, and `tools/`.
 
-**NFR Coverage:** Graceful shutdown (CancellationToken), fault isolation (per-module results), platform abstraction (ISymlinkProvider), testability (interfaces + mocks) — all addressed. Desktop adds ViewModel testability via CommunityToolkit.Mvvm + NSubstitute against Core interfaces.
+**Desktop FR Coverage:** FR35-FR37, FR49-FR53, FR74-FR75 mapped to WPF Desktop project. Smart status model (Applied/Drifted/Linked/Broken/Installed per mechanism type) integrated into card system. GalleryTreeView provides unified tree browser. TweakDetailPanel shows three-value inline display + Open Location.
 
-**Gaps:** None critical. Path resolution (`%AppData%` expansion) starts as a simple function — no premature abstraction. Desktop `IProgress<DeployResult>` callback pattern for live card updates — straightforward, no complex async needed.
+**NFR Coverage:** Graceful shutdown (CancellationToken), fault isolation (per-module results), platform abstraction (ISymlinkProvider, ITweakProvider), testability (interfaces + mocks) — all addressed. Desktop adds ViewModel testability via CommunityToolkit.Mvvm + NSubstitute against Core interfaces. Gallery schema validated by CI.
 
-**Key architectural invariant:** Core never references any UI framework. Both CLI and Desktop are thin presentation layers. If a feature requires logic, it goes in Core and is exposed via an interface that both UIs can consume.
+**Gaps:** None critical. Path resolution (`%AppData%` expansion) starts as a simple function — no premature abstraction. Desktop `IProgress<DeployResult>` callback pattern for live card updates — straightforward, no complex async needed. Import tooling is standalone PowerShell scripts outside the solution — no architectural coupling.
+
+**Key architectural invariants:**
+- Core never references any UI framework. Both CLI and Desktop are thin presentation layers
+- Gallery is the source of truth. Manifests store deviations only
+- ITweakProvider interface abstracts mechanism types — new mechanisms (services, scheduled tasks) slot in without changing consumers
+- Three-value model (default/captured/desired) is the foundation for drift detection, revert, and status display across all mechanism types
 
 **Status:** READY FOR IMPLEMENTATION

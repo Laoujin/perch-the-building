@@ -1,11 +1,11 @@
 ---
 stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain, step-06-innovation, step-07-project-type, step-08-scoping, step-09-functional, step-10-nonfunctional, step-11-polish, step-12-complete]
-inputDocuments: ['_bmad-output/brainstorming/brainstorming-session-2026-02-08.md']
+inputDocuments: ['_bmad-output/brainstorming/brainstorming-session-2026-02-08.md', '_bmad-output/brainstorming/brainstorming-session-2026-02-17.md']
 workflowType: 'prd'
 documentCounts:
   briefs: 0
   research: 0
-  brainstorming: 1
+  brainstorming: 2
   projectDocs: 0
   projectContext: 0
 classification:
@@ -16,7 +16,7 @@ classification:
   scopes:
     scope1: "Switch machines - core symlink/junction engine, PowerShell profile, git config, program settings via symlinks"
     scope2: "Rock solid + cross-platform - idempotency, drift detection, WhatIf, package management, git clean filters, discovery, automated testing, Linux/macOS support"
-    scope3: "Accessible & complete - registry management (Windows), machine-specific overrides, WPF Desktop app (wizard onboarding + drift dashboard), secrets/1Password, community tools, competitor migration"
+    scope3: "Accessible & complete - multi-mechanism system tweaks (registry+PowerShell+fonts, three-value model, app-owned tweaks, detect-first), unified tree taxonomy, gallery as source of truth, WinUtil/Sophia import, machine-specific overrides, WPF Desktop app (wizard + drift dashboard with smart status), secrets/1Password, competitor migration"
     scope5: "Scoop integration - Scoop as primary dev-tool package manager, bucket management, app install/export/import, predictable path integration"
 ---
 
@@ -113,9 +113,11 @@ Wouter sets up a Linux dev server. He installs .NET 10, runs `dotnet tool instal
 
 ### Journey 6: Multi-Machine Configuration (Scope 3)
 
-Wouter's laptop needs different settings than his desktop — smaller font sizes in the terminal, a different git email for work projects, and only a subset of modules (no gaming tools on the work laptop). He creates a machine profile in perch-config: `machines/laptop.json` defines the machine name, which modules to include, and override values. He runs `perch deploy` on the laptop — Perch identifies the machine by hostname, applies the base config with laptop-specific overrides, skips excluded modules, and symlinks `laptop.gitconfig` instead of the default. On Windows, he also manages registry settings declaratively: dark mode, specific context menu entries, power settings. Perch applies the desired registry state and reports what changed.
+Wouter's laptop needs different settings than his desktop — smaller font sizes in the terminal, a different git email for work projects, and only a subset of modules (no gaming tools on the work laptop). He creates a machine profile in perch-config: `machines/laptop.yaml` defines the machine name, which modules to include, and override values. He runs `perch deploy` on the laptop — Perch identifies the machine by hostname, applies the base config with laptop-specific overrides, skips excluded modules, and symlinks `laptop.gitconfig` instead of the default.
 
-**Capabilities revealed:** Per-machine overrides, machine identification, module-to-machine filtering, declarative registry management, registry state reporting.
+On Windows, he also manages system tweaks declaratively. The gallery is the source of truth — each tweak defines the Windows default value, the desired value, and optionally a PowerShell script for things registry can't express. On first deploy, Perch captures the current machine state before applying changes. He can revert to either "what I had before" or "Windows default." The dashboard shows drifted tweaks when something changes externally — an app installer silently added a context menu entry, and Perch catches it. He clicks the tweak card, sees the current/desired/default values inline, and hits "Open Location" to jump straight to regedit at that key. Apps own their tweaks: the Visual Studio gallery entry includes its telemetry registry keys and context menu additions as toggleable sub-items in the unified tree under `Apps/Languages/.NET/Editors/Visual Studio`.
+
+**Capabilities revealed:** Per-machine overrides, machine identification, module-to-machine filtering, declarative multi-mechanism tweaks (registry + PowerShell), three-value model (default/captured/desired), detect-first approach, app-owned tweaks, unified tree taxonomy, drift detection with inline diff, "Open Location" deep links.
 
 ### Journey 7: Secrets and Credentials (Scope 3)
 
@@ -167,8 +169,14 @@ Wouter's colleague uses chezmoi and wants to try Perch. He runs `perch import ch
 | Pre/post-deploy lifecycle hooks | | | | | | | | | x | | | | 2 |
 | Per-machine overrides | | | | | | | x | | | | | | 3 |
 | Module-to-machine filtering | | | | | | | x | | | | | | 3 |
-| Declarative registry management | | | | | | | x | | | | | | 3 |
-| Registry state reporting | | | | | | | x | | | | | | 3 |
+| Multi-mechanism system tweaks (registry+PS+fonts) | | | | | | | x | | | | | | 3 |
+| Three-value model (default/captured/desired) | | | | | | | x | | | x | | | 3 |
+| App-owned tweaks | | | | x | | | x | | | x | | | 3 |
+| Detect-first flow | | | | x | | | x | | | x | | | 3 |
+| Unified tree taxonomy | | | | x | | | x | | | x | | | 3 |
+| Gallery as source of truth | | | | x | | | x | | | x | | | 3 |
+| Smart status cards (mechanism-aware) | | | | x | | | | | | x | | | 3 |
+| Inline value display + Open Location | | | | | | | x | | | x | | | 3 |
 | Secret placeholder resolution | | | | | | | | x | | | | | 3 |
 | Password manager integration | | | | | | | | x | | | | | 3 |
 | Generated (non-symlinked) files | | | | | | | | x | | | | | 3 |
@@ -237,7 +245,7 @@ Wouter's colleague uses chezmoi and wants to try Perch. He runs `perch import ch
 ### Config Schema
 
 - **App manifests:** Co-located in the config repo alongside config files. Minimum required fields: source path(s), target path(s) per platform, link type (symlink vs junction). Platform filter (optional — which OSes this module applies to)
-- **Future [Scope 3]:** Manifests become templates from a separate repository, hosted via GitHub Pages as a public gallery/registry. Desktop app uses gallery data to populate the "Suggested for You" and "Other Apps" tiers in card views
+- **Future [Scope 3]:** Gallery is the source of truth for app/tweak/font defaults. User manifests store only deviations from gallery values. Gallery entries use a unified tree taxonomy with deep category paths, dependency links (`suggests:`/`requires:`), OS version awareness, and mechanism-aware definitions (registry, PowerShell, font install). Desktop app is the primary gallery browser. Import tooling generates gallery entries from WinUtil and Sophia Script
 
 ### Desktop UI
 
@@ -323,16 +331,25 @@ Wouter's colleague uses chezmoi and wants to try Perch. He runs `perch import ch
 ### Phase 3: Accessible & Complete
 
 - Interactive mode (step-level and command-level confirmation)
-- Machine-specific overrides (layered config system)
-- Registry management — Windows only (requires dedicated brainstorm)
+- Machine-specific overrides (layered config system), active machine tracking
+- Multi-mechanism system tweaks — Windows only: registry YAML, PowerShell script + undo_script, font installation. Legacy .reg files retired
+- Three-value model for registry: default_value (Windows default) / captured machine state / desired value. Enables drift detection, revert-to-default, revert-to-previous
+- App-owned tweaks — app entries include their bad behavior (context menus, startup items, telemetry) as toggleable sub-items
+- Detect-first flow — scan current machine state before configuring, show what's already in place
+- Gallery as source of truth — manifests store only deviations from gallery defaults + captured old values
+- Unified tree taxonomy — deep category paths (`Apps/Languages/.NET/...`, `Windows Tweaks/Explorer`), shared across wizard and dashboard
+- Gallery schema evolution: `suggests:`/`requires:` dependency links (replaces `priority:`), `restart_required:`, `windows_versions:`, category `sort:`, unified `type:` field, auto-generated `index.yaml`
+- WinUtil import tooling (~65 tweaks), then Sophia Script import (~270 functions) with deduplication. License checks per source repo
+- CI registry validation — GitHub Actions matrix on multiple Windows versions validates every registry path exists
 - Secrets/password manager integration (1Password CLI) — template + inject model for files containing secrets (NuGet credentials, npm tokens, SSH config for Synology/GitHub, API keys). Non-symlinked generated files
 - Manifest templates from external repo (GitHub Pages gallery)
 - Version-range-aware manifest paths
 - Restore from backup (full restore capability)
 - Shell completion
 - WPF Desktop wizard — profile-driven onboarding, detection-first card grids, three-tier layout, per-card deploy progress. Built on WPF UI (Fluent 2), HandyControl (StepBar), CommunityToolkit.Mvvm. Shares Perch.Core engine library
-- WPF Desktop dashboard — drift hero banner, attention cards with one-click fix, sidebar navigation into shared card gallery views. Same engine, same views as wizard
-- Competitor migration tool (chezmoi → Perch, other popular formats)
+- WPF Desktop dashboard — drift hero banner, mechanism-aware smart status cards (Applied/Drifted/Linked/Broken/Installed/etc.), inline current/desired/default values, universal "Open Location" button, one-click fix actions. Sidebar navigation into shared card gallery views
+- WPF is the primary gallery browser. Astro website is marketing only
+- Competitor migration tool (chezmoi -> Perch, other popular formats)
 - Community config path database
 - Git identity bootstrap automation
 
@@ -422,9 +439,30 @@ Wouter's colleague uses chezmoi and wants to try Perch. He runs `perch import ch
 ### Machine Configuration
 
 - **FR31:** User can define base config values with per-machine overrides [Scope 3]
-- **FR32:** User can specify which modules apply to which machines [Scope 3]
-- **FR33:** User can manage Windows registry settings declaratively [Scope 3]
-- **FR34:** System applies and reports on registry state (context menus, default programs, power settings, etc.) [Scope 3]
+- **FR32:** User can specify which modules apply to which machines, tracking "active" machines [Scope 3]
+- **FR33:** User can manage Windows system tweaks declaratively via multi-mechanism definitions: `registry:` entries, `script:` + `undo_script:` (PowerShell) for things registry can't express, and font installation (winget or file copy). Legacy `.reg` files are retired in favor of YAML [Scope 3]
+- **FR34:** System applies and reports on tweak state across all mechanism types (registry, PowerShell scripts, fonts, context menus, startup programs, power settings). Each registry entry uses a three-value model: `default_value` (Windows default), captured machine state (pre-Perch), and desired value. Enables drift detection, revert-to-default, and revert-to-previous [Scope 3]
+- **FR59:** Gallery entries can declare `suggests:` (soft) and `requires:` (hard) dependency links to other entries. Execution order derives from the dependency graph, replacing the `priority` field [Scope 3]
+- **FR60:** App gallery entries own their tweaks — an app's bad behavior (context menu additions, startup entries, telemetry) is defined as toggleable sub-items within the app's entry, not as separate tweaks [Scope 3]
+- **FR61:** On first deploy, system captures the current value of each managed registry key per machine before applying the desired value. User can revert to either "restore my previous" or "restore Windows default" [Scope 3]
+- **FR62:** System detects current machine state first (detect-first flow) — on a new machine, scans existing registry/app/font state and matches against gallery before configuring. Shows what's already in place [Scope 3]
+
+### Gallery Schema & Taxonomy
+
+- **FR63:** Gallery is the source of truth for defaults. User manifests store only deviations from gallery values plus captured old values. Minimizes config size and diff noise [Scope 3]
+- **FR64:** Gallery uses a unified tree taxonomy with deep category paths (e.g., `Apps/Languages/.NET/Editors/Visual Studio`, `Windows Tweaks/Explorer`, `Windows Tweaks/Startup Items`). Tree depth matches content density — no subcategories for 2 items [Scope 3]
+- **FR65:** Gallery entries declare a `type:` field (app, tweak, font) with a shared base schema where possible, while respecting that different types have different install/apply mechanisms [Scope 3]
+- **FR66:** Gallery entries declare `windows_versions: [10, 11]` for OS-aware filtering. Desktop UI hides entries that don't apply to the current machine's OS version [Scope 3]
+- **FR67:** Gallery categories declare a `sort:` value controlling display order in the tree [Scope 3]
+- **FR68:** Gallery entries can declare `restart_required: true` to indicate that applying the tweak requires a restart [Scope 3]
+- **FR69:** `index.yaml` is auto-generated from catalog folder contents, not manually maintained [Scope 3]
+
+### Import & Sourcing
+
+- **FR70:** One-time import tooling to parse WinUtil's `tweaks.json` and generate gallery YAML stubs for human review. Covers ~65 tweaks in a single import run [Scope 3]
+- **FR71:** One-time import tooling for Sophia Script functions as a deep catalog (~270 functions), run after WinUtil import proves the pattern. Import pipeline flags overlaps with existing entries for deduplication [Scope 3]
+- **FR72:** Import pipeline checks LICENSE files of source repos for compliance [Scope 3]
+- **FR73:** CI GitHub Action runs on a matrix of Windows versions, validates every registry path in the gallery exists on that OS version. Fails if a key is missing (staleness detection) [Scope 3]
 
 ### Secrets Management
 
@@ -434,7 +472,7 @@ Wouter's colleague uses chezmoi and wants to try Perch. He runs `perch import ch
 
 ### Desktop UI (WPF)
 
-- **FR35:** User can view sync status of all managed modules in a visual dashboard with drift hero banner showing aggregate health (linked/attention/broken counts) and attention cards grouped by severity with one-click fix actions [Scope 3]
+- **FR35:** User can view sync status of all managed modules in a visual dashboard with drift hero banner showing aggregate health and attention cards grouped by severity with one-click fix actions. Status is mechanism-aware — registry tweaks show Applied/Drifted/Not Applied/Reverted/Error; apps show Installed/Not Installed/Update Available; dotfiles show Linked/Broken/Not Linked/Modified; fonts show Installed/Not Installed. Cross-cutting statuses: Skipped (excluded for this machine), hidden (wrong OS version) [Scope 3]
 - **FR36:** User can interactively explore an app's filesystem to find config locations [Scope 3 — future]
 - **FR37:** User can generate and edit module manifests via a visual interface [Scope 3 — future]
 - **FR49:** User is guided through a first-run wizard: profile selection (Developer/Power User/Gamer/Casual) drives which steps and content are shown, with card-based browsing and toggling of detected configs, and a final review + deploy step [Scope 3]
@@ -442,6 +480,8 @@ Wouter's colleague uses chezmoi and wants to try Perch. He runs `perch import ch
 - **FR51:** Card-based view components (Apps, Dotfiles, System Tweaks) are shared between wizard steps and dashboard sidebar pages [Scope 3]
 - **FR52:** User can deploy selected configs from the Desktop app with per-card progress feedback and a contextual deploy bar showing selection count and deploy action [Scope 3]
 - **FR53:** Desktop app supports card grid and compact list display modes with a density toggle [Scope 3]
+- **FR74:** Desktop tweak cards show inline current/desired/default values and a universal "Open Location" button that opens the appropriate tool based on mechanism type — regedit for registry, Explorer for startup folder, services.msc for services, Fonts folder for fonts [Scope 3]
+- **FR75:** Desktop gallery/tree browser is the primary discovery UX. The Astro website serves as marketing only ("why Perch" and "getting started"), not as a browsable catalog [Scope 3]
 
 ### Plugin Lifecycle
 
