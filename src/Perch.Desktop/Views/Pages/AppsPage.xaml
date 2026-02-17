@@ -290,8 +290,12 @@
                                 </Button>
                             </StackPanel>
 
-                            <!-- Action buttons + module info -->
-                            <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="0,4,0,0">
+                            <!-- Action buttons + module info (only when module found) -->
+                            <StackPanel
+                                Grid.Row="5"
+                                Orientation="Horizontal"
+                                Margin="0,4,0,0"
+                                Visibility="{Binding HasModule, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <ui:Button
                                     Content="Link"
                                     Appearance="Primary"
@@ -329,14 +333,25 @@
                                     FontSize="11"
                                     Foreground="#10B981"
                                     VerticalAlignment="Center"
-                                    Text="{Binding AppDetail.OwningModule.DisplayName}"
-                                    Visibility="{Binding HasModule, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                    Text="{Binding AppDetail.OwningModule.DisplayName}" />
+                            </StackPanel>
+
+                            <!-- No module found -->
+                            <StackPanel
+                                Grid.Row="5"
+                                Orientation="Horizontal"
+                                Margin="0,4,0,0"
+                                Visibility="{Binding HasNoModule, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <ui:SymbolIcon
+                                    Symbol="Box24"
+                                    FontSize="14"
+                                    Foreground="#666666"
+                                    Margin="0,0,6,0" />
                                 <TextBlock
                                     FontSize="11"
                                     Foreground="#666666"
                                     VerticalAlignment="Center"
-                                    Text="No module found"
-                                    Visibility="{Binding HasNoModule, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                    Text="No module found" />
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -489,34 +504,13 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border
-                                        Background="#1A1A2E"
-                                        CornerRadius="6"
-                                        Padding="12"
-                                        Width="200"
-                                        Margin="0,0,8,8">
-                                        <StackPanel>
-                                            <TextBlock
-                                                Text="{Binding DisplayName}"
-                                                FontSize="12"
-                                                FontWeight="SemiBold"
-                                                Foreground="White"
-                                                TextTrimming="CharacterEllipsis" />
-                                            <TextBlock
-                                                Text="{Binding Category}"
-                                                FontSize="10"
-                                                Foreground="#888888"
-                                                Margin="0,2,0,0" />
-                                            <TextBlock
-                                                Text="{Binding Description}"
-                                                FontSize="10"
-                                                Foreground="#666666"
-                                                TextWrapping="Wrap"
-                                                MaxHeight="32"
-                                                Margin="0,4,0,0"
-                                                Visibility="{Binding Description, Converter={StaticResource NullToVisibilityConverter}}" />
-                                        </StackPanel>
-                                    </Border>
+                                    <controls:AppCard
+                                        DisplayLabel="{Binding Name}"
+                                        Description="{Binding Description}"
+                                        Category="{Binding Category}"
+                                        Website="{Binding Links.Website}"
+                                        GitHub="{Binding Links.GitHub}"
+                                        Margin="0,0,12,12" />
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
