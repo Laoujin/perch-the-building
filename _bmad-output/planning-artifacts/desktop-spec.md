@@ -55,7 +55,7 @@ Last updated: 2026-02-17
 
 **Data:** Four boolean properties: `IsDeveloper` (default true), `IsPowerUser`, `IsGamer`, `IsCasual`. Multi-select allowed.
 
-**Interactions:** Click a ProfileCard toggles its `IsSelected`. SelectionChanged routed event updates ViewModel booleans.
+**Interactions:** Clicking a ProfileCard toggles its `IsSelected`. SelectionChanged routed event updates ViewModel booleans.
 
 **States:** At least one profile should be selected (IsDeveloper starts true). Profile selection determines which wizard steps appear and which gallery categories surface.
 
@@ -136,7 +136,7 @@ Only shown for Developer or PowerUser profiles.
 
 **Layout:** Progress ring + deploy results list. Each result shows level-specific icon (Success=green check, Warning=yellow warning, Error=red X, Info=blue info).
 
-**Data:** `IDeployService.DeployAsync()` with `IProgress<DeployResult>`. Filters to `BeforeModule` for selected modules only. Font onboarding via `IFontOnboardingService.OnboardAsync()`.
+**Data:** `IDeployService.DeployAsync()` with `IProgress<DeployResult>`. Uses `BeforeModule` callback to deploy selected modules only. Font onboarding via `IFontOnboardingService.OnboardAsync()`.
 
 **Interactions:** No user interaction during deploy. "Open Dashboard" button appears on completion.
 
@@ -487,7 +487,7 @@ Font category detail:
 
 **File:** `Services/AppDetailService.cs`
 
-**Purpose:** Load manifest and alternatives when user opens app config detail.
+**Purpose:** Load manifest and alternatives when the user opens app config detail.
 
 **Dependencies:** `IModuleDiscoveryService`, `ICatalogService`, `ISettingsProvider`
 
@@ -602,7 +602,7 @@ Items confirmed in code that are non-functional or half-wired. Recommended for r
 
 **What:** Alternatives card list at bottom of app config detail and dotfile detail. Shows other catalog entries in the same category.
 
-**Status:** Loads via `AppDetailService` / `DotfileDetailService`. Binds `DisplayName` which is **null for many catalog entries**, causing blank cards. `HasAlternatives` visibility check passes but cards render without names.
+**Status:** Loads via `AppDetailService` / `DotfileDetailService`. Binds `DisplayName`, which is **null for many catalog entries**, causing blank cards. `HasAlternatives` visibility check passes but cards render without names.
 
 **Remove:** Alternatives UI sections. The data loading in services can stay (low cost), but the broken display should go.
 
@@ -670,7 +670,7 @@ System fonts are detected independently via `IFontScanner` — no gallery entry 
 
 ### 9.2 Null DisplayName on Catalog Entries
 
-Many gallery catalog entries lack `displayName`. The `AppCardModel` and alternatives rendering bind to `DisplayName` which can be null, producing blank card headers. `Name` (GalleryId) should be used as fallback consistently.
+Many gallery catalog entries lack `displayName`. The `AppCardModel` and alternatives rendering bind to `DisplayName`, which can be null, producing blank card headers. `Name` (GalleryId) should be used as fallback consistently.
 
 ### 9.3 Silent Error States on Catalog Failure
 
@@ -678,7 +678,7 @@ If `ICatalogService` fails to load, detection methods return empty collections. 
 
 ### 9.4 Hardcoded Profiles in SystemTweaksViewModel
 
-`SystemTweaksViewModel` uses hardcoded `{ UserProfile.Developer, UserProfile.PowerUser }` instead of the user's actual selected profiles from settings. This means Gamer/Casual users see Developer/PowerUser filtered results.
+`SystemTweaksViewModel` uses hardcoded `{ UserProfile.Developer, UserProfile.PowerUser }` instead of the user's actual selected profiles from settings. This means Gamer/Casual users see results filtered for Developer/PowerUser.
 
 ### 9.5 Gamer/Casual Profile Sparsity
 
@@ -712,7 +712,7 @@ StartupPage was added during implementation but is not referenced in the UX Desi
 | DotfileDetailService | 9 | `DotfileDetailServiceTests.cs` | Path matching, platform targets, normalization |
 | **Total Desktop** | **50** | **6 files** | All in `Perch.Core.Tests/Desktop/` |
 
-Tests are gated behind `#if DESKTOP_TESTS` preprocessor directive and `[Platform("Win")]` + `[SupportedOSPlatform("windows")]` attributes.
+Tests are gated behind the `#if DESKTOP_TESTS` preprocessor directive and `[Platform("Win")]` + `[SupportedOSPlatform("windows")]` attributes.
 
 ### Gaps
 
