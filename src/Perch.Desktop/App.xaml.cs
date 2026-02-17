@@ -131,11 +131,8 @@ public partial class App : Application
             }
         }
 
-        MessageBox.Show(
-            e.Exception.ToString(),
-            "Unhandled Exception",
-            MessageBoxButton.OK,
-            MessageBoxImage.Error);
+        var crashWindow = new CrashWindow(e.Exception);
+        crashWindow.ShowDialog();
         e.Handled = true;
     }
 }
