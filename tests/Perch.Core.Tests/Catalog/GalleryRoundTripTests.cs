@@ -102,7 +102,9 @@ public sealed class GalleryRoundTripTests
 
         Assert.That(result.IsSuccess, Is.True, $"Failed to parse {id}: {result.Error}");
         Assert.That(result.Value!.Name, Is.Not.Empty);
-        Assert.That(result.Value!.Registry, Is.Not.Empty, $"Tweak '{id}' has no registry entries");
+        var hasRegistry = result.Value!.Registry.Length > 0;
+        var hasScript = result.Value!.Script != null;
+        Assert.That(hasRegistry || hasScript, Is.True, $"Tweak '{id}' has no registry entries or script");
     }
 
     private CatalogIndex ParseIndex()

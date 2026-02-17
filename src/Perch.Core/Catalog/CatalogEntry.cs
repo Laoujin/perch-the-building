@@ -23,7 +23,8 @@ public sealed record CatalogEntry(
     InstallDefinition? Install,
     CatalogConfigDefinition? Config,
     CatalogExtensions? Extensions,
-    CatalogKind Kind = CatalogKind.App);
+    CatalogKind Kind = CatalogKind.App,
+    ImmutableArray<AppOwnedTweak> Tweaks = default);
 
 public sealed record CatalogLinks(string? Website, string? Docs, string? GitHub);
 
@@ -47,3 +48,11 @@ public sealed record CatalogCleanFilter(
 public sealed record CatalogExtensions(
     ImmutableArray<string> Bundled,
     ImmutableArray<string> Recommended);
+
+public sealed record AppOwnedTweak(
+    string Id,
+    string Name,
+    string? Description,
+    ImmutableArray<RegistryEntryDefinition> Registry,
+    string? Script = null,
+    string? UndoScript = null);

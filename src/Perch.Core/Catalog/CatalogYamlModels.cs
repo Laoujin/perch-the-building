@@ -18,6 +18,7 @@ internal sealed class AppCatalogYamlModel
     public InstallYamlModel? Install { get; set; }
     public CatalogConfigYamlModel? Config { get; set; }
     public CatalogExtensionsYamlModel? Extensions { get; set; }
+    public List<AppOwnedTweakYamlModel>? Tweaks { get; set; }
 }
 
 internal sealed class FontCatalogYamlModel
@@ -42,8 +43,26 @@ internal sealed class TweakCatalogYamlModel
     public string? Description { get; set; }
     public bool Reversible { get; set; }
     public List<string>? Profiles { get; set; }
-    public int Priority { get; set; }
     public List<TweakRegistryYamlModel>? Registry { get; set; }
+    public string? Script { get; set; }
+
+    [YamlMember(Alias = "undo-script")]
+    public string? UndoScript { get; set; }
+
+    public List<string>? Suggests { get; set; }
+    public List<string>? Requires { get; set; }
+}
+
+internal sealed class AppOwnedTweakYamlModel
+{
+    public string? Id { get; set; }
+    public string? Name { get; set; }
+    public string? Description { get; set; }
+    public List<TweakRegistryYamlModel>? Registry { get; set; }
+    public string? Script { get; set; }
+
+    [YamlMember(Alias = "undo-script")]
+    public string? UndoScript { get; set; }
 }
 
 internal sealed class CatalogLinksYamlModel
@@ -104,6 +123,13 @@ internal sealed class TweakRegistryYamlModel
     public string? Name { get; set; }
     public object? Value { get; set; }
     public string? Type { get; set; }
+
+    [YamlMember(Alias = "default-value")]
+    public object? DefaultValue { get => _defaultValue; set { _defaultValue = value; HasDefaultValue = true; } }
+    private object? _defaultValue;
+
+    [YamlIgnore]
+    public bool HasDefaultValue { get; private set; }
 }
 
 internal sealed class CatalogIndexYamlModel

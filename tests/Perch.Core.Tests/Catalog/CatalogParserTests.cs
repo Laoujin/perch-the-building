@@ -145,7 +145,6 @@ public sealed class CatalogParserTests
             Assert.That(entry.Name, Is.EqualTo("Show File Extensions"));
             Assert.That(entry.Reversible, Is.True);
             Assert.That(entry.Profiles, Has.Length.EqualTo(2));
-            Assert.That(entry.Priority, Is.EqualTo(1));
             Assert.That(entry.Registry, Has.Length.EqualTo(1));
             Assert.That(entry.Registry[0].Name, Is.EqualTo("HideFileExt"));
             Assert.That(entry.Registry[0].Kind, Is.EqualTo(RegistryValueType.DWord));
@@ -454,6 +453,241 @@ public sealed class CatalogParserTests
             Assert.That(filter.Rules[1].Patterns, Has.Length.EqualTo(2));
             Assert.That(entry.Extensions!.Bundled, Has.Length.EqualTo(1));
             Assert.That(entry.Extensions.Recommended, Has.Length.EqualTo(2));
+        });
+    }
+
+    [Test]
+    public void ParseTweak_WithDefaultValue_ParsesDefaultValue()
+    {
+        string yaml = """
+            name: Show File Extensions
+            category: Explorer/Files
+            tags: [explorer, files]
+            description: Always show file name extensions in Explorer
+            reversible: true
+            profiles: [developer]
+            registry:
+              - key: HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+                name: HideFileExt
+                value: 0
+                type: dword
+                default-value: 1
+            """;
+
+        var result = _parser.ParseTweak(yaml, "show-file-extensions");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value!.Registry[0].DefaultValue, Is.EqualTo(1));
+    }
+
+    [Test]
+    public void ParseTweak_WithNullDefaultValue_ParsesAsNull()
+    {
+        string yaml = """
+            name: Classic Context Menu
+            category: Explorer/Context Menu
+            tags: [explorer]
+            description: Restore classic context menu
+            reversible: true
+            registry:
+              - key: HKCU\Software\Classes\CLSID\{86ca1aa0}\InprocServer32
+                name: ""
+                value: ""
+                type: string
+                default-value: null
+            """;
+
+        var result = _parser.ParseTweak(yaml, "classic-context-menu");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value!.Registry[0].DefaultValue, Is.Null);
+    }
+
+    [Test]
+    public void ParseTweak_WithoutDefaultValue_DefaultValueIsNull()
+    {
+        string yaml = """
+            name: Test Tweak
+            category: Test
+            tags: [test]
+            reversible: true
+            registry:
+              - key: HKCU\Software\Test
+                name: TestValue
+                value: 1
+                type: dword
+            """;
+
+        var result = _parser.ParseTweak(yaml, "test-tweak");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value!.Registry[0].DefaultValue, Is.Null);
+    }
+
+    [Test]
+    public void ParseTweak_WithScript_ParsesScriptAndUndoScript()
+    {
+        string yaml = """
+            name: Hide This PC Folders
+            category: Explorer/Navigation
+            tags: [explorer]
+            reversible: true
+            script: |
+              Remove-Item -Path 'HKLM:\test' -Recurse
+            undo-script: |
+              New-Item -Path 'HKLM:\test' -Force
+            """;
+
+        var result = _parser.ParseTweak(yaml, "hide-this-pc-folders");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Value!.Script, Does.Contain("Remove-Item"));
+            Assert.That(result.Value!.UndoScript, Does.Contain("New-Item"));
+            Assert.That(result.Value!.Registry, Is.Empty);
+        });
+    }
+
+    [Test]
+    public void ParseTweak_WithSuggests_ParsesSuggestsList()
+    {
+        string yaml = """
+            name: Hide Copilot Button
+            category: Taskbar/Declutter
+            tags: [taskbar]
+            reversible: true
+            suggests: [disable-widgets, disable-chat-icon]
+            registry:
+              - key: HKCU\Software\Test
+                name: ShowCopilotButton
+                value: 0
+                type: dword
+            """;
+
+        var result = _parser.ParseTweak(yaml, "disable-copilot-button");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value!.Suggests, Has.Length.EqualTo(2));
+        Assert.That(result.Value!.Suggests[0], Is.EqualTo("disable-widgets"));
+    }
+
+    [Test]
+    public void ParseTweak_WithoutSuggests_SuggestsIsEmpty()
+    {
+        string yaml = """
+            name: Test Tweak
+            category: Test
+            tags: [test]
+            reversible: true
+            registry:
+              - key: HKCU\Software\Test
+                name: TestValue
+                value: 1
+                type: dword
+            """;
+
+        var result = _parser.ParseTweak(yaml, "test");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value!.Suggests, Is.Empty);
+        Assert.That(result.Value!.Requires, Is.Empty);
+    }
+
+    [Test]
+    public void ParseTweak_WithStringDefaultValue_CoercesCorrectly()
+    {
+        string yaml = """
+            name: Disable Sticky Keys
+            category: Accessibility/Keyboard
+            tags: [accessibility]
+            reversible: true
+            registry:
+              - key: HKCU\Control Panel\Accessibility\StickyKeys
+                name: Flags
+                value: "506"
+                type: string
+                default-value: "510"
+            """;
+
+        var result = _parser.ParseTweak(yaml, "disable-sticky-keys");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value!.Registry[0].DefaultValue, Is.EqualTo("510"));
+    }
+
+    [Test]
+    public void ParseApp_WithTweaks_ParsesAppOwnedTweaks()
+    {
+        string yaml = """
+            name: Spotify
+            category: Media/Players
+            tags: [music]
+            tweaks:
+              - id: disable-autostart
+                name: Disable Auto-Start
+                description: Prevent Spotify from launching at startup
+                registry:
+                  - key: HKCU\Software\Microsoft\Windows\CurrentVersion\Run
+                    name: Spotify
+                    value: null
+                    type: string
+                    default-value: null
+            """;
+
+        var result = _parser.ParseApp(yaml, "spotify");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value!.Tweaks, Has.Length.EqualTo(1));
+        var tweak = result.Value!.Tweaks[0];
+        Assert.Multiple(() =>
+        {
+            Assert.That(tweak.Id, Is.EqualTo("disable-autostart"));
+            Assert.That(tweak.Name, Is.EqualTo("Disable Auto-Start"));
+            Assert.That(tweak.Registry, Has.Length.EqualTo(1));
+            Assert.That(tweak.Registry[0].Value, Is.Null);
+        });
+    }
+
+    [Test]
+    public void ParseApp_WithoutTweaks_TweaksIsEmpty()
+    {
+        string yaml = """
+            name: TestApp
+            category: Test
+            """;
+
+        var result = _parser.ParseApp(yaml, "testapp");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value!.Tweaks, Is.Empty);
+    }
+
+    [Test]
+    public void ParseApp_WithScriptTweak_ParsesScripts()
+    {
+        string yaml = """
+            name: Cmder
+            category: Development/Terminals
+            tags: [terminal]
+            tweaks:
+              - id: open-here
+                name: Open Cmder Here
+                description: Add context menu entry
+                script: |
+                  New-Item -Path 'HKCR:\test' -Force
+                undo-script: |
+                  Remove-Item -Path 'HKCR:\test' -Recurse
+            """;
+
+        var result = _parser.ParseApp(yaml, "cmder");
+
+        Assert.That(result.IsSuccess, Is.True);
+        var tweak = result.Value!.Tweaks[0];
+        Assert.Multiple(() =>
+        {
+            Assert.That(tweak.Script, Does.Contain("New-Item"));
+            Assert.That(tweak.UndoScript, Does.Contain("Remove-Item"));
         });
     }
 }
