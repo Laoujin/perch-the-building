@@ -145,7 +145,6 @@ public sealed class CatalogParserTests
             Assert.That(entry.Name, Is.EqualTo("Show File Extensions"));
             Assert.That(entry.Reversible, Is.True);
             Assert.That(entry.Profiles, Has.Length.EqualTo(2));
-            Assert.That(entry.Priority, Is.EqualTo(1));
             Assert.That(entry.Registry, Has.Length.EqualTo(1));
             Assert.That(entry.Registry[0].Name, Is.EqualTo("HideFileExt"));
             Assert.That(entry.Registry[0].Kind, Is.EqualTo(RegistryValueType.DWord));

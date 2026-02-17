@@ -144,6 +144,6 @@ public sealed class GalleryDetectionServiceTweakTests
 
     private static TweakCatalogEntry MakeTweak(string id, string name, string[] profiles) =>
         new(id, name, "System", [], null, true,
-            profiles.ToImmutableArray(), 0, []);
+            profiles.ToImmutableArray(), []);
 }
 #endif

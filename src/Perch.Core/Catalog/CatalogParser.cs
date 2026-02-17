@@ -124,7 +124,6 @@ public sealed class CatalogParser
             model.Description,
             model.Reversible,
             ToImmutableTags(model.Profiles),
-            model.Priority,
             registryEntries,
             model.Script,
             model.UndoScript,

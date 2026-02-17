@@ -43,7 +43,6 @@ internal sealed class TweakCatalogYamlModel
     public string? Description { get; set; }
     public bool Reversible { get; set; }
     public List<string>? Profiles { get; set; }
-    public int Priority { get; set; }
     public List<TweakRegistryYamlModel>? Registry { get; set; }
     public string? Script { get; set; }
 

@@ -16,7 +16,6 @@ public partial class TweakCardModel : ObservableObject
     public ImmutableArray<string> Tags { get; }
     public ImmutableArray<string> Profiles { get; }
     public bool Reversible { get; }
-    public int Priority { get; }
     public ImmutableArray<RegistryEntryDefinition> Registry { get; }
 
     [ObservableProperty]
@@ -42,7 +41,6 @@ public partial class TweakCardModel : ObservableObject
         Tags = entry.Tags;
         Profiles = entry.Profiles;
         Reversible = entry.Reversible;
-        Priority = entry.Priority;
         Registry = entry.Registry;
         Status = status;
     }
