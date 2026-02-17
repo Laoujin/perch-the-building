@@ -687,7 +687,8 @@ StartupPage was added during implementation but is not referenced in the UX Desi
 | AppDetailService | 5 | `AppDetailServiceTests.cs` | Module matching, alternatives, edge cases |
 | DotfileDetailService | 9 | `DotfileDetailServiceTests.cs` | Path matching, platform targets, normalization |
 | ViewModels (Apps, Dotfiles, SystemTweaks) | 20 | `ViewModelTests.cs` | Navigation state, refresh/error, search filtering, profile loading |
-| **Total Desktop** | **70** | **7 files** | All in `Perch.Core.Tests/Desktop/` |
+| WizardShellViewModel | 46 | `WizardViewModelTests.cs` | Step building, navigation guards, detection flow, deploy, crash, font onboarding |
+| **Total Desktop** | **116** | **8 files** | All in `Perch.Core.Tests/Desktop/` |
 
 Tests are gated behind the `#if DESKTOP_TESTS` preprocessor directive and `[Platform("Win")]` + `[SupportedOSPlatform("windows")]` attributes.
 
@@ -695,12 +696,9 @@ Tests are gated behind the `#if DESKTOP_TESTS` preprocessor directive and `[Plat
 
 | Gap | Priority | Rationale |
 |-----|----------|-----------|
-| Wizard step flow | High | Step visibility, conditional steps, navigation guards untested |
 | `smoke-test.ps1` integration | Low | Exists at `tests/integration/smoke-test.ps1`, covers deploy + symlink verify. Manual run only |
 
 ### Recommendations
 
-1. **WizardShellViewModel tests** — Test step building based on profiles, navigation guards, detection triggering, deploy flow. High value given the wizard is the first-run experience.
-
-2. **Integration test expansion** — `smoke-test.ps1` only covers CLI deploy. Add Desktop smoke test that launches app, verifies wizard appears on first run, completes a profile selection.
+1. **Integration test expansion** — `smoke-test.ps1` only covers CLI deploy. Add Desktop smoke test that launches app, verifies wizard appears on first run, completes a profile selection.
 
