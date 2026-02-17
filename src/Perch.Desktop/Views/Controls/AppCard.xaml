@@ -27,11 +27,12 @@
                 Status="{Binding Status, RelativeSource={RelativeSource AncestorType=UserControl}}"
                 Margin="0,0,0,8" />
 
-            <!-- Row 1: Icon + Name -->
+            <!-- Row 1: Icon + Name + Configure -->
             <Grid Grid.Row="1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
                 <ui:SymbolIcon
@@ -50,6 +51,15 @@
                     Foreground="White"
                     VerticalAlignment="Center"
                     TextTrimming="CharacterEllipsis" />
+
+                <ui:Button
+                    Grid.Column="2"
+                    Icon="{ui:SymbolIcon Settings24}"
+                    Appearance="Secondary"
+                    Padding="4"
+                    Margin="4,0,0,0"
+                    VerticalAlignment="Center"
+                    Click="OnConfigureClick" />
             </Grid>
 
             <!-- Row 2: Description -->

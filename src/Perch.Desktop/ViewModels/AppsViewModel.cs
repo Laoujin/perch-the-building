@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -14,6 +15,7 @@ public sealed partial class AppsViewModel : ViewModelBase
 {
     private readonly IGalleryDetectionService _detectionService;
     private readonly IAppLinkService _appLinkService;
+    private readonly IAppDetailService _detailService;
 
     [ObservableProperty]
     private bool _isLoading;
@@ -24,18 +26,41 @@ public sealed partial class AppsViewModel : ViewModelBase
     [ObservableProperty]
     private string? _selectedAppCategory;
 
+    [ObservableProperty]
+    private AppCardModel? _selectedApp;
+
+    [ObservableProperty]
+    private AppDetail? _appDetail;
+
+    [ObservableProperty]
+    private bool _isLoadingAppDetail;
+
+    [ObservableProperty]
+    private bool _showRawEditor;
+
     public ObservableCollection<AppCategoryCardModel> AppCategories { get; } = [];
     public ObservableCollection<AppCategoryGroup> FilteredCategoryApps { get; } = [];
 
-    public bool ShowAppCategories => SelectedAppCategory is null;
-    public bool ShowAppDetail => SelectedAppCategory is not null;
+    public bool ShowAppCategories => SelectedAppCategory is null && SelectedApp is null;
+    public bool ShowAppDetail => SelectedAppCategory is not null && SelectedApp is null;
+    public bool ShowAppConfigDetail => SelectedApp is not null;
+
+    public bool HasModule => AppDetail?.OwningModule is not null;
+    public bool HasNoModule => AppDetail is not null && AppDetail.OwningModule is null;
+    public bool HasAlternatives => AppDetail is not null && AppDetail.Alternatives.Length > 0;
+    public bool ShowStructuredView => HasModule && !ShowRawEditor;
+    public bool ShowEditorView => HasModule && ShowRawEditor;
 
     private ImmutableArray<AppCardModel> _allApps = [];
 
-    public AppsViewModel(IGalleryDetectionService detectionService, IAppLinkService appLinkService)
+    public AppsViewModel(
+        IGalleryDetectionService detectionService,
+        IAppLinkService appLinkService,
+        IAppDetailService detailService)
     {
         _detectionService = detectionService;
         _appLinkService = appLinkService;
+        _detailService = detailService;
     }
 
     partial void OnSearchTextChanged(string value) => ApplyFilter();
@@ -44,6 +69,67 @@ public sealed partial class AppsViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(ShowAppCategories));
         OnPropertyChanged(nameof(ShowAppDetail));
+        OnPropertyChanged(nameof(ShowAppConfigDetail));
+    }
+
+    partial void OnSelectedAppChanged(AppCardModel? value)
+    {
+        OnPropertyChanged(nameof(ShowAppCategories));
+        OnPropertyChanged(nameof(ShowAppDetail));
+        OnPropertyChanged(nameof(ShowAppConfigDetail));
+    }
+
+    partial void OnAppDetailChanged(AppDetail? value)
+    {
+        OnPropertyChanged(nameof(HasModule));
+        OnPropertyChanged(nameof(HasNoModule));
+        OnPropertyChanged(nameof(HasAlternatives));
+        OnPropertyChanged(nameof(ShowStructuredView));
+        OnPropertyChanged(nameof(ShowEditorView));
+    }
+
+    partial void OnShowRawEditorChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowStructuredView));
+        OnPropertyChanged(nameof(ShowEditorView));
+    }
+
+    [RelayCommand]
+    private async Task ConfigureAppAsync(AppCardModel card, CancellationToken cancellationToken)
+    {
+        SelectedApp = card;
+        AppDetail = null;
+        IsLoadingAppDetail = true;
+
+        try
+        {
+            AppDetail = await _detailService.LoadDetailAsync(card, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        finally
+        {
+            IsLoadingAppDetail = false;
+        }
+    }
+
+    [RelayCommand]
+    private void BackToCategoryDetail()
+    {
+        SelectedApp = null;
+        AppDetail = null;
+        ShowRawEditor = false;
+    }
+
+    [RelayCommand]
+    private void ToggleEditor() => ShowRawEditor = !ShowRawEditor;
+
+    [RelayCommand]
+    private void AddDroppedFiles(string[] files)
+    {
+        Trace.TraceInformation("{0} file(s) queued for linking", files.Length);
     }
 
     [RelayCommand]

@@ -60,6 +60,10 @@ public partial class AppCard : UserControl
         EventManager.RegisterRoutedEvent(nameof(FixRequested), RoutingStrategy.Bubble,
             typeof(RoutedEventHandler), typeof(AppCard));
 
+    public static readonly RoutedEvent ConfigureRequestedEvent =
+        EventManager.RegisterRoutedEvent(nameof(ConfigureRequested), RoutingStrategy.Bubble,
+            typeof(RoutedEventHandler), typeof(AppCard));
+
     public string DisplayLabel
     {
         get => (string)GetValue(DisplayLabelProperty);
@@ -138,6 +142,12 @@ public partial class AppCard : UserControl
         remove => RemoveHandler(FixRequestedEvent, value);
     }
 
+    public event RoutedEventHandler ConfigureRequested
+    {
+        add => AddHandler(ConfigureRequestedEvent, value);
+        remove => RemoveHandler(ConfigureRequestedEvent, value);
+    }
+
     public AppCard()
     {
         InitializeComponent();
@@ -151,6 +161,9 @@ public partial class AppCard : UserControl
 
     private void OnFixClick(object sender, RoutedEventArgs e) =>
         RaiseEvent(new RoutedEventArgs(FixRequestedEvent, this));
+
+    private void OnConfigureClick(object sender, RoutedEventArgs e) =>
+        RaiseEvent(new RoutedEventArgs(ConfigureRequestedEvent, this));
 
     private void OnWebsiteClick(object sender, RoutedEventArgs e)
     {
