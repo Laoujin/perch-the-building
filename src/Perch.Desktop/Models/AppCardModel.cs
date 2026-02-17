@@ -17,6 +17,9 @@ public partial class AppCardModel : ObservableObject
     public InstallDefinition? Install { get; }
     public CatalogConfigDefinition? Config { get; }
     public CardTier Tier { get; }
+    public CatalogEntry CatalogEntry { get; }
+    public string? Website { get; }
+    public string? GitHub { get; }
 
     [ObservableProperty]
     private CardStatus _status;
@@ -28,6 +31,10 @@ public partial class AppCardModel : ObservableObject
     private bool _isExpanded;
 
     public string DisplayLabel => DisplayName ?? Name;
+
+    public bool CanLink => Status == CardStatus.Detected;
+    public bool CanUnlink => Status == CardStatus.Linked;
+    public bool CanFix => Status is CardStatus.Broken or CardStatus.Drift;
 
     public AppCardModel(CatalogEntry entry, CardTier tier, CardStatus status)
     {
@@ -41,6 +48,16 @@ public partial class AppCardModel : ObservableObject
         Config = entry.Config;
         Tier = tier;
         Status = status;
+        CatalogEntry = entry;
+        Website = entry.Links?.Website;
+        GitHub = entry.Links?.GitHub;
+    }
+
+    partial void OnStatusChanged(CardStatus value)
+    {
+        OnPropertyChanged(nameof(CanLink));
+        OnPropertyChanged(nameof(CanUnlink));
+        OnPropertyChanged(nameof(CanFix));
     }
 
     public bool MatchesSearch(string query)

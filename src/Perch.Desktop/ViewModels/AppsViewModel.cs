@@ -1,8 +1,10 @@
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
+using Perch.Core.Symlinks;
 using Perch.Desktop.Models;
 using Perch.Desktop.Services;
 
@@ -11,6 +13,7 @@ namespace Perch.Desktop.ViewModels;
 public sealed partial class AppsViewModel : ViewModelBase
 {
     private readonly IGalleryDetectionService _detectionService;
+    private readonly IAppLinkService _appLinkService;
 
     [ObservableProperty]
     private bool _isLoading;
@@ -18,18 +21,14 @@ public sealed partial class AppsViewModel : ViewModelBase
     [ObservableProperty]
     private string _searchText = string.Empty;
 
-    [ObservableProperty]
-    private int _selectedCount;
+    public ObservableCollection<AppCategoryGroup> GroupedApps { get; } = [];
 
-    public ObservableCollection<AppCardModel> YourApps { get; } = [];
-    public ObservableCollection<AppCardModel> SuggestedApps { get; } = [];
-    public ObservableCollection<AppCardModel> OtherApps { get; } = [];
+    private ImmutableArray<AppCardModel> _allApps = [];
 
-    private GalleryDetectionResult? _lastResult;
-
-    public AppsViewModel(IGalleryDetectionService detectionService)
+    public AppsViewModel(IGalleryDetectionService detectionService, IAppLinkService appLinkService)
     {
         _detectionService = detectionService;
+        _appLinkService = appLinkService;
     }
 
     partial void OnSearchTextChanged(string value) => ApplyFilter();
@@ -41,8 +40,7 @@ public sealed partial class AppsViewModel : ViewModelBase
 
         try
         {
-            var profiles = new HashSet<UserProfile> { UserProfile.Developer, UserProfile.PowerUser };
-            _lastResult = await _detectionService.DetectAppsAsync(profiles, cancellationToken);
+            _allApps = await _detectionService.DetectAllAppsAsync(cancellationToken);
             ApplyFilter();
         }
         catch (OperationCanceledException)
@@ -55,53 +53,74 @@ public sealed partial class AppsViewModel : ViewModelBase
         }
     }
 
-    public async Task LoadFromDetectionResultAsync(GalleryDetectionResult result)
-    {
-        _lastResult = result;
-        ApplyFilter();
-        await Task.CompletedTask;
-    }
-
     private void ApplyFilter()
     {
-        if (_lastResult is null) return;
-
-        YourApps.Clear();
-        SuggestedApps.Clear();
-        OtherApps.Clear();
-
-        foreach (var app in _lastResult.YourApps)
+        if (_allApps.IsDefaultOrEmpty)
         {
-            if (app.MatchesSearch(SearchText))
-                YourApps.Add(app);
+            GroupedApps.Clear();
+            return;
         }
 
-        foreach (var app in _lastResult.Suggested)
-        {
-            if (app.MatchesSearch(SearchText))
-                SuggestedApps.Add(app);
-        }
+        var filtered = _allApps.Where(a => a.MatchesSearch(SearchText));
 
-        foreach (var app in _lastResult.OtherApps)
-        {
-            if (app.MatchesSearch(SearchText))
-                OtherApps.Add(app);
-        }
+        var groups = filtered
+            .GroupBy(a => a.Category)
+            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(g => new AppCategoryGroup(
+                g.Key,
+                new ObservableCollection<AppCardModel>(
+                    g.OrderBy(a => StatusSortOrder(a.Status))
+                     .ThenBy(a => a.DisplayLabel, StringComparer.OrdinalIgnoreCase))))
+            .ToList();
 
-        UpdateSelectedCount();
+        GroupedApps.Clear();
+        foreach (var group in groups)
+            GroupedApps.Add(group);
     }
 
-    public void UpdateSelectedCount()
+    private static int StatusSortOrder(CardStatus status) => status switch
     {
-        SelectedCount = YourApps.Count(a => a.IsSelected)
-            + SuggestedApps.Count(a => a.IsSelected)
-            + OtherApps.Count(a => a.IsSelected);
+        CardStatus.Linked => 0,
+        CardStatus.Drift => 1,
+        CardStatus.Broken => 2,
+        CardStatus.Detected => 3,
+        CardStatus.NotInstalled => 4,
+        _ => 5,
+    };
+
+    [RelayCommand]
+    private async Task LinkAppAsync(AppCardModel app)
+    {
+        var results = await _appLinkService.LinkAppAsync(app.CatalogEntry);
+        if (results.All(r => r.Level != Core.Deploy.ResultLevel.Error))
+            app.Status = CardStatus.Linked;
     }
 
-    public void ClearSelection()
+    [RelayCommand]
+    private async Task UnlinkAppAsync(AppCardModel app)
     {
-        foreach (var app in YourApps.Concat(SuggestedApps).Concat(OtherApps))
-            app.IsSelected = false;
-        SelectedCount = 0;
+        var results = await _appLinkService.UnlinkAppAsync(app.CatalogEntry);
+        if (results.All(r => r.Level != Core.Deploy.ResultLevel.Error))
+            app.Status = CardStatus.Detected;
+    }
+
+    [RelayCommand]
+    private async Task FixAppAsync(AppCardModel app)
+    {
+        var results = await _appLinkService.FixAppLinksAsync(app.CatalogEntry);
+        if (results.All(r => r.Level != Core.Deploy.ResultLevel.Error))
+            app.Status = CardStatus.Linked;
+    }
+}
+
+public sealed class AppCategoryGroup
+{
+    public string Category { get; }
+    public ObservableCollection<AppCardModel> Apps { get; }
+
+    public AppCategoryGroup(string category, ObservableCollection<AppCardModel> apps)
+    {
+        Category = category;
+        Apps = apps;
     }
 }

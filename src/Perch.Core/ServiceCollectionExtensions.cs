@@ -51,6 +51,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IFileBackupProvider, FileBackupProvider>();
         services.AddSingleton<ISnapshotProvider, SnapshotProvider>();
         services.AddSingleton<SymlinkOrchestrator>();
+        services.AddSingleton<IAppLinkService, AppLinkService>();
         services.AddSingleton<IHookRunner, HookRunner>();
         services.AddSingleton<IGlobalPackageInstaller, GlobalPackageInstaller>();
         services.AddSingleton<IVscodeExtensionInstaller, VscodeExtensionInstaller>();

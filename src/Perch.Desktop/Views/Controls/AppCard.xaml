@@ -7,13 +7,14 @@
     <Border
         x:Name="CardBorder"
         Background="#1A1A2E"
-        BorderBrush="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToBorderBrushConverter}}"
+        BorderBrush="#2A2A3E"
         BorderThickness="1"
         CornerRadius="8"
         Padding="12"
-        Width="240">
+        Width="320">
         <Grid>
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -26,17 +27,15 @@
                 Status="{Binding Status, RelativeSource={RelativeSource AncestorType=UserControl}}"
                 Margin="0,0,0,8" />
 
-            <!-- Row 1: Icon + Name + Toggle -->
+            <!-- Row 1: Icon + Name -->
             <Grid Grid.Row="1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
                 <ui:SymbolIcon
                     Grid.Column="0"
-                    x:Name="AppIcon"
                     Symbol="Apps24"
                     FontSize="24"
                     Foreground="#888888"
@@ -46,38 +45,90 @@
                 <TextBlock
                     Grid.Column="1"
                     Text="{Binding DisplayLabel, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                    FontSize="13"
+                    FontSize="14"
                     FontWeight="SemiBold"
                     Foreground="White"
                     VerticalAlignment="Center"
                     TextTrimming="CharacterEllipsis" />
-
-                <ui:ToggleSwitch
-                    Grid.Column="2"
-                    x:Name="ManageToggle"
-                    IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=TwoWay}"
-                    VerticalAlignment="Center" />
             </Grid>
 
             <!-- Row 2: Description -->
             <TextBlock
                 Grid.Row="2"
                 Text="{Binding Description, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                FontSize="11"
-                Foreground="#888888"
+                FontSize="12"
+                Foreground="#AAAAAA"
                 TextWrapping="Wrap"
                 TextTrimming="CharacterEllipsis"
-                MaxHeight="32"
-                Margin="0,4,0,0"
+                MaxHeight="48"
+                Margin="0,6,0,0"
                 Visibility="{Binding Description, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource CountToVisibilityConverter}}" />
 
-            <!-- Row 3: Category tag -->
-            <TextBlock
+            <!-- Row 3: Website + GitHub links -->
+            <StackPanel
                 Grid.Row="3"
-                Text="{Binding Category, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                FontSize="10"
-                Foreground="#666666"
-                Margin="0,4,0,0" />
+                Orientation="Horizontal"
+                Margin="0,6,0,0">
+                <Button
+                    x:Name="WebsiteButton"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Padding="4,2"
+                    Click="OnWebsiteClick"
+                    ToolTip="{Binding Website, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                    Visibility="{Binding Website, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource CountToVisibilityConverter}}">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="Globe24" FontSize="12" Foreground="#6B7280" />
+                        <TextBlock Text="Website" FontSize="11" Foreground="#6B7280" Margin="4,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button
+                    x:Name="GitHubButton"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Padding="4,2"
+                    Click="OnGitHubClick"
+                    ToolTip="{Binding GitHub, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                    Visibility="{Binding GitHub, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource CountToVisibilityConverter}}">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="Code24" FontSize="12" Foreground="#6B7280" />
+                        <TextBlock Text="GitHub" FontSize="11" Foreground="#6B7280" Margin="4,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+
+            <!-- Row 4: Action buttons -->
+            <StackPanel
+                Grid.Row="4"
+                Orientation="Horizontal"
+                Margin="0,8,0,0">
+                <ui:Button
+                    x:Name="LinkButton"
+                    Content="Link"
+                    Appearance="Primary"
+                    Click="OnLinkClick"
+                    Padding="12,4"
+                    FontSize="11"
+                    Margin="0,0,6,0"
+                    Visibility="{Binding CanLink, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                <ui:Button
+                    x:Name="UnlinkButton"
+                    Content="Unlink"
+                    Appearance="Secondary"
+                    Click="OnUnlinkClick"
+                    Padding="12,4"
+                    FontSize="11"
+                    Margin="0,0,6,0"
+                    Visibility="{Binding CanUnlink, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                <ui:Button
+                    x:Name="FixButton"
+                    Content="Fix"
+                    Appearance="Caution"
+                    Click="OnFixClick"
+                    Padding="12,4"
+                    FontSize="11"
+                    Visibility="{Binding CanFix, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}" />
+            </StackPanel>
         </Grid>
     </Border>
 </UserControl>

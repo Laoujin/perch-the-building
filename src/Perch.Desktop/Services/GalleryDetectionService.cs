@@ -88,6 +88,32 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
             other.ToImmutable());
     }
 
+    public async Task<ImmutableArray<AppCardModel>> DetectAllAppsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var allApps = await _catalog.GetAllAppsAsync(cancellationToken);
+        var settings = await _settingsProvider.LoadAsync(cancellationToken);
+        var platform = _platformDetector.CurrentPlatform;
+        var builder = ImmutableArray.CreateBuilder<AppCardModel>();
+
+        foreach (var app in allApps)
+        {
+            var status = ResolveStatus(app, platform, settings.ConfigRepoPath);
+            builder.Add(new AppCardModel(app, CardTier.Other, status));
+        }
+
+        return builder.ToImmutable();
+    }
+
+    private CardStatus ResolveStatus(CatalogEntry app, Platform platform, string? configRepoPath)
+    {
+        var detected = IsAppDetectedOnFilesystem(app, platform);
+        var linked = detected && IsAppLinked(app, platform, configRepoPath);
+        if (linked) return CardStatus.Linked;
+        if (detected) return CardStatus.Detected;
+        return CardStatus.NotInstalled;
+    }
+
     public async Task<ImmutableArray<TweakCardModel>> DetectTweaksAsync(
         IReadOnlySet<UserProfile> selectedProfiles,
         CancellationToken cancellationToken = default)

@@ -16,7 +16,6 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <!-- Header -->
@@ -50,90 +49,49 @@
             VerticalAlignment="Center"
             Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}" />
 
-        <!-- Three-tier card grid -->
+        <!-- Category-grouped card grid -->
         <ScrollViewer
             Grid.Row="1"
             Margin="0,16,0,0"
             VerticalScrollBarVisibility="Auto"
             Visibility="{Binding IsLoading, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
-            <StackPanel>
-                <!-- Your Apps tier -->
-                <StackPanel Visibility="{Binding YourApps.Count, Converter={StaticResource CountToVisibilityConverter}, FallbackValue=Collapsed}">
-                    <controls:TierSectionHeader Title="Your Apps" ItemCount="{Binding YourApps.Count}" />
-                    <ItemsControl ItemsSource="{Binding YourApps}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type models:AppCardModel}">
-                                <controls:AppCard
-                                    DisplayLabel="{Binding DisplayLabel}"
-                                    Description="{Binding Description}"
-                                    Category="{Binding Category}"
-                                    Status="{Binding Status}"
-                                    IsSelected="{Binding IsSelected, Mode=TwoWay}"
-                                    Margin="0,0,12,12" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-
-                <!-- Suggested tier -->
-                <StackPanel Visibility="{Binding SuggestedApps.Count, Converter={StaticResource CountToVisibilityConverter}, FallbackValue=Collapsed}">
-                    <controls:TierSectionHeader Title="Suggested for You" ItemCount="{Binding SuggestedApps.Count}" />
-                    <ItemsControl ItemsSource="{Binding SuggestedApps}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type models:AppCardModel}">
-                                <controls:AppCard
-                                    DisplayLabel="{Binding DisplayLabel}"
-                                    Description="{Binding Description}"
-                                    Category="{Binding Category}"
-                                    Status="{Binding Status}"
-                                    IsSelected="{Binding IsSelected, Mode=TwoWay}"
-                                    Margin="0,0,12,12" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-
-                <!-- Other Apps tier -->
-                <StackPanel Visibility="{Binding OtherApps.Count, Converter={StaticResource CountToVisibilityConverter}, FallbackValue=Collapsed}">
-                    <controls:TierSectionHeader Title="Other Apps" ItemCount="{Binding OtherApps.Count}" />
-                    <ItemsControl ItemsSource="{Binding OtherApps}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type models:AppCardModel}">
-                                <controls:AppCard
-                                    DisplayLabel="{Binding DisplayLabel}"
-                                    Description="{Binding Description}"
-                                    Category="{Binding Category}"
-                                    Status="{Binding Status}"
-                                    IsSelected="{Binding IsSelected, Mode=TwoWay}"
-                                    Margin="0,0,12,12" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-            </StackPanel>
+            <ItemsControl ItemsSource="{Binding GroupedApps}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:AppCategoryGroup}">
+                        <StackPanel>
+                            <controls:TierSectionHeader
+                                Title="{Binding Category}"
+                                ItemCount="{Binding Apps.Count}" />
+                            <ItemsControl ItemsSource="{Binding Apps}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type models:AppCardModel}">
+                                        <controls:AppCard
+                                            DisplayLabel="{Binding DisplayLabel}"
+                                            Description="{Binding Description}"
+                                            Category="{Binding Category}"
+                                            Status="{Binding Status}"
+                                            Website="{Binding Website}"
+                                            GitHub="{Binding GitHub}"
+                                            CanLink="{Binding CanLink}"
+                                            CanUnlink="{Binding CanUnlink}"
+                                            CanFix="{Binding CanFix}"
+                                            LinkRequested="OnLinkRequested"
+                                            UnlinkRequested="OnUnlinkRequested"
+                                            FixRequested="OnFixRequested"
+                                            Margin="0,0,12,12" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
         </ScrollViewer>
-
-        <!-- Deploy bar -->
-        <controls:DeployBar
-            Grid.Row="2"
-            SelectedCount="{Binding SelectedCount}"
-            DeployRequested="OnDeployRequested"
-            ClearRequested="OnClearRequested" />
     </Grid>
 
 </Page>
