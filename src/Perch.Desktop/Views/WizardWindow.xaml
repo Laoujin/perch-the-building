@@ -686,13 +686,12 @@
 
                                                     <ui:Button
                                                         Grid.Row="2"
-                                                        Content="View Font"
                                                         Icon="{ui:SymbolIcon Eye24}"
                                                         Command="{Binding PreviewCommand}"
-                                                        Padding="6,2"
-                                                        FontSize="11"
+                                                        ToolTip="View Font"
+                                                        Padding="4"
                                                         Margin="0,4,0,0"
-                                                        HorizontalAlignment="Left"
+                                                        HorizontalAlignment="Right"
                                                         Visibility="{Binding FullPath, Converter={StaticResource CountToVisibilityConverter}}" />
                                                 </Grid>
                                             </Border>

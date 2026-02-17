@@ -190,7 +190,7 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
 
         foreach (var font in systemFonts)
         {
-            if (DefaultFontFamilies.IsDefault(font.Name))
+            if (DefaultFontFamilies.IsDefault(Path.GetFileNameWithoutExtension(font.FullPath)))
                 continue;
 
             var normalizedName = NormalizeFontName(font.Name);

@@ -270,18 +270,17 @@
                                                 Margin="0,4,0,0"
                                                 Visibility="{Binding Description, Converter={StaticResource CountToVisibilityConverter}}" />
 
-                                            <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,4,0,0">
-                                                <controls:StatusRibbon Status="{Binding Status}" />
+                                            <Grid Grid.Row="2" Margin="0,4,0,0">
+                                                <controls:StatusRibbon Status="{Binding Status}" HorizontalAlignment="Left" />
                                                 <ui:Button
-                                                    Content="View Font"
                                                     Icon="{ui:SymbolIcon Eye24}"
                                                     Command="{Binding PreviewCommand}"
-                                                    Padding="6,2"
-                                                    FontSize="11"
-                                                    Margin="8,0,0,0"
+                                                    ToolTip="View Font"
+                                                    Padding="4"
+                                                    HorizontalAlignment="Right"
                                                     VerticalAlignment="Center"
                                                     Visibility="{Binding FullPath, Converter={StaticResource CountToVisibilityConverter}}" />
-                                            </StackPanel>
+                                            </Grid>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>
