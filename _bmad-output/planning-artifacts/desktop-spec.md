@@ -570,41 +570,23 @@ Font category detail:
 
 ## 7. Dead UI Inventory
 
-Items confirmed in code that are non-functional or half-wired. Recommended for removal.
+All dead UI identified below has been removed.
 
-### 7.1 Drag-Drop Zones (Apps + Dotfiles pages)
+### 7.1 Drag-Drop Zones (Apps + Dotfiles pages) -- REMOVED
 
-**What:** `OnDropZoneDragOver` / `OnDropZoneDrop` event handlers and visual drop zones in AppsPage.xaml and DotfilesPage.xaml. `AddDroppedFiles` command on ViewModels.
+Drop zone UI, drag event handlers, and `AddDroppedFiles` stub commands removed from AppsPage and DotfilesPage.
 
-**Status:** Command handler only logs via `Trace.TraceInformation`. No actual file processing.
+### 7.2 YAML Editor Toggle (Apps + Dotfiles pages) -- REMOVED
 
-**Remove:** Drop zone UI elements, drag events in code-behind, `AddDroppedFiles` commands.
+Toggle buttons, `ShowRawEditor`/`ShowEditorView` properties, YAML TextBox panels removed. Structured view now bound directly to `HasModule`.
 
-### 7.2 YAML Editor Toggle (Apps + Dotfiles pages)
+### 7.3 DeployBar on Dashboard Pages (Dotfiles + SystemTweaks) -- REMOVED
 
-**What:** `ShowRawEditor` / `ToggleEditor` on AppsViewModel and DotfilesViewModel. Toggle button in XAML switches between structured and raw YAML views.
+DeployBar removed from DotfilesPage and SystemTweaksPage. Associated `SelectedCount`, `UpdateSelectedCount`, `ClearSelection`, and `OnClearRequested` handlers removed.
 
-**Status:** YAML is displayed read-only in a TextBox (MaxHeight 400). No editing capability. The "toggle" just shows/hides the raw text.
+### 7.4 Alternatives Section (Apps + Dotfiles detail views) -- REMOVED
 
-**Remove:** Toggle button, `ShowRawEditor` property, YAML TextBox panel. Keep manifest display in structured form only.
-
-### 7.3 DeployBar on Dashboard Pages (Dotfiles + SystemTweaks)
-
-**What:** `DeployBar` control placed at bottom of DotfilesPage and SystemTweaksPage. Shows selected count + Clear + Deploy buttons.
-
-**Status:** `ClearRequested` event is wired. `DeployRequested` event is **not connected to any command**. Selecting items shows the bar but Deploy does nothing.
-
-**Note:** SystemTweaksViewModel has selection tracking but no command to apply selected tweaks — tweaks can only be applied through the wizard deploy step. The dashboard page is browse-only despite having selection UI.
-
-**Remove:** DeployBar from both pages. Selection toggles can stay for future use, but remove the non-functional deploy UI.
-
-### 7.4 Alternatives Section (Apps + Dotfiles detail views)
-
-**What:** Alternatives card list at bottom of app config detail and dotfile detail. Shows other catalog entries in the same category.
-
-**Status:** Loads via `AppDetailService` / `DotfileDetailService`. Binds `DisplayName`, which is **null for many catalog entries**, causing blank cards. `HasAlternatives` visibility check passes but cards render without names.
-
-**Remove:** Alternatives UI sections. The data loading in services can stay (low cost), but the broken display should go.
+Alternatives UI sections removed from AppsPage and DotfilesPage detail views. `HasAlternatives` property removed from ViewModels.
 
 ---
 
