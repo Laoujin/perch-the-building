@@ -292,7 +292,8 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
 
     public async Task<FontDetectionResult> DetectFontsAsync(CancellationToken cancellationToken = default)
     {
-        var systemFonts = await _fontScanner.ScanAsync(cancellationToken);
+        var systemFontsTask = _fontScanner.ScanAsync(cancellationToken);
+        var installedIdsTask = ScanInstalledPackageIdsAsync(cancellationToken);
 
         ImmutableArray<FontCatalogEntry> galleryFonts;
         try
@@ -304,19 +305,41 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
             galleryFonts = [];
         }
 
+        var systemFonts = await systemFontsTask;
+        var installedIds = await installedIdsTask;
+
         var galleryByNormalized = new Dictionary<string, FontCatalogEntry>(StringComparer.OrdinalIgnoreCase);
         foreach (var gf in galleryFonts)
             galleryByNormalized[NormalizeFontName(gf.Name)] = gf;
 
+        // Determine which gallery fonts are installed (by name match or package ID)
         var matchedGalleryIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var detected = ImmutableArray.CreateBuilder<FontCardModel>();
+        var packageInstalledGalleryNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+        // First pass: check package IDs for gallery fonts
+        foreach (var gf in galleryFonts)
+        {
+            if (IsGalleryFontInstalledByPackage(gf, installedIds))
+                packageInstalledGalleryNames.Add(NormalizeFontName(gf.Name));
+        }
+
+        // Build detected (installed) fonts, excluding nerd fonts matched by package
+        var detected = ImmutableArray.CreateBuilder<FontCardModel>();
         foreach (var font in systemFonts)
         {
             if (DefaultFontFamilies.IsDefault(Path.GetFileNameWithoutExtension(font.FullPath)))
                 continue;
 
             var normalizedName = NormalizeFontName(font.Name);
+
+            // If this system font matches a gallery font installed via package manager, skip it
+            if (packageInstalledGalleryNames.Contains(normalizedName))
+            {
+                if (galleryByNormalized.TryGetValue(normalizedName, out var pkgEntry))
+                    matchedGalleryIds.Add(pkgEntry.Id);
+                continue;
+            }
+
             FontCatalogEntry? matchedGallery = null;
             if (galleryByNormalized.TryGetValue(normalizedName, out var entry))
             {
@@ -327,6 +350,7 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
             detected.Add(new FontCardModel(
                 matchedGallery?.Id ?? font.Name,
                 matchedGallery?.Name ?? font.Name,
+                font.FamilyName,
                 matchedGallery?.Description,
                 matchedGallery?.PreviewText,
                 font.FullPath,
@@ -335,24 +359,39 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
                 CardStatus.Detected));
         }
 
-        var gallery = ImmutableArray.CreateBuilder<FontCardModel>();
+        // Build nerd fonts list: all gallery fonts, with installed ones marked Detected
+        var nerdFonts = ImmutableArray.CreateBuilder<FontCardModel>();
         foreach (var gf in galleryFonts)
         {
-            if (matchedGalleryIds.Contains(gf.Id))
-                continue;
+            var isInstalledByPackage = IsGalleryFontInstalledByPackage(gf, installedIds);
+            var isNameMatched = matchedGalleryIds.Contains(gf.Id);
 
-            gallery.Add(new FontCardModel(
+            var status = (isInstalledByPackage || isNameMatched)
+                ? CardStatus.Detected
+                : CardStatus.NotInstalled;
+
+            nerdFonts.Add(new FontCardModel(
                 gf.Id,
                 gf.Name,
+                familyName: null,
                 gf.Description,
                 gf.PreviewText,
                 fullPath: null,
                 FontCardSource.Gallery,
                 gf.Tags,
-                CardStatus.NotInstalled));
+                status));
         }
 
-        return new FontDetectionResult(detected.ToImmutable(), gallery.ToImmutable());
+        return new FontDetectionResult(detected.ToImmutable(), nerdFonts.ToImmutable());
+    }
+
+    private static bool IsGalleryFontInstalledByPackage(FontCatalogEntry font, HashSet<string> installedIds)
+    {
+        if (font.Install is null)
+            return false;
+
+        return (font.Install.Choco is not null && installedIds.Contains(font.Install.Choco))
+            || (font.Install.Winget is not null && installedIds.Contains(font.Install.Winget));
     }
 
     private static string NormalizeFontName(string name)

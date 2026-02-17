@@ -210,178 +210,251 @@
             </ScrollViewer>
 
             <!-- Font cards for Fonts category -->
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
-                          x:Name="FontDetailPanel">
-                <StackPanel>
-                    <!-- Detected Fonts -->
-                    <StackPanel Visibility="{Binding DetectedFonts.Count, Converter={StaticResource CountToVisibilityConverter}, FallbackValue=Collapsed}">
-                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#888888" Margin="0,0,0,8"
-                                   Text="Detected on your system" />
-                        <ItemsControl ItemsSource="{Binding DetectedFonts}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="{x:Type models:FontCardModel}">
-                                    <Border
-                                        Background="#1A1A2E"
-                                        BorderBrush="{Binding IsSelected, Converter={StaticResource BooleanToBorderBrushConverter}}"
-                                        BorderThickness="1"
-                                        CornerRadius="8"
-                                        Padding="12"
-                                        Width="240"
-                                        Margin="0,0,12,12">
-                                        <Grid>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                            </Grid.RowDefinitions>
+            <Grid Grid.Row="1" x:Name="FontDetailPanel">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
 
-                                            <Grid Grid.Row="0">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
+                <!-- Font search -->
+                <ui:TextBox
+                    Grid.Row="0"
+                    PlaceholderText="Filter fonts..."
+                    Text="{Binding FontSearchText, UpdateSourceTrigger=PropertyChanged}"
+                    Width="250"
+                    HorizontalAlignment="Left"
+                    Margin="0,0,0,12" />
 
-                                                <TextBlock
-                                                    Grid.Column="0"
-                                                    Text="{Binding Name}"
-                                                    FontFamily="{Binding Name}"
-                                                    FontSize="13"
-                                                    FontWeight="SemiBold"
-                                                    Foreground="White"
-                                                    TextTrimming="CharacterEllipsis"
-                                                    ToolTip="{Binding Name}"
-                                                    VerticalAlignment="Center" />
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <!-- Nerd Fonts -->
+                        <StackPanel Visibility="{Binding FilteredNerdFonts.Count, Converter={StaticResource CountToVisibilityConverter}, FallbackValue=Collapsed}">
+                            <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#888888" Margin="0,0,0,8"
+                                       Text="Nerd Fonts" />
+                            <ItemsControl ItemsSource="{Binding FilteredNerdFonts}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type models:FontCardModel}">
+                                        <Border
+                                            Background="#1A1A2E"
+                                            BorderBrush="{Binding IsSelected, Converter={StaticResource BooleanToBorderBrushConverter}}"
+                                            BorderThickness="1"
+                                            CornerRadius="8"
+                                            Padding="12"
+                                            Width="240"
+                                            Margin="0,0,12,12">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
 
-                                                <ui:ToggleSwitch
-                                                    Grid.Column="1"
-                                                    IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                                    VerticalAlignment="Center" />
-                                            </Grid>
+                                                <Grid Grid.Row="0">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
 
-                                            <TextBlock
-                                                Grid.Row="1"
-                                                Text="{Binding Description}"
-                                                FontSize="11"
-                                                Foreground="#888888"
-                                                TextTrimming="CharacterEllipsis"
-                                                Margin="0,4,0,0"
-                                                Visibility="{Binding Description, Converter={StaticResource CountToVisibilityConverter}}" />
-
-                                            <Grid Grid.Row="2" Margin="0,8,0,0">
-                                                <controls:StatusRibbon Status="{Binding Status}" HorizontalAlignment="Left" VerticalAlignment="Center" />
-                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                                    <ui:Button
-                                                        Icon="{ui:SymbolIcon TextFont16}"
-                                                        Command="{Binding ToggleExpandCommand}"
-                                                        ToolTip="Try font"
-                                                        Padding="2"
-                                                        Height="22"
-                                                        Margin="0,0,4,0"
+                                                    <TextBlock
+                                                        Grid.Column="0"
+                                                        Text="{Binding Name}"
+                                                        FontFamily="{Binding Name}"
+                                                        FontSize="13"
+                                                        FontWeight="SemiBold"
+                                                        Foreground="White"
+                                                        TextTrimming="CharacterEllipsis"
+                                                        ToolTip="{Binding Name}"
                                                         VerticalAlignment="Center" />
-                                                    <ui:Button
-                                                        Icon="{ui:SymbolIcon Eye16}"
-                                                        Command="{Binding PreviewCommand}"
-                                                        ToolTip="View Font"
-                                                        Padding="2"
-                                                        Height="22"
-                                                        VerticalAlignment="Center"
-                                                        Visibility="{Binding FullPath, Converter={StaticResource CountToVisibilityConverter}}" />
-                                                </StackPanel>
-                                            </Grid>
 
-                                            <ui:TextBox
-                                                Grid.Row="3"
-                                                Text="{Binding SampleText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                FontFamily="{Binding Name}"
-                                                FontSize="14"
-                                                Foreground="White"
-                                                TextWrapping="Wrap"
-                                                AcceptsReturn="True"
-                                                MinHeight="50"
-                                                MaxHeight="100"
-                                                Margin="0,8,0,0"
-                                                Visibility="{Binding IsExpanded, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
-
-                    <!-- Gallery Fonts -->
-                    <StackPanel Visibility="{Binding GalleryFonts.Count, Converter={StaticResource CountToVisibilityConverter}, FallbackValue=Collapsed}"
-                                Margin="0,16,0,0">
-                        <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#888888" Margin="0,0,0,8"
-                                   Text="Available from gallery" />
-                        <ItemsControl ItemsSource="{Binding GalleryFonts}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="{x:Type models:FontCardModel}">
-                                    <Border
-                                        Background="#1A1A2E"
-                                        BorderBrush="{Binding IsSelected, Converter={StaticResource BooleanToBorderBrushConverter}}"
-                                        BorderThickness="1"
-                                        CornerRadius="8"
-                                        Padding="12"
-                                        Width="240"
-                                        Margin="0,0,12,12">
-                                        <Grid>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                            </Grid.RowDefinitions>
-
-                                            <Grid Grid.Row="0">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
+                                                    <ui:ToggleSwitch
+                                                        Grid.Column="1"
+                                                        IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                        VerticalAlignment="Center" />
+                                                </Grid>
 
                                                 <TextBlock
-                                                    Grid.Column="0"
-                                                    Text="{Binding Name}"
-                                                    FontFamily="{Binding Name}"
-                                                    FontSize="13"
-                                                    FontWeight="SemiBold"
-                                                    Foreground="White"
-                                                    TextTrimming="CharacterEllipsis"
-                                                    ToolTip="{Binding Name}"
-                                                    VerticalAlignment="Center" />
+                                                    Grid.Row="1"
+                                                    Text="{Binding Description}"
+                                                    FontSize="11"
+                                                    Foreground="#888888"
+                                                    TextWrapping="Wrap"
+                                                    MaxHeight="32"
+                                                    Margin="0,4,0,0" />
 
-                                                <ui:ToggleSwitch
-                                                    Grid.Column="1"
-                                                    IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                                    VerticalAlignment="Center" />
+                                                <controls:StatusRibbon
+                                                    Grid.Row="2"
+                                                    Status="{Binding Status}"
+                                                    Margin="0,4,0,0" />
                                             </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
 
-                                            <TextBlock
-                                                Grid.Row="1"
-                                                Text="{Binding Description}"
-                                                FontSize="11"
-                                                Foreground="#888888"
-                                                TextWrapping="Wrap"
-                                                MaxHeight="32"
-                                                Margin="0,4,0,0" />
+                        <!-- Installed Fonts (grouped by family) -->
+                        <StackPanel Visibility="{Binding FilteredInstalledFontGroups.Count, Converter={StaticResource CountToVisibilityConverter}, FallbackValue=Collapsed}"
+                                    Margin="0,16,0,0">
+                            <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#888888" Margin="0,0,0,8"
+                                       Text="Installed Fonts" />
+                            <ItemsControl ItemsSource="{Binding FilteredInstalledFontGroups}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type models:FontFamilyGroupModel}">
+                                        <Border
+                                            Background="#1A1A2E"
+                                            BorderBrush="#333350"
+                                            BorderThickness="1"
+                                            CornerRadius="8"
+                                            Padding="12"
+                                            Margin="0,0,0,8">
+                                            <StackPanel>
+                                                <!-- Group header -->
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
 
-                                            <controls:StatusRibbon
-                                                Grid.Row="2"
-                                                Status="{Binding Status}"
-                                                Margin="0,4,0,0" />
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                                                    <ui:Button
+                                                        Grid.Column="0"
+                                                        Content="{Binding IsExpanded, Converter={StaticResource BooleanToChevronConverter}}"
+                                                        Padding="2"
+                                                        Height="22"
+                                                        Width="22"
+                                                        Margin="0,0,8,0"
+                                                        VerticalAlignment="Center"
+                                                        Click="OnGroupExpandClick" />
+
+                                                    <TextBlock
+                                                        Grid.Column="1"
+                                                        Text="{Binding FamilyName}"
+                                                        FontFamily="{Binding FamilyName}"
+                                                        FontSize="14"
+                                                        FontWeight="SemiBold"
+                                                        Foreground="White"
+                                                        VerticalAlignment="Center" />
+
+                                                    <TextBlock
+                                                        Grid.Column="2"
+                                                        FontSize="11"
+                                                        Foreground="#666666"
+                                                        VerticalAlignment="Center"
+                                                        Margin="0,0,8,0">
+                                                        <Run Text="{Binding Fonts.Count, Mode=OneWay}" />
+                                                        <Run Text=" variants" />
+                                                    </TextBlock>
+
+                                                    <ui:ToggleSwitch
+                                                        Grid.Column="3"
+                                                        IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                        VerticalAlignment="Center" />
+                                                </Grid>
+
+                                                <!-- Expanded: individual font cards -->
+                                                <ItemsControl
+                                                    ItemsSource="{Binding Fonts}"
+                                                    Margin="24,8,0,0"
+                                                    Visibility="{Binding IsExpanded, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate DataType="{x:Type models:FontCardModel}">
+                                                            <Border
+                                                                Background="#12122A"
+                                                                BorderBrush="{Binding IsSelected, Converter={StaticResource BooleanToBorderBrushConverter}}"
+                                                                BorderThickness="1"
+                                                                CornerRadius="6"
+                                                                Padding="10"
+                                                                Margin="0,0,0,6">
+                                                                <Grid>
+                                                                    <Grid.RowDefinitions>
+                                                                        <RowDefinition Height="Auto" />
+                                                                        <RowDefinition Height="Auto" />
+                                                                        <RowDefinition Height="Auto" />
+                                                                    </Grid.RowDefinitions>
+
+                                                                    <Grid Grid.Row="0">
+                                                                        <Grid.ColumnDefinitions>
+                                                                            <ColumnDefinition Width="*" />
+                                                                            <ColumnDefinition Width="Auto" />
+                                                                            <ColumnDefinition Width="Auto" />
+                                                                            <ColumnDefinition Width="Auto" />
+                                                                        </Grid.ColumnDefinitions>
+
+                                                                        <TextBlock
+                                                                            Grid.Column="0"
+                                                                            Text="{Binding Name}"
+                                                                            FontFamily="{Binding Name}"
+                                                                            FontSize="13"
+                                                                            Foreground="White"
+                                                                            TextTrimming="CharacterEllipsis"
+                                                                            ToolTip="{Binding Name}"
+                                                                            VerticalAlignment="Center" />
+
+                                                                        <ui:Button
+                                                                            Grid.Column="1"
+                                                                            Icon="{ui:SymbolIcon TextFont16}"
+                                                                            Command="{Binding ToggleExpandCommand}"
+                                                                            ToolTip="Try font"
+                                                                            Padding="2"
+                                                                            Height="22"
+                                                                            Margin="4,0"
+                                                                            VerticalAlignment="Center" />
+                                                                        <ui:Button
+                                                                            Grid.Column="2"
+                                                                            Icon="{ui:SymbolIcon Eye16}"
+                                                                            Command="{Binding PreviewCommand}"
+                                                                            ToolTip="View Font"
+                                                                            Padding="2"
+                                                                            Height="22"
+                                                                            VerticalAlignment="Center"
+                                                                            Visibility="{Binding FullPath, Converter={StaticResource CountToVisibilityConverter}}" />
+
+                                                                        <ui:ToggleSwitch
+                                                                            Grid.Column="3"
+                                                                            IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                                            VerticalAlignment="Center"
+                                                                            Margin="4,0,0,0" />
+                                                                    </Grid>
+
+                                                                    <TextBlock
+                                                                        Grid.Row="1"
+                                                                        Text="{Binding Description}"
+                                                                        FontSize="11"
+                                                                        Foreground="#888888"
+                                                                        TextTrimming="CharacterEllipsis"
+                                                                        Margin="0,4,0,0"
+                                                                        Visibility="{Binding Description, Converter={StaticResource CountToVisibilityConverter}}" />
+
+                                                                    <ui:TextBox
+                                                                        Grid.Row="2"
+                                                                        Text="{Binding SampleText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                        FontFamily="{Binding Name}"
+                                                                        FontSize="14"
+                                                                        Foreground="White"
+                                                                        TextWrapping="Wrap"
+                                                                        AcceptsReturn="True"
+                                                                        MinHeight="80"
+                                                                        MaxHeight="150"
+                                                                        Margin="0,8,0,0"
+                                                                        Visibility="{Binding IsExpanded, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                                </Grid>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
                     </StackPanel>
-                </StackPanel>
-            </ScrollViewer>
+                </ScrollViewer>
+            </Grid>
         </Grid>
 
         <!-- Deploy bar -->

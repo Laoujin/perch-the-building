@@ -97,8 +97,8 @@ public sealed partial class WizardShellViewModel : ViewModelBase
     public ObservableCollection<AppCardModel> OtherApps { get; } = [];
     public ObservableCollection<TweakCardModel> Tweaks { get; } = [];
     public ObservableCollection<TweakCardModel> FilteredTweaks { get; } = [];
-    public ObservableCollection<FontCardModel> DetectedFonts { get; } = [];
-    public ObservableCollection<FontCardModel> GalleryFonts { get; } = [];
+    public ObservableCollection<FontCardModel> InstalledFonts { get; } = [];
+    public ObservableCollection<FontCardModel> NerdFonts { get; } = [];
     public ObservableCollection<AppCategoryCardModel> AppCategories { get; } = [];
     public ObservableCollection<AppCategoryGroup> FilteredAppsByCategory { get; } = [];
     public ObservableCollection<TweakCategoryCardModel> TweakCategories { get; } = [];
@@ -388,7 +388,7 @@ public sealed partial class WizardShellViewModel : ViewModelBase
                 items.Count(t => t.IsSelected)));
         }
 
-        var fontCount = DetectedFonts.Count + GalleryFonts.Count;
+        var fontCount = InstalledFonts.Count + NerdFonts.Count;
         if (fontCount > 0)
         {
             TweakCategories.Add(new TweakCategoryCardModel(
@@ -396,7 +396,7 @@ public sealed partial class WizardShellViewModel : ViewModelBase
                 "Fonts",
                 "Detected & gallery nerd fonts",
                 fontCount,
-                DetectedFonts.Count(f => f.IsSelected) + GalleryFonts.Count(f => f.IsSelected)));
+                InstalledFonts.Count(f => f.IsSelected) + NerdFonts.Count(f => f.IsSelected)));
         }
     }
 
@@ -505,16 +505,16 @@ public sealed partial class WizardShellViewModel : ViewModelBase
             OtherApps.Clear();
             Tweaks.Clear();
             Dotfiles.Clear();
-            DetectedFonts.Clear();
-            GalleryFonts.Clear();
+            InstalledFonts.Clear();
+            NerdFonts.Clear();
 
             foreach (var app in appResult.YourApps) { app.IsSelected = true; YourApps.Add(app); }
             foreach (var app in appResult.Suggested) SuggestedApps.Add(app);
             foreach (var app in appResult.OtherApps) OtherApps.Add(app);
             foreach (var tweak in tweakResult) Tweaks.Add(tweak);
             foreach (var df in dotfileResult) { df.IsSelected = df.Status == CardStatus.Linked; Dotfiles.Add(df); }
-            foreach (var f in fontResult.DetectedFonts) DetectedFonts.Add(f);
-            foreach (var f in fontResult.GalleryFonts) GalleryFonts.Add(f);
+            foreach (var f in fontResult.InstalledFonts) InstalledFonts.Add(f);
+            foreach (var f in fontResult.NerdFonts) NerdFonts.Add(f);
 
             RebuildTweakCategories();
             RebuildAppCategories();
@@ -577,7 +577,7 @@ public sealed partial class WizardShellViewModel : ViewModelBase
 
         try
         {
-            var selectedFontPaths = DetectedFonts
+            var selectedFontPaths = InstalledFonts
                 .Where(f => f.IsSelected && f.FullPath is not null)
                 .Select(f => f.FullPath!)
                 .ToList();
@@ -637,7 +637,7 @@ public sealed partial class WizardShellViewModel : ViewModelBase
         SelectedAppCount = YourApps.Concat(SuggestedApps).Concat(OtherApps).Count(a => a.IsSelected);
         SelectedDotfileCount = Dotfiles.Count(d => d.IsSelected);
         SelectedTweakCount = Tweaks.Count(t => t.IsSelected);
-        SelectedFontCount = DetectedFonts.Count(f => f.IsSelected) + GalleryFonts.Count(f => f.IsSelected);
+        SelectedFontCount = InstalledFonts.Count(f => f.IsSelected) + NerdFonts.Count(f => f.IsSelected);
         OnPropertyChanged(nameof(TotalSelectedCount));
     }
 

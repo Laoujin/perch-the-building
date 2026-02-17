@@ -19,6 +19,9 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
     private string _searchText = string.Empty;
 
     [ObservableProperty]
+    private string _fontSearchText = string.Empty;
+
+    [ObservableProperty]
     private int _selectedCount;
 
     [ObservableProperty]
@@ -26,9 +29,13 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
 
     public ObservableCollection<TweakCardModel> Tweaks { get; } = [];
     public ObservableCollection<TweakCardModel> FilteredTweaks { get; } = [];
-    public ObservableCollection<FontCardModel> DetectedFonts { get; } = [];
-    public ObservableCollection<FontCardModel> GalleryFonts { get; } = [];
+    public ObservableCollection<FontCardModel> InstalledFonts { get; } = [];
+    public ObservableCollection<FontCardModel> NerdFonts { get; } = [];
+    public ObservableCollection<FontFamilyGroupModel> FilteredInstalledFontGroups { get; } = [];
+    public ObservableCollection<FontCardModel> FilteredNerdFonts { get; } = [];
     public ObservableCollection<TweakCategoryCardModel> Categories { get; } = [];
+
+    private List<FontFamilyGroupModel> _allInstalledFontGroups = [];
 
     public bool ShowCategories => SelectedCategory is null;
     public bool ShowDetail => SelectedCategory is not null;
@@ -39,6 +46,7 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
     }
 
     partial void OnSearchTextChanged(string value) => ApplyFilter();
+    partial void OnFontSearchTextChanged(string value) => ApplyFontFilter();
 
     partial void OnSelectedCategoryChanged(string? value)
     {
@@ -64,11 +72,12 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
                 Tweaks.Add(tweak);
 
             var fontResult = fontsTask.Result;
-            DetectedFonts.Clear();
-            GalleryFonts.Clear();
-            foreach (var f in fontResult.DetectedFonts) DetectedFonts.Add(f);
-            foreach (var f in fontResult.GalleryFonts) GalleryFonts.Add(f);
+            InstalledFonts.Clear();
+            NerdFonts.Clear();
+            foreach (var f in fontResult.InstalledFonts) InstalledFonts.Add(f);
+            foreach (var f in fontResult.NerdFonts) NerdFonts.Add(f);
 
+            BuildFontGroups();
             RebuildCategories();
             ApplyFilter();
         }
@@ -103,7 +112,7 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
                 items.Count(t => t.IsSelected)));
         }
 
-        var fontCount = DetectedFonts.Count + GalleryFonts.Count;
+        var fontCount = InstalledFonts.Count + NerdFonts.Count;
         if (fontCount > 0)
         {
             Categories.Add(new TweakCategoryCardModel(
@@ -111,7 +120,7 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
                 "Fonts",
                 "Detected & gallery nerd fonts",
                 fontCount,
-                DetectedFonts.Count(f => f.IsSelected) + GalleryFonts.Count(f => f.IsSelected)));
+                InstalledFonts.Count(f => f.IsSelected) + NerdFonts.Count(f => f.IsSelected)));
         }
     }
 
@@ -135,6 +144,38 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
         RebuildCategories();
     }
 
+    private void BuildFontGroups()
+    {
+        _allInstalledFontGroups = InstalledFonts
+            .GroupBy(f => f.FamilyName ?? f.Name, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(g => new FontFamilyGroupModel(g.Key, g))
+            .ToList();
+
+        ApplyFontFilter();
+    }
+
+    private void ApplyFontFilter()
+    {
+        var query = FontSearchText;
+
+        FilteredInstalledFontGroups.Clear();
+        foreach (var group in _allInstalledFontGroups)
+        {
+            if (group.MatchesSearch(query))
+                FilteredInstalledFontGroups.Add(group);
+        }
+
+        FilteredNerdFonts.Clear();
+        foreach (var font in NerdFonts)
+        {
+            if (font.MatchesSearch(query))
+                FilteredNerdFonts.Add(font);
+        }
+
+        UpdateSelectedCount();
+    }
+
     private void ApplyFilter()
     {
         UpdateSelectedCount();
@@ -143,17 +184,17 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
     public void UpdateSelectedCount()
     {
         SelectedCount = Tweaks.Count(t => t.IsSelected)
-            + DetectedFonts.Count(f => f.IsSelected)
-            + GalleryFonts.Count(f => f.IsSelected);
+            + InstalledFonts.Count(f => f.IsSelected)
+            + NerdFonts.Count(f => f.IsSelected);
     }
 
     public void ClearSelection()
     {
         foreach (var tweak in Tweaks)
             tweak.IsSelected = false;
-        foreach (var font in DetectedFonts)
+        foreach (var font in InstalledFonts)
             font.IsSelected = false;
-        foreach (var font in GalleryFonts)
+        foreach (var font in NerdFonts)
             font.IsSelected = false;
         SelectedCount = 0;
         RebuildCategories();

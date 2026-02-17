@@ -43,6 +43,12 @@ public partial class SystemTweaksPage : Page
         }
     }
 
+    private void OnGroupExpandClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: FontFamilyGroupModel group })
+            group.IsExpanded = !group.IsExpanded;
+    }
+
     private void UpdateDetailPanelVisibility()
     {
         var isFonts = string.Equals(ViewModel.SelectedCategory, "Fonts", StringComparison.OrdinalIgnoreCase);

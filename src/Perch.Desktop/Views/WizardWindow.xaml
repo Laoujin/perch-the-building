@@ -618,11 +618,11 @@
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
                                   x:Name="WizardFontDetailPanel">
                         <StackPanel>
-                            <!-- Detected Fonts -->
-                            <StackPanel Visibility="{Binding DetectedFonts.Count, Converter={StaticResource CountToVisibilityConverter}, FallbackValue=Collapsed}">
+                            <!-- Installed Fonts -->
+                            <StackPanel Visibility="{Binding InstalledFonts.Count, Converter={StaticResource CountToVisibilityConverter}, FallbackValue=Collapsed}">
                                 <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#888888" Margin="0,0,0,8"
-                                           Text="Detected on your system" />
-                                <ItemsControl ItemsSource="{Binding DetectedFonts}">
+                                           Text="Installed Fonts" />
+                                <ItemsControl ItemsSource="{Binding InstalledFonts}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
                                     </ItemsControl.ItemsPanel>
@@ -712,12 +712,12 @@
                                 </ItemsControl>
                             </StackPanel>
 
-                            <!-- Gallery Fonts -->
-                            <StackPanel Visibility="{Binding GalleryFonts.Count, Converter={StaticResource CountToVisibilityConverter}, FallbackValue=Collapsed}"
+                            <!-- Nerd Fonts -->
+                            <StackPanel Visibility="{Binding NerdFonts.Count, Converter={StaticResource CountToVisibilityConverter}, FallbackValue=Collapsed}"
                                         Margin="0,16,0,0">
                                 <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#888888" Margin="0,0,0,8"
-                                           Text="Available from gallery" />
-                                <ItemsControl ItemsSource="{Binding GalleryFonts}">
+                                           Text="Nerd Fonts" />
+                                <ItemsControl ItemsSource="{Binding NerdFonts}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
                                     </ItemsControl.ItemsPanel>

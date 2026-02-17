@@ -6,6 +6,15 @@ public sealed class FontScanner : IFontScanner
 {
     private static readonly string[] FontExtensions = [".ttf", ".otf", ".ttc", ".woff", ".woff2"];
 
+    private static readonly HashSet<string> StyleSuffixes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Bold", "Italic", "Light", "Thin", "Black", "Medium",
+        "SemiBold", "SemiLight", "ExtraBold", "ExtraLight",
+        "Condensed", "Regular", "Oblique", "Heavy", "Book",
+        "Demi", "DemiBold", "UltraLight", "UltraBold", "Narrow",
+        "Semi", "Extra", "Ultra",
+    };
+
     public Task<ImmutableArray<DetectedFont>> ScanAsync(CancellationToken cancellationToken = default)
     {
         var registryNames = BuildRegistryFontNameMap();
@@ -28,12 +37,29 @@ public sealed class FontScanner : IFontScanner
                     var fileName = Path.GetFileName(file);
                     registryNames.TryGetValue(fileName, out var displayName);
                     string name = displayName ?? Path.GetFileNameWithoutExtension(file);
-                    results.Add(new DetectedFont(name, null, file));
+                    results.Add(new DetectedFont(name, ExtractFamilyName(name), file));
                 }
             }
         }
 
         return Task.FromResult(results.ToImmutableArray());
+    }
+
+    internal static string ExtractFamilyName(string displayName)
+    {
+        var words = displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        int lastNonStyle = -1;
+        for (int i = 0; i < words.Length; i++)
+        {
+            if (!StyleSuffixes.Contains(words[i]))
+                lastNonStyle = i;
+        }
+
+        if (lastNonStyle < 0)
+            return displayName;
+
+        return string.Join(' ', words[..(lastNonStyle + 1)]);
     }
 
     private static Dictionary<string, string> BuildRegistryFontNameMap()

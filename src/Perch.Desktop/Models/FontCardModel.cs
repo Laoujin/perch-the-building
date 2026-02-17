@@ -10,6 +10,7 @@ public partial class FontCardModel : ObservableObject
 {
     public string Id { get; }
     public string Name { get; }
+    public string? FamilyName { get; }
     public string? Description { get; }
     public string? PreviewText { get; }
     public string? FullPath { get; }
@@ -31,6 +32,7 @@ public partial class FontCardModel : ObservableObject
     public FontCardModel(
         string id,
         string name,
+        string? familyName,
         string? description,
         string? previewText,
         string? fullPath,
@@ -40,6 +42,7 @@ public partial class FontCardModel : ObservableObject
     {
         Id = id;
         Name = name;
+        FamilyName = familyName;
         Description = description;
         PreviewText = previewText;
         FullPath = fullPath;

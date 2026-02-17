@@ -20,5 +20,5 @@ public sealed record GalleryDetectionResult(
     ImmutableArray<AppCardModel> OtherApps);
 
 public sealed record FontDetectionResult(
-    ImmutableArray<FontCardModel> DetectedFonts,
-    ImmutableArray<FontCardModel> GalleryFonts);
+    ImmutableArray<FontCardModel> InstalledFonts,
+    ImmutableArray<FontCardModel> NerdFonts);
