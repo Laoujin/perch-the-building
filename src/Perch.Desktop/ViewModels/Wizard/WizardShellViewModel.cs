@@ -344,15 +344,21 @@ public sealed partial class WizardShellViewModel : ViewModelBase
         if (!CanGoNext)
             return;
 
+        await NavigateToStepAsync(CurrentStepIndex + 1, cancellationToken);
+    }
+
+    public async Task<bool> NavigateToStepAsync(int targetIndex, CancellationToken cancellationToken = default)
+    {
+        if (!CanNavigateToStep(targetIndex) || targetIndex <= CurrentStepIndex)
+            return false;
+
         try
         {
-            var stepName = GetCurrentStepName();
-
-            // Save config when leaving Config step
-            if (stepName == "Config")
+            var configIndex = _stepKeys.IndexOf("Config");
+            if (CurrentStepIndex <= configIndex && targetIndex > configIndex)
             {
                 if (string.IsNullOrWhiteSpace(ConfigRepoPath))
-                    return;
+                    return false;
 
                 var settings = await _settingsProvider.LoadAsync(cancellationToken);
                 if (!string.Equals(settings.ConfigRepoPath, ConfigRepoPath, StringComparison.Ordinal))
@@ -361,15 +367,17 @@ public sealed partial class WizardShellViewModel : ViewModelBase
                 await RunDetectionAsync(cancellationToken);
             }
 
-            CurrentStepIndex++;
+            CurrentStepIndex = targetIndex;
+            return true;
         }
         catch (OperationCanceledException)
         {
-            // cancelled — don't show crash page
+            return false;
         }
         catch (Exception ex)
         {
             ShowCrash(ex);
+            return false;
         }
     }
 

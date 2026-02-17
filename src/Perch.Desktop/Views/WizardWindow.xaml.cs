@@ -92,7 +92,7 @@ public partial class WizardWindow : FluentWindow
         Close();
     }
 
-    private void OnStepSelectionChanged(object sender, SelectionChangedEventArgs e)
+    private async void OnStepSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (sender is not ListBox lb)
             return;
@@ -100,9 +100,24 @@ public partial class WizardWindow : FluentWindow
         if (lb.SelectedIndex < 0 || lb.SelectedIndex == ViewModel.CurrentStepIndex)
             return;
 
-        if (ViewModel.CanNavigateToStep(lb.SelectedIndex))
-            ViewModel.CurrentStepIndex = lb.SelectedIndex;
-        else
+        var targetIndex = lb.SelectedIndex;
+
+        if (!ViewModel.CanNavigateToStep(targetIndex))
+        {
             lb.SelectedIndex = ViewModel.CurrentStepIndex;
+            return;
+        }
+
+        // Forward past Config: save settings and run detection first
+        if (targetIndex > ViewModel.CurrentStepIndex)
+        {
+            var navigated = await ViewModel.NavigateToStepAsync(targetIndex);
+            if (!navigated)
+                lb.SelectedIndex = ViewModel.CurrentStepIndex;
+        }
+        else
+        {
+            ViewModel.CurrentStepIndex = targetIndex;
+        }
     }
 }
