@@ -15,7 +15,7 @@
     Title="Perch Setup Wizard"
     Icon="/Assets/logo-small-transparant.png"
     Width="1050"
-    Height="720"
+    Height="800"
     MinWidth="800"
     MinHeight="800"
     WindowStartupLocation="CenterScreen"
