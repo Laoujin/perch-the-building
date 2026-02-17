@@ -17,6 +17,7 @@
             <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter" />
             <converters:IndexToVisibilityConverter x:Key="IndexToVisibilityConverter" />
             <converters:BooleanToBorderBrushConverter x:Key="BooleanToBorderBrushConverter" />
+            <converters:PathEllipsisConverter x:Key="PathEllipsisConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -137,10 +137,12 @@
 
                                 <TextBlock
                                     Grid.Row="3"
-                                    Text="{Binding FullPath}"
+                                    Text="{Binding FullPath, Converter={StaticResource PathEllipsisConverter}}"
+                                    ToolTip="{Binding FullPath}"
                                     FontSize="10"
                                     Foreground="#666666"
-                                    TextTrimming="CharacterEllipsis"
+                                    TextWrapping="Wrap"
+                                    MaxHeight="28"
                                     Margin="0,4,0,0" />
                             </Grid>
                         </Border>
