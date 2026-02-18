@@ -356,7 +356,7 @@
                 </ScrollViewer>
             </Grid>
 
-            <!-- Apps Step (category drill-in) -->
+            <!-- Apps Step (flat 3-tier) -->
             <Grid x:Name="AppsStep" Margin="24,16">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -364,117 +364,174 @@
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="0" FontSize="20" FontWeight="SemiBold" Foreground="White" Text="Applications" />
-                <TextBlock Grid.Row="1" FontSize="13" Foreground="#888888" Margin="0,4,0,16"
-                    Text="Apps detected on your system, plus suggestions based on your profile. Click a category to see apps." />
-
-                <!-- Category grid -->
-                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto"
-                              Visibility="{Binding ShowAppCategories, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <ItemsControl ItemsSource="{Binding AppCategories}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type models:AppCategoryCardModel}">
-                                <Border
-                                    Background="#1A1A2E"
-                                    BorderBrush="#333350"
-                                    BorderThickness="1"
-                                    CornerRadius="8"
-                                    Padding="16"
-                                    Width="200"
-                                    Margin="0,0,12,12"
-                                    Cursor="Hand"
-                                    MouseLeftButtonUp="OnAppCategoryCardClick">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="Auto" />
-                                            <RowDefinition Height="Auto" />
-                                        </Grid.RowDefinitions>
-
-                                        <ui:SymbolIcon
-                                            Grid.Row="0"
-                                            Symbol="{Binding IconSymbol}"
-                                            FontSize="28"
-                                            Foreground="#10B981"
-                                            HorizontalAlignment="Left"
-                                            Margin="0,0,0,8" />
-
-                                        <TextBlock
-                                            Grid.Row="1"
-                                            Text="{Binding DisplayName}"
-                                            FontSize="14"
-                                            FontWeight="SemiBold"
-                                            Foreground="White" />
-
-                                        <TextBlock
-                                            Grid.Row="2"
-                                            FontSize="11"
-                                            Foreground="#888888"
-                                            Margin="0,4,0,0">
-                                            <Run Text="{Binding ItemCount, Mode=OneWay}" />
-                                            <Run Text=" apps" />
-                                        </TextBlock>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
-
-                <!-- Detail view (drill-in) -->
-                <Grid Grid.Row="2"
-                      Visibility="{Binding ShowAppDetail, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,12">
-                        <ui:Button
-                            Icon="{ui:SymbolIcon ArrowLeft24}"
-                            Command="{Binding BackToAppCategoriesCommand}"
-                            Margin="0,0,12,0" />
-                        <TextBlock
-                            Text="{Binding SelectedAppCategory}"
-                            FontSize="18"
-                            FontWeight="SemiBold"
-                            Foreground="White"
-                            VerticalAlignment="Center" />
-                    </StackPanel>
-
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                        <ItemsControl ItemsSource="{Binding FilteredAppsByCategory}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="{x:Type models:AppCategoryGroup}">
-                                    <StackPanel>
-                                        <controls:TierSectionHeader
-                                            Title="{Binding Category}"
-                                            ItemCount="{Binding Apps.Count}" />
-                                        <ItemsControl ItemsSource="{Binding Apps}">
-                                            <ItemsControl.ItemsPanel>
-                                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
-                                            </ItemsControl.ItemsPanel>
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate DataType="{x:Type models:AppCardModel}">
-                                                    <controls:AppCard
-                                                        DisplayLabel="{Binding DisplayLabel}"
-                                                        Description="{Binding Description}"
-                                                        Category="{Binding Category}"
-                                                        Status="{Binding Status}"
-                                                        IsSelected="{Binding IsSelected, Mode=TwoWay}"
-                                                        Margin="0,0,12,12" />
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" FontSize="20" FontWeight="SemiBold" Foreground="White" Text="Applications" />
+                    <TextBlock Grid.Column="2" FontSize="12" Foreground="#888888" VerticalAlignment="Center">
+                        <Run Text="{Binding SelectedAppCount, Mode=OneWay}" Foreground="#10B981" FontWeight="SemiBold" />
+                        <Run Text=" selected" />
+                    </TextBlock>
                 </Grid>
+                <TextBlock Grid.Row="1" FontSize="13" Foreground="#888888" Margin="0,4,0,16"
+                    Text="Toggle apps to include them in your setup." />
+
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <!-- Tier 1: Your Apps -->
+                        <StackPanel Visibility="{Binding YourApps.Count, Converter={StaticResource CountToVisibilityConverter}, FallbackValue=Collapsed}">
+                            <controls:TierSectionHeader Title="Your Apps" ItemCount="{Binding YourApps.Count}" />
+                            <ItemsControl ItemsSource="{Binding YourApps}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type models:AppCardModel}">
+                                        <controls:AppCard
+                                            DisplayLabel="{Binding DisplayLabel}"
+                                            Description="{Binding Description}"
+                                            Category="{Binding Category}"
+                                            Status="{Binding Status}"
+                                            IsSelected="{Binding IsSelected, Mode=TwoWay}"
+                                            IsSuggested="{Binding IsSuggested}"
+                                            KindBadge="{Binding KindBadge}"
+                                            Tags="{Binding Tags}"
+                                            Margin="0,0,12,12" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <!-- Tier 2: Suggested -->
+                        <StackPanel Visibility="{Binding SuggestedApps.Count, Converter={StaticResource CountToVisibilityConverter}, FallbackValue=Collapsed}">
+                            <controls:TierSectionHeader Title="Suggested for You" ItemCount="{Binding SuggestedApps.Count}" />
+                            <ItemsControl ItemsSource="{Binding SuggestedApps}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type models:AppCardModel}">
+                                        <controls:AppCard
+                                            DisplayLabel="{Binding DisplayLabel}"
+                                            Description="{Binding Description}"
+                                            Category="{Binding Category}"
+                                            Status="{Binding Status}"
+                                            IsSelected="{Binding IsSelected, Mode=TwoWay}"
+                                            IsSuggested="{Binding IsSuggested}"
+                                            KindBadge="{Binding KindBadge}"
+                                            Tags="{Binding Tags}"
+                                            Margin="0,0,12,12" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <!-- Tier 3: Browse All -->
+                        <StackPanel Visibility="{Binding BrowseCategories.Count, Converter={StaticResource CountToVisibilityConverter}, FallbackValue=Collapsed}">
+                            <controls:TierSectionHeader Title="Browse All" ItemCount="{Binding BrowseCategories.Count}" />
+                            <ItemsControl ItemsSource="{Binding BrowseCategories}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type models:AppCategoryCardModel}">
+                                        <StackPanel>
+                                            <Border
+                                                Background="#1A1A2E"
+                                                BorderBrush="#333350"
+                                                BorderThickness="1"
+                                                CornerRadius="8"
+                                                Padding="12"
+                                                Margin="0,0,0,8"
+                                                Cursor="Hand"
+                                                MouseLeftButtonUp="OnWizardBrowseCategoryClick">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <ui:SymbolIcon
+                                                        Grid.Column="0"
+                                                        Symbol="{Binding IconSymbol}"
+                                                        FontSize="20"
+                                                        Foreground="#10B981"
+                                                        VerticalAlignment="Center"
+                                                        Margin="0,0,12,0" />
+                                                    <TextBlock
+                                                        Grid.Column="1"
+                                                        Text="{Binding DisplayName}"
+                                                        FontSize="14"
+                                                        FontWeight="SemiBold"
+                                                        Foreground="White"
+                                                        VerticalAlignment="Center" />
+                                                    <TextBlock
+                                                        Grid.Column="2"
+                                                        FontSize="11"
+                                                        Foreground="#888888"
+                                                        VerticalAlignment="Center"
+                                                        Margin="0,0,12,0">
+                                                        <Run Text="{Binding ItemCount, Mode=OneWay}" />
+                                                        <Run Text=" apps" />
+                                                    </TextBlock>
+                                                    <ui:SymbolIcon
+                                                        Grid.Column="3"
+                                                        Symbol="ChevronDown24"
+                                                        FontSize="12"
+                                                        Foreground="#666666"
+                                                        VerticalAlignment="Center"
+                                                        RenderTransformOrigin="0.5,0.5">
+                                                        <ui:SymbolIcon.Style>
+                                                            <Style TargetType="ui:SymbolIcon">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                                                                        <Setter Property="RenderTransform">
+                                                                            <Setter.Value>
+                                                                                <RotateTransform Angle="180" />
+                                                                            </Setter.Value>
+                                                                        </Setter>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </ui:SymbolIcon.Style>
+                                                    </ui:SymbolIcon>
+                                                </Grid>
+                                            </Border>
+
+                                            <ItemsControl
+                                                Visibility="{Binding IsExpanded, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                Margin="0,0,0,12"
+                                                Tag="{Binding BroadCategory}"
+                                                Loaded="OnWizardCategoryAppsPanelLoaded">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <WrapPanel Margin="24,0,0,0" />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate DataType="{x:Type models:AppCardModel}">
+                                                        <controls:AppCard
+                                                            DisplayLabel="{Binding DisplayLabel}"
+                                                            Description="{Binding Description}"
+                                                            Category="{Binding Category}"
+                                                            Status="{Binding Status}"
+                                                            IsSelected="{Binding IsSelected, Mode=TwoWay}"
+                                                            IsSuggested="{Binding IsSuggested}"
+                                                            KindBadge="{Binding KindBadge}"
+                                                            Tags="{Binding Tags}"
+                                                            Margin="0,0,12,12" />
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
             </Grid>
 
             <!-- Windows Tweaks Step (category drill-in) -->

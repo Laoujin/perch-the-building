@@ -364,15 +364,15 @@ public sealed class WizardShellViewModelTests
 
         _detectionService.DetectAppsAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
             .Returns(new GalleryDetectionResult(
-                ImmutableArray.Create(app1, app2),
                 ImmutableArray<AppCardModel>.Empty,
-                ImmutableArray<AppCardModel>.Empty));
+                ImmutableArray<AppCardModel>.Empty,
+                ImmutableArray.Create(app1, app2)));
 
         _vm.ConfigRepoPath = Path.GetTempPath();
         _vm.CurrentStepIndex = 1;
         await _vm.GoNextCommand.ExecuteAsync(null);
 
-        Assert.That(_vm.AppCategories, Has.Count.EqualTo(2));
+        Assert.That(_vm.BrowseCategories, Has.Count.EqualTo(2));
     }
 
     [Test]
@@ -435,41 +435,16 @@ public sealed class WizardShellViewModelTests
     // --- App category navigation ---
 
     [Test]
-    public async Task SelectAppCategory_SetsDetailView()
+    public void ToggleCategoryExpand_TogglesExpanded()
     {
-        var app = MakeApp("vscode", "Development/IDEs");
-        _detectionService.DetectAppsAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
-            .Returns(new GalleryDetectionResult(
-                ImmutableArray.Create(app),
-                ImmutableArray<AppCardModel>.Empty,
-                ImmutableArray<AppCardModel>.Empty));
+        var category = new AppCategoryCardModel("Dev", "Development", 5, 2);
+        Assert.That(category.IsExpanded, Is.False);
 
-        _vm.ConfigRepoPath = Path.GetTempPath();
-        _vm.CurrentStepIndex = 1;
-        await _vm.GoNextCommand.ExecuteAsync(null);
+        _vm.ToggleCategoryExpandCommand.Execute(category);
+        Assert.That(category.IsExpanded, Is.True);
 
-        _vm.SelectAppCategoryCommand.Execute("Development");
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(_vm.ShowAppCategories, Is.False);
-            Assert.That(_vm.ShowAppDetail, Is.True);
-            Assert.That(_vm.SelectedAppCategory, Is.EqualTo("Development"));
-            Assert.That(_vm.FilteredAppsByCategory, Has.Count.GreaterThan(0));
-        });
-    }
-
-    [Test]
-    public void BackToAppCategories_ResetsSelection()
-    {
-        _vm.SelectAppCategoryCommand.Execute("Development");
-        _vm.BackToAppCategoriesCommand.Execute(null);
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(_vm.ShowAppCategories, Is.True);
-            Assert.That(_vm.SelectedAppCategory, Is.Null);
-        });
+        _vm.ToggleCategoryExpandCommand.Execute(category);
+        Assert.That(category.IsExpanded, Is.False);
     }
 
     // --- Tweak category navigation ---

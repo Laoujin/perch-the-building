@@ -99,8 +99,7 @@ public sealed partial class WizardShellViewModel : ViewModelBase
     public ObservableCollection<TweakCardModel> FilteredTweaks { get; } = [];
     public ObservableCollection<FontCardModel> InstalledFonts { get; } = [];
     public ObservableCollection<FontCardModel> NerdFonts { get; } = [];
-    public ObservableCollection<AppCategoryCardModel> AppCategories { get; } = [];
-    public ObservableCollection<AppCategoryGroup> FilteredAppsByCategory { get; } = [];
+    public ObservableCollection<AppCategoryCardModel> BrowseCategories { get; } = [];
     public ObservableCollection<TweakCategoryCardModel> TweakCategories { get; } = [];
     public ObservableCollection<DeployResultItemViewModel> DeployResults { get; } = [];
 
@@ -117,13 +116,7 @@ public sealed partial class WizardShellViewModel : ViewModelBase
     private int _selectedFontCount;
 
     [ObservableProperty]
-    private string? _selectedAppCategory;
-
-    [ObservableProperty]
     private string? _selectedTweakCategory;
-
-    public bool ShowAppCategories => SelectedAppCategory is null;
-    public bool ShowAppDetail => SelectedAppCategory is not null;
 
     public bool ShowTweakCategories => SelectedTweakCategory is null;
     public bool ShowTweakDetail => SelectedTweakCategory is not null;
@@ -156,12 +149,6 @@ public sealed partial class WizardShellViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanGoBack));
         OnPropertyChanged(nameof(CanGoNext));
         OnPropertyChanged(nameof(ShowDeploy));
-    }
-
-    partial void OnSelectedAppCategoryChanged(string? value)
-    {
-        OnPropertyChanged(nameof(ShowAppCategories));
-        OnPropertyChanged(nameof(ShowAppDetail));
     }
 
     partial void OnSelectedTweakCategoryChanged(string? value)
@@ -299,56 +286,34 @@ public sealed partial class WizardShellViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void SelectAppCategory(string broadCategory)
+    private void ToggleCategoryExpand(AppCategoryCardModel category)
     {
-        RebuildAppCategoryDetail(broadCategory);
-        SelectedAppCategory = broadCategory;
+        category.IsExpanded = !category.IsExpanded;
     }
 
-    [RelayCommand]
-    private void BackToAppCategories()
+    public IEnumerable<AppCardModel> GetCategoryApps(string broadCategory)
     {
-        SelectedAppCategory = null;
-        RebuildAppCategories();
+        return OtherApps
+            .Where(a => string.Equals(a.BroadCategory, broadCategory, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(a => a.DisplayLabel, StringComparer.OrdinalIgnoreCase);
     }
 
-    private void RebuildAppCategories()
+    private void RebuildBrowseCategories()
     {
-        AppCategories.Clear();
+        BrowseCategories.Clear();
 
-        var allApps = YourApps.Concat(SuggestedApps).Concat(OtherApps);
-        var groups = allApps
+        var groups = OtherApps
             .GroupBy(a => a.BroadCategory, StringComparer.OrdinalIgnoreCase)
             .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
 
         foreach (var group in groups)
         {
             var items = group.ToList();
-            AppCategories.Add(new AppCategoryCardModel(
+            BrowseCategories.Add(new AppCategoryCardModel(
                 group.Key,
                 group.Key,
                 items.Count,
                 items.Count(a => a.IsSelected)));
-        }
-    }
-
-    private void RebuildAppCategoryDetail(string broadCategory)
-    {
-        FilteredAppsByCategory.Clear();
-
-        var allApps = YourApps.Concat(SuggestedApps).Concat(OtherApps)
-            .Where(a => string.Equals(a.BroadCategory, broadCategory, StringComparison.OrdinalIgnoreCase));
-
-        var subGroups = allApps
-            .GroupBy(a => a.SubCategory, StringComparer.OrdinalIgnoreCase)
-            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
-
-        foreach (var group in subGroups)
-        {
-            FilteredAppsByCategory.Add(new AppCategoryGroup(
-                group.Key,
-                new ObservableCollection<AppCardModel>(
-                    group.OrderBy(a => a.DisplayLabel, StringComparer.OrdinalIgnoreCase))));
         }
     }
 
@@ -517,7 +482,7 @@ public sealed partial class WizardShellViewModel : ViewModelBase
             foreach (var f in fontResult.NerdFonts) NerdFonts.Add(f);
 
             RebuildTweakCategories();
-            RebuildAppCategories();
+            RebuildBrowseCategories();
         }
         finally
         {

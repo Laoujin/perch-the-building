@@ -77,11 +77,19 @@ public partial class WizardWindow : FluentWindow
             ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    private void OnAppCategoryCardClick(object sender, MouseButtonEventArgs e)
+    private void OnWizardBrowseCategoryClick(object sender, MouseButtonEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: AppCategoryCardModel card })
         {
-            ViewModel.SelectAppCategoryCommand.Execute(card.BroadCategory);
+            ViewModel.ToggleCategoryExpandCommand.Execute(card);
+        }
+    }
+
+    private void OnWizardCategoryAppsPanelLoaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is ItemsControl { Tag: string broadCategory } itemsControl)
+        {
+            itemsControl.ItemsSource = ViewModel.GetCategoryApps(broadCategory);
         }
     }
 
