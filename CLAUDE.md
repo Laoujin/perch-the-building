@@ -18,11 +18,14 @@ dotnet run --project src/Perch.Cli        # Run the CLI
 dotnet run --project src/Perch.Cli -- deploy   # Run with arguments
 ```
 
-After making changes to Perch.Desktop, launch the app to verify:
+After making changes to Perch.Desktop, take smoke test screenshots to verify:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File launch-dev.ps1
+```bash
+dotnet test tests/Perch.SmokeTests --filter PageScreenshotTests  # Screenshot all pages
+dotnet test tests/Perch.SmokeTests --filter <TestName>            # Targeted test
 ```
+
+Screenshots saved to `tests/Perch.SmokeTests/screenshots/`. Review them with the Read tool (supports images).
 
 ## Coding Conventions
 
@@ -50,6 +53,10 @@ See global `~/.claude/AGENTS-DOTNET-STYLE.md` and `~/.claude/AGENTS-DOTNET-TESTI
 - **Prefer editing existing files** over creating new ones
 - **No comments restating what code does** — code should be self-documenting
 - **Warnings as errors** — zero tolerance for analyzer warnings
+
+## Agent Workflow
+
+See `AGENTS-WORKFLOW.md` for the full issue-to-PR pipeline: worktree, fix, smoke test, screenshot, PR, repeat.
 
 ## Project Docs
 
