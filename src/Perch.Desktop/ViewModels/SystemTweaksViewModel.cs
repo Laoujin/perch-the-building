@@ -43,6 +43,9 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
     private string _certificateSearchText = string.Empty;
 
     [ObservableProperty]
+    private string? _activeCertificateExpiryFilter;
+
+    [ObservableProperty]
     private string? _selectedCategory;
 
     [ObservableProperty]
@@ -66,6 +69,7 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
     public ObservableCollection<string> AvailableProfileFilters { get; } = [];
     public ObservableCollection<CertificateCardModel> CertificateItems { get; } = [];
     public ObservableCollection<CertificateStoreGroupModel> FilteredCertificateGroups { get; } = [];
+    public ObservableCollection<string> AvailableCertificateExpiryFilters { get; } = ["All", "Valid", "Expiring Soon", "Expired"];
 
     private List<FontFamilyGroupModel> _allInstalledFontGroups = [];
     private List<CertificateStoreGroupModel> _allCertificateGroups = [];
@@ -316,7 +320,10 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
             ApplyStartupFilter();
 
         if (string.Equals(category, "Certificates", StringComparison.OrdinalIgnoreCase))
+        {
+            ActiveCertificateExpiryFilter = "All";
             ApplyCertificateFilter();
+        }
 
         if (string.Equals(category, "System Tweaks", StringComparison.OrdinalIgnoreCase))
         {
@@ -361,6 +368,13 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
 
         if (SelectedSubCategory is not null)
             SelectSubCategory(SelectedSubCategory);
+    }
+
+    [RelayCommand]
+    private void SetCertificateExpiryFilter(string filter)
+    {
+        ActiveCertificateExpiryFilter = filter;
+        ApplyCertificateFilter();
     }
 
     [RelayCommand]
@@ -504,19 +518,30 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
     private void ApplyCertificateFilter()
     {
         var query = CertificateSearchText;
+        var expiryFilter = ActiveCertificateExpiryFilter;
         FilteredCertificateGroups.Clear();
-
-        if (string.IsNullOrWhiteSpace(query))
-        {
-            foreach (var group in _allCertificateGroups)
-                FilteredCertificateGroups.Add(group);
-            return;
-        }
 
         foreach (var group in _allCertificateGroups)
         {
-            var matching = group.Certificates.Where(c => c.MatchesSearch(query));
-            var filtered = new CertificateStoreGroupModel(group.Store, matching);
+            IEnumerable<CertificateCardModel> certs = group.Certificates;
+
+            if (!string.IsNullOrWhiteSpace(query))
+                certs = certs.Where(c => c.MatchesSearch(query));
+
+            if (expiryFilter is not null and not "All")
+            {
+                var status = expiryFilter switch
+                {
+                    "Valid" => CertificateExpiryStatus.Valid,
+                    "Expiring Soon" => CertificateExpiryStatus.ExpiringSoon,
+                    "Expired" => CertificateExpiryStatus.Expired,
+                    _ => (CertificateExpiryStatus?)null,
+                };
+                if (status is not null)
+                    certs = certs.Where(c => c.ExpiryStatus == status);
+            }
+
+            var filtered = new CertificateStoreGroupModel(group.Store, certs);
             if (filtered.Certificates.Count > 0)
                 FilteredCertificateGroups.Add(filtered);
         }

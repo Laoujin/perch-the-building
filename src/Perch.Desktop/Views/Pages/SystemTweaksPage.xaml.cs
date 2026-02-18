@@ -91,6 +91,12 @@ public partial class SystemTweaksPage : Page
             cert.IsExpanded = !cert.IsExpanded;
     }
 
+    private void OnCertificateExpiryFilterClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: string filter })
+            ViewModel.SetCertificateExpiryFilterCommand.Execute(filter);
+    }
+
     private void OnStartupToggleEnabledClick(object sender, RoutedEventArgs e)
     {
         if (GetStartupCardModel(sender) is { } card)

@@ -580,6 +580,7 @@
             <Grid Grid.Row="1" x:Name="CertificateDetailPanel" Visibility="Collapsed">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
@@ -588,9 +589,27 @@
                     PlaceholderText="Filter certificates..."
                     Text="{Binding CertificateSearchText, UpdateSourceTrigger=PropertyChanged}"
                     Width="250"
-                    Margin="0,0,0,12" />
+                    Margin="0,0,0,8" />
 
-                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <ItemsControl Grid.Row="1" ItemsSource="{Binding AvailableCertificateExpiryFilters}" Margin="0,0,0,12">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ui:Button
+                                Content="{Binding}"
+                                Margin="0,0,8,4"
+                                Padding="8,4"
+                                FontSize="11"
+                                Click="OnCertificateExpiryFilterClick" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
                     <ItemsControl ItemsSource="{Binding FilteredCertificateGroups}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type models:CertificateStoreGroupModel}">
