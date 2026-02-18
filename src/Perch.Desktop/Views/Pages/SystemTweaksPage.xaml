@@ -576,6 +576,222 @@
                 </ScrollViewer>
             </Grid>
 
+            <!-- Certificate cards for Certificates category -->
+            <Grid Grid.Row="1" x:Name="CertificateDetailPanel" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <ui:TextBox
+                    Grid.Row="0"
+                    PlaceholderText="Filter certificates..."
+                    Text="{Binding CertificateSearchText, UpdateSourceTrigger=PropertyChanged}"
+                    Width="250"
+                    Margin="0,0,0,12" />
+
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding FilteredCertificateGroups}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type models:CertificateStoreGroupModel}">
+                                <Border
+                                    Background="#1A1A2E"
+                                    BorderBrush="#333350"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="12"
+                                    Margin="0,0,0,8">
+                                    <StackPanel>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <ui:Button
+                                                Grid.Column="0"
+                                                Content="{Binding IsExpanded, Converter={StaticResource BooleanToChevronConverter}}"
+                                                Padding="2"
+                                                Height="22"
+                                                Width="22"
+                                                Margin="0,0,8,0"
+                                                VerticalAlignment="Center"
+                                                Click="OnCertificateGroupExpandClick" />
+
+                                            <TextBlock
+                                                Grid.Column="1"
+                                                Text="{Binding DisplayName}"
+                                                FontSize="14"
+                                                FontWeight="SemiBold"
+                                                Foreground="White"
+                                                VerticalAlignment="Center" />
+
+                                            <TextBlock
+                                                Grid.Column="2"
+                                                FontSize="11"
+                                                Foreground="#666666"
+                                                VerticalAlignment="Center">
+                                                <Run Text="{Binding Certificates.Count, Mode=OneWay}" />
+                                                <Run Text=" certificates" />
+                                            </TextBlock>
+                                        </Grid>
+
+                                        <ItemsControl
+                                            ItemsSource="{Binding Certificates}"
+                                            Margin="24,8,0,0"
+                                            Visibility="{Binding IsExpanded, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="{x:Type models:CertificateCardModel}">
+                                                    <Border
+                                                        Background="#12122A"
+                                                        BorderBrush="#333350"
+                                                        BorderThickness="1"
+                                                        CornerRadius="6"
+                                                        Padding="10"
+                                                        Margin="0,0,0,6">
+                                                        <Grid>
+                                                            <Grid.RowDefinitions>
+                                                                <RowDefinition Height="Auto" />
+                                                                <RowDefinition Height="Auto" />
+                                                                <RowDefinition Height="Auto" />
+                                                            </Grid.RowDefinitions>
+
+                                                            <Grid Grid.Row="0">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="*" />
+                                                                    <ColumnDefinition Width="Auto" />
+                                                                </Grid.ColumnDefinitions>
+
+                                                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                                    <TextBlock
+                                                                        Text="{Binding SubjectDisplayName}"
+                                                                        FontSize="13"
+                                                                        FontWeight="SemiBold"
+                                                                        Foreground="White"
+                                                                        TextTrimming="CharacterEllipsis"
+                                                                        ToolTip="{Binding Certificate.Subject}" />
+                                                                    <TextBlock
+                                                                        FontSize="11"
+                                                                        Foreground="#888888"
+                                                                        TextTrimming="CharacterEllipsis"
+                                                                        Margin="0,2,0,0">
+                                                                        <Run Text="Issuer: " /><Run Text="{Binding IssuerDisplayName, Mode=OneWay}" />
+                                                                    </TextBlock>
+                                                                </StackPanel>
+
+                                                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                                    <Border
+                                                                        CornerRadius="4"
+                                                                        Padding="6,2"
+                                                                        Margin="8,0,0,0">
+                                                                        <Border.Style>
+                                                                            <Style TargetType="Border">
+                                                                                <Setter Property="Background" Value="#1A3D2E" />
+                                                                                <Style.Triggers>
+                                                                                    <DataTrigger Binding="{Binding ExpiryStatus}" Value="ExpiringSoon">
+                                                                                        <Setter Property="Background" Value="#3D3A1A" />
+                                                                                    </DataTrigger>
+                                                                                    <DataTrigger Binding="{Binding ExpiryStatus}" Value="Expired">
+                                                                                        <Setter Property="Background" Value="#3D1A1A" />
+                                                                                    </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </Border.Style>
+                                                                        <TextBlock FontSize="10">
+                                                                            <TextBlock.Style>
+                                                                                <Style TargetType="TextBlock">
+                                                                                    <Setter Property="Foreground" Value="#10B981" />
+                                                                                    <Setter Property="Text" Value="Valid" />
+                                                                                    <Style.Triggers>
+                                                                                        <DataTrigger Binding="{Binding ExpiryStatus}" Value="ExpiringSoon">
+                                                                                            <Setter Property="Foreground" Value="#EAB308" />
+                                                                                            <Setter Property="Text" Value="Expiring soon" />
+                                                                                        </DataTrigger>
+                                                                                        <DataTrigger Binding="{Binding ExpiryStatus}" Value="Expired">
+                                                                                            <Setter Property="Foreground" Value="#EF4444" />
+                                                                                            <Setter Property="Text" Value="Expired" />
+                                                                                        </DataTrigger>
+                                                                                    </Style.Triggers>
+                                                                                </Style>
+                                                                            </TextBlock.Style>
+                                                                        </TextBlock>
+                                                                    </Border>
+                                                                    <ui:Button
+                                                                        Content="{Binding IsExpanded, Converter={StaticResource BooleanToChevronConverter}}"
+                                                                        Padding="2"
+                                                                        Height="22"
+                                                                        Width="22"
+                                                                        Margin="4,0,0,0"
+                                                                        VerticalAlignment="Center"
+                                                                        Click="OnCertificateExpandClick" />
+                                                                </StackPanel>
+                                                            </Grid>
+
+                                                            <TextBlock
+                                                                Grid.Row="1"
+                                                                FontSize="11"
+                                                                Foreground="#666666"
+                                                                Margin="0,2,0,0">
+                                                                <Run Text="Expires: " /><Run Text="{Binding Certificate.NotAfter, Mode=OneWay, StringFormat=d}" />
+                                                            </TextBlock>
+
+                                                            <StackPanel
+                                                                Grid.Row="2"
+                                                                Margin="0,6,0,0"
+                                                                Visibility="{Binding IsExpanded, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                                <Border
+                                                                    Background="#0D0D1A"
+                                                                    CornerRadius="4"
+                                                                    Padding="8">
+                                                                    <StackPanel>
+                                                                        <TextBlock FontSize="10" Foreground="#666666" Margin="0,0,0,2">
+                                                                            <Run Text="Thumbprint: " />
+                                                                        </TextBlock>
+                                                                        <TextBlock
+                                                                            Text="{Binding Certificate.Thumbprint}"
+                                                                            FontSize="10"
+                                                                            FontFamily="Cascadia Code,Consolas,Courier New"
+                                                                            Foreground="#888888"
+                                                                            TextWrapping="Wrap"
+                                                                            Margin="0,0,0,6" />
+
+                                                                        <TextBlock FontSize="10" Foreground="#666666">
+                                                                            <Run Text="Valid: " />
+                                                                            <Run Text="{Binding Certificate.NotBefore, Mode=OneWay, StringFormat=d}" />
+                                                                            <Run Text=" - " />
+                                                                            <Run Text="{Binding Certificate.NotAfter, Mode=OneWay, StringFormat=d}" />
+                                                                        </TextBlock>
+
+                                                                        <TextBlock FontSize="10" Foreground="#666666" Margin="0,2,0,0">
+                                                                            <Run Text="Subject: " /><Run Text="{Binding Certificate.Subject, Mode=OneWay}" />
+                                                                        </TextBlock>
+
+                                                                        <TextBlock FontSize="10" Foreground="#666666" Margin="0,2,0,0"
+                                                                                   Visibility="{Binding Certificate.FriendlyName, Converter={StaticResource CountToVisibilityConverter}}">
+                                                                            <Run Text="Friendly name: " /><Run Text="{Binding Certificate.FriendlyName, Mode=OneWay}" />
+                                                                        </TextBlock>
+
+                                                                        <TextBlock FontSize="10" Foreground="#666666" Margin="0,2,0,0"
+                                                                                   Visibility="{Binding Certificate.HasPrivateKey, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                                            <Run Text="Has private key" />
+                                                                        </TextBlock>
+                                                                    </StackPanel>
+                                                                </Border>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+
             <!-- Font cards for Fonts category -->
             <Grid Grid.Row="1" x:Name="FontDetailPanel">
                 <Grid.RowDefinitions>
