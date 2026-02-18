@@ -7,8 +7,6 @@ using Perch.Core.Packages;
 using Perch.Core.Registry;
 using Perch.Core.Status;
 using Perch.Core.Symlinks;
-using Perch.Core.Deploy;
-using Perch.Core.Fonts;
 using Perch.Core.Templates;
 
 namespace Perch.Core.Tests.Status;
