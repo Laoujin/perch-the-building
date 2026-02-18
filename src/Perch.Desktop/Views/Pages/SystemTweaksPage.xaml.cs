@@ -79,6 +79,18 @@ public partial class SystemTweaksPage : Page
             group.IsExpanded = !group.IsExpanded;
     }
 
+    private void OnCertificateGroupExpandClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: CertificateStoreGroupModel group })
+            group.IsExpanded = !group.IsExpanded;
+    }
+
+    private void OnCertificateExpandClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: CertificateCardModel cert })
+            cert.IsExpanded = !cert.IsExpanded;
+    }
+
     private void OnStartupToggleEnabledClick(object sender, RoutedEventArgs e)
     {
         if (GetStartupCardModel(sender) is { } card)
@@ -97,6 +109,7 @@ public partial class SystemTweaksPage : Page
         var subCategory = ViewModel.SelectedSubCategory;
         var isFonts = string.Equals(category, "Fonts", StringComparison.OrdinalIgnoreCase);
         var isStartup = string.Equals(category, "Startup", StringComparison.OrdinalIgnoreCase);
+        var isCertificates = string.Equals(category, "Certificates", StringComparison.OrdinalIgnoreCase);
         var isSystemTweaks = string.Equals(category, "System Tweaks", StringComparison.OrdinalIgnoreCase);
 
         SubCategoryPanel.Visibility = isSystemTweaks && subCategory is null
@@ -106,6 +119,8 @@ public partial class SystemTweaksPage : Page
         FontDetailPanel.Visibility = isFonts
             ? Visibility.Visible : Visibility.Collapsed;
         StartupDetailPanel.Visibility = isStartup
+            ? Visibility.Visible : Visibility.Collapsed;
+        CertificateDetailPanel.Visibility = isCertificates
             ? Visibility.Visible : Visibility.Collapsed;
 
         UpdateBackButton();

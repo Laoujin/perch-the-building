@@ -9,6 +9,7 @@ using Perch.Core.Catalog;
 using Perch.Core.Config;
 using Perch.Core.Modules;
 using Perch.Core.Registry;
+using Perch.Core.Scanner;
 using Perch.Core.Startup;
 using Perch.Core.Tweaks;
 using Perch.Desktop.Models;
@@ -500,6 +501,7 @@ public sealed class SystemTweaksViewModelTests
     private ISettingsProvider _settingsProvider = null!;
     private IStartupService _startupService = null!;
     private ITweakService _tweakService = null!;
+    private ICertificateScanner _certificateScanner = null!;
     private IPendingChangesService _pendingChanges = null!;
     private SystemTweaksViewModel _vm = null!;
 
@@ -510,6 +512,7 @@ public sealed class SystemTweaksViewModelTests
         _settingsProvider = Substitute.For<ISettingsProvider>();
         _startupService = Substitute.For<IStartupService>();
         _tweakService = Substitute.For<ITweakService>();
+        _certificateScanner = Substitute.For<ICertificateScanner>();
         _pendingChanges = Substitute.For<IPendingChangesService>();
 
         _settingsProvider.LoadAsync(Arg.Any<CancellationToken>())
@@ -523,8 +526,10 @@ public sealed class SystemTweaksViewModelTests
                 ImmutableArray<FontCardModel>.Empty));
         _startupService.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(Array.Empty<StartupEntry>());
+        _certificateScanner.ScanAsync(Arg.Any<CancellationToken>())
+            .Returns(ImmutableArray<DetectedCertificate>.Empty);
 
-        _vm = new SystemTweaksViewModel(_detectionService, _settingsProvider, _startupService, _tweakService, _pendingChanges);
+        _vm = new SystemTweaksViewModel(_detectionService, _settingsProvider, _startupService, _tweakService, _certificateScanner, _pendingChanges);
     }
 
     [Test]
