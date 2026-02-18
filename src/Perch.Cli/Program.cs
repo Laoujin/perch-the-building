@@ -53,6 +53,8 @@ app.Configure(config =>
     {
         tweak.AddCommand<TweakListCommand>("list")
             .WithDescription("List gallery tweaks with their current status");
+        tweak.AddCommand<TweakApplyCommand>("apply")
+            .WithDescription("Apply a gallery tweak by ID");
     });
     config.AddCommand<CompletionCommand>("completion")
         .WithDescription("Generate shell completion script");
