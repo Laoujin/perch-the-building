@@ -2,9 +2,11 @@
 using System.Collections.Immutable;
 using System.Runtime.Versioning;
 
+using Perch.Core;
 using Perch.Core.Catalog;
 using Perch.Core.Config;
 using Perch.Core.Modules;
+using Perch.Core.Symlinks;
 using Perch.Desktop.Models;
 using Perch.Desktop.Services;
 
@@ -18,6 +20,8 @@ public sealed class AppDetailServiceTests
     private IModuleDiscoveryService _moduleDiscovery = null!;
     private ICatalogService _catalog = null!;
     private ISettingsProvider _settings = null!;
+    private IPlatformDetector _platformDetector = null!;
+    private ISymlinkProvider _symlinkProvider = null!;
     private AppDetailService _service = null!;
 
     [SetUp]
@@ -26,12 +30,15 @@ public sealed class AppDetailServiceTests
         _moduleDiscovery = Substitute.For<IModuleDiscoveryService>();
         _catalog = Substitute.For<ICatalogService>();
         _settings = Substitute.For<ISettingsProvider>();
+        _platformDetector = Substitute.For<IPlatformDetector>();
+        _symlinkProvider = Substitute.For<ISymlinkProvider>();
         _settings.LoadAsync(Arg.Any<CancellationToken>())
             .Returns(new PerchSettings { ConfigRepoPath = @"C:\config" });
         _catalog.GetAllAppsAsync(Arg.Any<CancellationToken>())
             .Returns(ImmutableArray<CatalogEntry>.Empty);
+        _platformDetector.CurrentPlatform.Returns(Platform.Windows);
 
-        _service = new AppDetailService(_moduleDiscovery, _catalog, _settings);
+        _service = new AppDetailService(_moduleDiscovery, _catalog, _settings, _platformDetector, _symlinkProvider);
     }
 
     [Test]

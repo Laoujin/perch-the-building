@@ -91,7 +91,7 @@ public sealed partial class WizardShellViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isCasual;
 
-    public ObservableCollection<DotfileGroupCardModel> Dotfiles { get; } = [];
+    public ObservableCollection<AppCardModel> Dotfiles { get; } = [];
     public ObservableCollection<AppCardModel> YourApps { get; } = [];
     public ObservableCollection<AppCardModel> SuggestedApps { get; } = [];
     public ObservableCollection<AppCardModel> OtherApps { get; } = [];
@@ -477,7 +477,7 @@ public sealed partial class WizardShellViewModel : ViewModelBase
             foreach (var app in appResult.Suggested) SuggestedApps.Add(app);
             foreach (var app in appResult.OtherApps) OtherApps.Add(app);
             foreach (var tweak in tweakResult.Tweaks) Tweaks.Add(tweak);
-            foreach (var df in dotfileResult) { df.IsSelected = df.Status == CardStatus.Linked; Dotfiles.Add(df); }
+            foreach (var df in dotfileResult) { df.IsSelected = df.IsManaged; Dotfiles.Add(df); }
             foreach (var f in fontResult.InstalledFonts) InstalledFonts.Add(f);
             foreach (var f in fontResult.NerdFonts) NerdFonts.Add(f);
 

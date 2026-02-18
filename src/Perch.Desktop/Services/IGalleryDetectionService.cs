@@ -10,7 +10,7 @@ public interface IGalleryDetectionService
     Task<GalleryDetectionResult> DetectAppsAsync(IReadOnlySet<UserProfile> selectedProfiles, CancellationToken cancellationToken = default);
     Task<ImmutableArray<AppCardModel>> DetectAllAppsAsync(CancellationToken cancellationToken = default);
     Task<TweakDetectionPageResult> DetectTweaksAsync(IReadOnlySet<UserProfile> selectedProfiles, CancellationToken cancellationToken = default);
-    Task<ImmutableArray<DotfileGroupCardModel>> DetectDotfilesAsync(CancellationToken cancellationToken = default);
+    Task<ImmutableArray<AppCardModel>> DetectDotfilesAsync(CancellationToken cancellationToken = default);
     Task<FontDetectionResult> DetectFontsAsync(CancellationToken cancellationToken = default);
 }
 

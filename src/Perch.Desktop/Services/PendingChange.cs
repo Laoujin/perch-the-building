@@ -32,7 +32,7 @@ public sealed record ApplyTweakChange(TweakCardModel Tweak)
 public sealed record RevertTweakChange(TweakCardModel Tweak)
     : PendingChange(Tweak.Id, Tweak.Name, Tweak.Description ?? "Revert registry tweak", PendingChangeKind.RevertTweak);
 
-public sealed record LinkDotfileChange(DotfileGroupCardModel Dotfile)
+public sealed record LinkDotfileChange(AppCardModel Dotfile)
     : PendingChange(Dotfile.Id, Dotfile.DisplayLabel, "Link dotfile group", PendingChangeKind.LinkDotfile);
 
 public sealed record OnboardFontChange(FontCardModel Font)

@@ -54,7 +54,7 @@ public sealed class WizardShellViewModelTests
             .Returns(new TweakDetectionPageResult(ImmutableArray<TweakCardModel>.Empty, ImmutableArray<TweakDetectionError>.Empty));
 
         _detectionService.DetectDotfilesAsync(Arg.Any<CancellationToken>())
-            .Returns(ImmutableArray<DotfileGroupCardModel>.Empty);
+            .Returns(ImmutableArray<AppCardModel>.Empty);
 
         _detectionService.DetectFontsAsync(Arg.Any<CancellationToken>())
             .Returns(new FontDetectionResult(
@@ -877,10 +877,10 @@ public sealed class WizardShellViewModelTests
         return new AppCardModel(entry, CardTier.YourApps, status);
     }
 
-    private static DotfileGroupCardModel MakeDotfile(string name, CardStatus status)
+    private static AppCardModel MakeDotfile(string name, CardStatus status)
     {
         var entry = new CatalogEntry(name, name, name, "Shell", [], null, null, null, null, null, null, CatalogKind.Dotfile);
-        return new DotfileGroupCardModel(entry, [], status);
+        return new AppCardModel(entry, CardTier.Other, status);
     }
 
     private static TweakCardModel MakeTweak(string name, string category)

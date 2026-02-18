@@ -1,6 +1,5 @@
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -13,10 +12,10 @@ namespace Perch.Desktop.ViewModels;
 public sealed partial class DotfilesViewModel : ViewModelBase
 {
     private readonly IGalleryDetectionService _detectionService;
-    private readonly IDotfileDetailService _detailService;
+    private readonly IAppDetailService _detailService;
     private readonly IPendingChangesService _pendingChanges;
 
-    private ImmutableArray<DotfileGroupCardModel> _allDotfiles = [];
+    private ImmutableArray<AppCardModel> _allDotfiles = [];
 
     [ObservableProperty]
     private bool _isLoading;
@@ -34,23 +33,25 @@ public sealed partial class DotfilesViewModel : ViewModelBase
     private int _totalCount;
 
     [ObservableProperty]
-    private DotfileGroupCardModel? _selectedDotfile;
+    private AppCardModel? _selectedApp;
 
     [ObservableProperty]
-    private DotfileDetail? _detail;
+    private AppDetail? _detail;
 
     [ObservableProperty]
     private bool _isLoadingDetail;
 
-    public bool ShowCardGrid => SelectedDotfile is null;
-    public bool ShowDetailView => SelectedDotfile is not null;
+    public bool ShowCardGrid => SelectedApp is null;
+    public bool ShowDetailView => SelectedApp is not null;
     public bool HasModule => Detail?.OwningModule is not null;
     public bool HasNoModule => Detail is not null && Detail.OwningModule is null;
-    public ObservableCollection<DotfileGroupCardModel> Dotfiles { get; } = [];
+    public bool HasFileStatuses => Detail is not null && !Detail.FileStatuses.IsDefaultOrEmpty;
+    public bool HasAlternatives => Detail is not null && !Detail.Alternatives.IsDefaultOrEmpty;
+    public ObservableCollection<AppCardModel> Dotfiles { get; } = [];
 
     public DotfilesViewModel(
         IGalleryDetectionService detectionService,
-        IDotfileDetailService detailService,
+        IAppDetailService detailService,
         IPendingChangesService pendingChanges)
     {
         _detectionService = detectionService;
@@ -60,22 +61,24 @@ public sealed partial class DotfilesViewModel : ViewModelBase
 
     partial void OnSearchTextChanged(string value) => ApplyFilter();
 
-    partial void OnSelectedDotfileChanged(DotfileGroupCardModel? value)
+    partial void OnSelectedAppChanged(AppCardModel? value)
     {
         OnPropertyChanged(nameof(ShowCardGrid));
         OnPropertyChanged(nameof(ShowDetailView));
     }
 
-    partial void OnDetailChanged(DotfileDetail? value)
+    partial void OnDetailChanged(AppDetail? value)
     {
         OnPropertyChanged(nameof(HasModule));
         OnPropertyChanged(nameof(HasNoModule));
+        OnPropertyChanged(nameof(HasFileStatuses));
+        OnPropertyChanged(nameof(HasAlternatives));
     }
 
     [RelayCommand]
-    private async Task ConfigureAsync(DotfileGroupCardModel card, CancellationToken cancellationToken)
+    private async Task ConfigureAppAsync(AppCardModel card, CancellationToken cancellationToken)
     {
-        SelectedDotfile = card;
+        SelectedApp = card;
         Detail = null;
         IsLoadingDetail = true;
 
@@ -94,9 +97,18 @@ public sealed partial class DotfilesViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void ToggleDotfile(AppCardModel app)
+    {
+        if (app.IsManaged)
+            _pendingChanges.Remove(app.Id, PendingChangeKind.LinkDotfile);
+        else
+            _pendingChanges.Add(new LinkDotfileChange(app));
+    }
+
+    [RelayCommand]
     private void BackToGrid()
     {
-        SelectedDotfile = null;
+        SelectedApp = null;
         Detail = null;
     }
 
@@ -108,14 +120,7 @@ public sealed partial class DotfilesViewModel : ViewModelBase
 
         try
         {
-            foreach (var df in _allDotfiles)
-                df.PropertyChanged -= OnDotfilePropertyChanged;
-
             _allDotfiles = await _detectionService.DetectDotfilesAsync(cancellationToken);
-
-            foreach (var df in _allDotfiles)
-                df.PropertyChanged += OnDotfilePropertyChanged;
-
             ApplyFilter();
         }
         catch (OperationCanceledException)
@@ -143,16 +148,5 @@ public sealed partial class DotfilesViewModel : ViewModelBase
 
         LinkedCount = _allDotfiles.Count(d => d.Status == CardStatus.Linked);
         TotalCount = _allDotfiles.Length;
-    }
-
-    private void OnDotfilePropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName != nameof(DotfileGroupCardModel.IsSelected) || sender is not DotfileGroupCardModel df)
-            return;
-
-        if (df.IsSelected)
-            _pendingChanges.Add(new LinkDotfileChange(df));
-        else
-            _pendingChanges.Remove(df.Id, PendingChangeKind.LinkDotfile);
     }
 }

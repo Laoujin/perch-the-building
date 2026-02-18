@@ -235,7 +235,7 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
         return new TweakDetectionPageResult(builder.ToImmutable(), errors.ToImmutable());
     }
 
-    public async Task<ImmutableArray<DotfileGroupCardModel>> DetectDotfilesAsync(
+    public async Task<ImmutableArray<AppCardModel>> DetectDotfilesAsync(
         CancellationToken cancellationToken = default)
     {
         var dotfileApps = await _catalog.GetAllDotfileAppsAsync(cancellationToken);
@@ -243,7 +243,7 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
         var platform = _platformDetector.CurrentPlatform;
         var configRepoPath = settings.ConfigRepoPath;
 
-        var builder = ImmutableArray.CreateBuilder<DotfileGroupCardModel>();
+        var builder = ImmutableArray.CreateBuilder<AppCardModel>();
 
         foreach (var app in dotfileApps)
         {
@@ -252,60 +252,49 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
             if (app.Config is null || app.Config.Links.IsDefaultOrEmpty)
                 continue;
 
-            var files = ImmutableArray.CreateBuilder<DotfileFileStatus>();
-            foreach (var link in app.Config.Links)
-            {
-                if (!link.Platforms.IsDefaultOrEmpty && !link.Platforms.Contains(platform))
-                    continue;
-
-                if (!link.Targets.TryGetValue(platform, out var targetPath))
-                    continue;
-
-                var resolved = Environment.ExpandEnvironmentVariables(targetPath.Replace('/', '\\'));
-                var exists = File.Exists(resolved) || Directory.Exists(resolved);
-                var isSymlink = exists && _symlinkProvider.IsSymlink(resolved);
-
-                var fileStatus = isSymlink ? CardStatus.Linked
-                    : exists ? CardStatus.Detected
-                    : CardStatus.NotInstalled;
-
-                if (isSymlink && !string.IsNullOrEmpty(configRepoPath))
-                {
-                    if (IsDrift(resolved, configRepoPath))
-                        fileStatus = CardStatus.Drift;
-                }
-
-                files.Add(new DotfileFileStatus(
-                    Path.GetFileName(resolved),
-                    resolved,
-                    exists,
-                    isSymlink,
-                    fileStatus));
-            }
-
-            if (files.Count == 0)
+            var status = DetectDotfileStatus(app, platform, configRepoPath);
+            if (status is null)
                 continue;
 
-            var groupStatus = ResolveGroupStatus(files);
-            builder.Add(new DotfileGroupCardModel(app, files.ToImmutable(), groupStatus));
+            builder.Add(new AppCardModel(app, CardTier.Other, status.Value));
         }
 
         return builder.ToImmutable();
     }
 
-    private static CardStatus ResolveGroupStatus(ImmutableArray<DotfileFileStatus>.Builder files)
+    private CardStatus? DetectDotfileStatus(CatalogEntry app, Platform platform, string? configRepoPath)
     {
         bool allLinked = true;
         bool anyDrift = false;
         bool anyDetected = false;
+        int count = 0;
 
-        foreach (var file in files)
+        foreach (var link in app.Config!.Links)
         {
-            if (file.Status == CardStatus.Drift) anyDrift = true;
-            if (file.Status == CardStatus.Detected) anyDetected = true;
-            if (file.Status != CardStatus.Linked) allLinked = false;
+            if (!link.Platforms.IsDefaultOrEmpty && !link.Platforms.Contains(platform))
+                continue;
+
+            if (!link.Targets.TryGetValue(platform, out var targetPath))
+                continue;
+
+            count++;
+            var resolved = Environment.ExpandEnvironmentVariables(targetPath.Replace('/', '\\'));
+            var exists = File.Exists(resolved) || Directory.Exists(resolved);
+            var isSymlink = exists && _symlinkProvider.IsSymlink(resolved);
+
+            if (isSymlink)
+            {
+                if (!string.IsNullOrEmpty(configRepoPath) && IsDrift(resolved, configRepoPath))
+                    anyDrift = true;
+            }
+            else
+            {
+                allLinked = false;
+                if (exists) anyDetected = true;
+            }
         }
 
+        if (count == 0) return null;
         if (anyDrift) return CardStatus.Drift;
         if (allLinked) return CardStatus.Linked;
         if (anyDetected) return CardStatus.Detected;

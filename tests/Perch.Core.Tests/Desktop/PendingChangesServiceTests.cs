@@ -161,10 +161,10 @@ public sealed class PendingChangesServiceTests
         return new TweakCardModel(entry, CardStatus.NotInstalled);
     }
 
-    private static DotfileGroupCardModel CreateDotfileCard(string id)
+    private static AppCardModel CreateDotfileCard(string id)
     {
-        var entry = new CatalogEntry(id, id, null, "test", [], null, null, null, null, null, null);
-        return new DotfileGroupCardModel(entry, [], CardStatus.Detected);
+        var entry = new CatalogEntry(id, id, null, "test", [], null, null, null, null, null, null, CatalogKind.Dotfile);
+        return new AppCardModel(entry, CardTier.Other, CardStatus.Detected);
     }
 }
 #endif

@@ -1,8 +1,10 @@
 using System.Collections.Immutable;
 
+using Perch.Core;
 using Perch.Core.Catalog;
 using Perch.Core.Config;
 using Perch.Core.Modules;
+using Perch.Core.Symlinks;
 using Perch.Desktop.Models;
 
 namespace Perch.Desktop.Services;
@@ -12,15 +14,21 @@ public sealed class AppDetailService : IAppDetailService
     private readonly IModuleDiscoveryService _moduleDiscovery;
     private readonly ICatalogService _catalog;
     private readonly ISettingsProvider _settings;
+    private readonly IPlatformDetector _platformDetector;
+    private readonly ISymlinkProvider _symlinkProvider;
 
     public AppDetailService(
         IModuleDiscoveryService moduleDiscovery,
         ICatalogService catalog,
-        ISettingsProvider settings)
+        ISettingsProvider settings,
+        IPlatformDetector platformDetector,
+        ISymlinkProvider symlinkProvider)
     {
         _moduleDiscovery = moduleDiscovery;
         _catalog = catalog;
         _settings = settings;
+        _platformDetector = platformDetector;
+        _symlinkProvider = symlinkProvider;
     }
 
     public async Task<AppDetail> LoadDetailAsync(AppCardModel card, CancellationToken cancellationToken = default)
@@ -39,8 +47,67 @@ public sealed class AppDetailService : IAppDetailService
             discovery.Modules, card.Id, cancellationToken);
 
         var alternatives = await FindAlternativesAsync(card.Category, card.Id, cancellationToken);
+        var fileStatuses = DetectFileStatuses(card.CatalogEntry, configRepoPath);
 
-        return new AppDetail(card, owningModule, manifest, manifestYaml, manifestPath, alternatives);
+        return new AppDetail(card, owningModule, manifest, manifestYaml, manifestPath, alternatives, fileStatuses);
+    }
+
+    private ImmutableArray<DotfileFileStatus> DetectFileStatuses(CatalogEntry entry, string? configRepoPath)
+    {
+        if (entry.Config is null || entry.Config.Links.IsDefaultOrEmpty)
+            return [];
+
+        var platform = _platformDetector.CurrentPlatform;
+        var builder = ImmutableArray.CreateBuilder<DotfileFileStatus>();
+
+        foreach (var link in entry.Config.Links)
+        {
+            if (!link.Platforms.IsDefaultOrEmpty && !link.Platforms.Contains(platform))
+                continue;
+
+            if (!link.Targets.TryGetValue(platform, out var targetPath))
+                continue;
+
+            var resolved = Environment.ExpandEnvironmentVariables(targetPath.Replace('/', '\\'));
+            var exists = File.Exists(resolved) || Directory.Exists(resolved);
+            var isSymlink = exists && _symlinkProvider.IsSymlink(resolved);
+
+            var fileStatus = isSymlink ? CardStatus.Linked
+                : exists ? CardStatus.Detected
+                : CardStatus.NotInstalled;
+
+            if (isSymlink && !string.IsNullOrEmpty(configRepoPath))
+            {
+                if (IsDrift(resolved, configRepoPath))
+                    fileStatus = CardStatus.Drift;
+            }
+
+            builder.Add(new DotfileFileStatus(
+                Path.GetFileName(resolved),
+                resolved,
+                exists,
+                isSymlink,
+                fileStatus));
+        }
+
+        return builder.ToImmutable();
+    }
+
+    private static bool IsDrift(string resolvedPath, string configRepoPath)
+    {
+        try
+        {
+            var linkTarget = new FileInfo(resolvedPath).LinkTarget;
+            if (linkTarget is null) return false;
+
+            var resolvedTarget = Path.GetFullPath(linkTarget, Path.GetDirectoryName(resolvedPath)!);
+            var resolvedConfig = Path.GetFullPath(configRepoPath);
+            return !resolvedTarget.StartsWith(resolvedConfig, StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     internal static async Task<(AppModule? Module, AppManifest? Manifest, string? Yaml, string? Path)>

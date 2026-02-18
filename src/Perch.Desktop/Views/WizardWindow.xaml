@@ -291,7 +291,7 @@
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type models:DotfileGroupCardModel}">
+                            <DataTemplate DataType="{x:Type models:AppCardModel}">
                                 <Border
                                     Background="#1A1A2E"
                                     BorderBrush="{Binding IsSelected, Converter={StaticResource BooleanToBorderBrushConverter}}"
@@ -344,10 +344,11 @@
 
                                         <TextBlock
                                             Grid.Row="2"
-                                            Text="{Binding FileCountLabel}"
+                                            Text="{Binding Description}"
                                             FontSize="11"
                                             Foreground="#888888"
-                                            Margin="0,4,0,0" />
+                                            Margin="0,4,0,0"
+                                            TextTrimming="CharacterEllipsis" />
                                     </Grid>
                                 </Border>
                             </DataTemplate>

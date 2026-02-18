@@ -6,6 +6,7 @@
     xmlns:vm="clr-namespace:Perch.Desktop.ViewModels"
     xmlns:models="clr-namespace:Perch.Desktop.Models"
     xmlns:controls="clr-namespace:Perch.Desktop.Views.Controls"
+    xmlns:catalog="clr-namespace:Perch.Core.Catalog;assembly=Perch.Core"
     d:DataContext="{d:DesignInstance vm:DotfilesViewModel}"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -88,7 +89,7 @@
             </Border>
         </ScrollViewer>
 
-        <!-- Dotfile cards (card layout like Apps) -->
+        <!-- Dotfile cards using AppCard -->
         <ScrollViewer
             Grid.Row="1"
             VerticalScrollBarVisibility="Auto"
@@ -100,76 +101,27 @@
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="{x:Type models:DotfileGroupCardModel}">
-                        <Border
-                            Background="#1A1A2E"
-                            BorderBrush="{Binding IsSelected, Converter={StaticResource BooleanToBorderBrushConverter}}"
-                            BorderThickness="1"
-                            CornerRadius="8"
-                            Padding="12"
-                            Width="240"
-                            Margin="0,0,12,12">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-
-                                <controls:StatusRibbon
-                                    Grid.Row="0"
-                                    Status="{Binding Status}"
-                                    Margin="0,0,0,8" />
-
-                                <Grid Grid.Row="1">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-
-                                    <ui:SymbolIcon
-                                        Grid.Column="0"
-                                        Symbol="Document24"
-                                        FontSize="20"
-                                        Foreground="#888888"
-                                        VerticalAlignment="Center"
-                                        Margin="0,0,8,0" />
-
-                                    <TextBlock
-                                        Grid.Column="1"
-                                        Text="{Binding DisplayLabel}"
-                                        FontSize="13"
-                                        FontWeight="SemiBold"
-                                        Foreground="White"
-                                        VerticalAlignment="Center"
-                                        TextTrimming="CharacterEllipsis" />
-
-                                    <ui:Button
-                                        Grid.Column="2"
-                                        Icon="{ui:SymbolIcon Settings24}"
-                                        Appearance="Secondary"
-                                        Padding="4"
-                                        Margin="4,0"
-                                        VerticalAlignment="Center"
-                                        Command="{Binding DataContext.ConfigureCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                        CommandParameter="{Binding}" />
-
-                                    <ui:ToggleSwitch
-                                        Grid.Column="3"
-                                        IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                        VerticalAlignment="Center" />
-                                </Grid>
-
-                                <TextBlock
-                                    Grid.Row="2"
-                                    Text="{Binding FileCountLabel}"
-                                    FontSize="11"
-                                    Foreground="#888888"
-                                    Margin="0,4,0,0" />
-                            </Grid>
-                        </Border>
+                    <DataTemplate DataType="{x:Type models:AppCardModel}">
+                        <controls:AppCard
+                            DisplayLabel="{Binding DisplayLabel}"
+                            Description="{Binding Description}"
+                            Category="{Binding Category}"
+                            Status="{Binding Status}"
+                            LogoUrl="{Binding LogoUrl}"
+                            Website="{Binding Website}"
+                            Docs="{Binding Docs}"
+                            GitHub="{Binding GitHub}"
+                            License="{Binding License}"
+                            IsManaged="{Binding IsManaged}"
+                            CanToggle="{Binding CanToggle}"
+                            IsSuggested="{Binding IsSuggested}"
+                            KindBadge="{Binding KindBadge}"
+                            GitHubStarsFormatted="{Binding GitHubStarsFormatted}"
+                            IsTopPick="{Binding IsTopPick}"
+                            Tags="{Binding Tags}"
+                            ConfigureClicked="OnConfigureClicked"
+                            ToggleChanged="OnToggleChanged"
+                            Margin="0,0,12,12" />
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
@@ -190,7 +142,7 @@
                     Command="{Binding BackToGridCommand}"
                     Margin="0,0,12,0" />
                 <TextBlock
-                    Text="{Binding SelectedDotfile.DisplayLabel}"
+                    Text="{Binding SelectedApp.DisplayLabel}"
                     FontSize="18"
                     FontWeight="SemiBold"
                     Foreground="White"
@@ -225,18 +177,22 @@
 
                             <controls:StatusRibbon
                                 Grid.Row="0"
-                                Status="{Binding SelectedDotfile.Status}"
+                                Status="{Binding SelectedApp.Status}"
                                 Margin="0,0,0,8" />
 
                             <TextBlock
                                 Grid.Row="1"
-                                Text="{Binding SelectedDotfile.Category}"
+                                Text="{Binding SelectedApp.Category}"
                                 FontSize="11"
                                 Foreground="#888888"
                                 Margin="0,0,0,4" />
 
                             <!-- Individual files -->
-                            <ItemsControl Grid.Row="2" ItemsSource="{Binding SelectedDotfile.Files}" Margin="0,4,0,4">
+                            <ItemsControl
+                                Grid.Row="2"
+                                ItemsSource="{Binding Detail.FileStatuses}"
+                                Margin="0,4,0,4"
+                                Visibility="{Binding HasFileStatuses, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Grid Margin="0,2">
@@ -346,6 +302,29 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                             </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Alternatives section -->
+                    <Border
+                        Background="#1A1A2E"
+                        CornerRadius="8"
+                        Padding="16"
+                        Margin="0,0,0,12"
+                        Visibility="{Binding HasAlternatives, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <StackPanel>
+                            <TextBlock Text="Alternatives" FontSize="14" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,8" />
+                            <ItemsControl ItemsSource="{Binding Detail.Alternatives}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type catalog:CatalogEntry}">
+                                        <TextBlock
+                                            Text="{Binding Name, Mode=OneWay}"
+                                            FontSize="11"
+                                            Foreground="#9CA3AF"
+                                            Margin="0,0,0,4" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </StackPanel>
                     </Border>
 

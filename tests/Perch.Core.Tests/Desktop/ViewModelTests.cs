@@ -433,7 +433,7 @@ public sealed class AppsViewModelTests
 public sealed class DotfilesViewModelTests
 {
     private IGalleryDetectionService _detectionService = null!;
-    private IDotfileDetailService _detailService = null!;
+    private IAppDetailService _detailService = null!;
     private IPendingChangesService _pendingChanges = null!;
     private DotfilesViewModel _vm = null!;
 
@@ -441,11 +441,11 @@ public sealed class DotfilesViewModelTests
     public void SetUp()
     {
         _detectionService = Substitute.For<IGalleryDetectionService>();
-        _detailService = Substitute.For<IDotfileDetailService>();
+        _detailService = Substitute.For<IAppDetailService>();
         _pendingChanges = Substitute.For<IPendingChangesService>();
 
         _detectionService.DetectDotfilesAsync(Arg.Any<CancellationToken>())
-            .Returns(ImmutableArray<DotfileGroupCardModel>.Empty);
+            .Returns(ImmutableArray<AppCardModel>.Empty);
 
         _vm = new DotfilesViewModel(_detectionService, _detailService, _pendingChanges);
     }
@@ -465,8 +465,8 @@ public sealed class DotfilesViewModelTests
     public async Task RefreshAsync_PopulatesDotfiles()
     {
         var dotfiles = ImmutableArray.Create(
-            MakeDotfileGroup("bashrc", CardStatus.Linked),
-            MakeDotfileGroup("gitconfig", CardStatus.Detected));
+            MakeDotfileCard("bashrc", CardStatus.Linked),
+            MakeDotfileCard("gitconfig", CardStatus.Detected));
 
         _detectionService.DetectDotfilesAsync(Arg.Any<CancellationToken>())
             .Returns(dotfiles);
@@ -500,12 +500,12 @@ public sealed class DotfilesViewModelTests
     [Test]
     public async Task BackToGrid_ResetsSelection()
     {
-        var group = MakeDotfileGroup("bashrc", CardStatus.Linked);
-        var detail = new DotfileDetail(group, null, null, null, null, []);
-        _detailService.LoadDetailAsync(group, Arg.Any<CancellationToken>())
+        var card = MakeDotfileCard("bashrc", CardStatus.Linked);
+        var detail = new AppDetail(card, null, null, null, null, []);
+        _detailService.LoadDetailAsync(card, Arg.Any<CancellationToken>())
             .Returns(detail);
 
-        await _vm.ConfigureCommand.ExecuteAsync(group);
+        await _vm.ConfigureAppCommand.ExecuteAsync(card);
         Assert.That(_vm.ShowDetailView, Is.True);
 
         _vm.BackToGridCommand.Execute(null);
@@ -513,7 +513,7 @@ public sealed class DotfilesViewModelTests
         Assert.Multiple(() =>
         {
             Assert.That(_vm.ShowCardGrid, Is.True);
-            Assert.That(_vm.SelectedDotfile, Is.Null);
+            Assert.That(_vm.SelectedApp, Is.Null);
             Assert.That(_vm.Detail, Is.Null);
         });
     }
@@ -522,8 +522,8 @@ public sealed class DotfilesViewModelTests
     public async Task SearchText_FiltersDotfiles()
     {
         var dotfiles = ImmutableArray.Create(
-            MakeDotfileGroup("bashrc", CardStatus.Linked),
-            MakeDotfileGroup("gitconfig", CardStatus.Detected));
+            MakeDotfileCard("bashrc", CardStatus.Linked),
+            MakeDotfileCard("gitconfig", CardStatus.Detected));
 
         _detectionService.DetectDotfilesAsync(Arg.Any<CancellationToken>())
             .Returns(dotfiles);
@@ -536,18 +536,18 @@ public sealed class DotfilesViewModelTests
     }
 
     [Test]
-    public async Task ConfigureAsync_SetsSelectedDotfileAndLoadsDetail()
+    public async Task ConfigureAsync_SetsSelectedAppAndLoadsDetail()
     {
-        var group = MakeDotfileGroup("bashrc", CardStatus.Linked);
-        var detail = new DotfileDetail(group, null, null, null, null, []);
-        _detailService.LoadDetailAsync(group, Arg.Any<CancellationToken>())
+        var card = MakeDotfileCard("bashrc", CardStatus.Linked);
+        var detail = new AppDetail(card, null, null, null, null, []);
+        _detailService.LoadDetailAsync(card, Arg.Any<CancellationToken>())
             .Returns(detail);
 
-        await _vm.ConfigureCommand.ExecuteAsync(group);
+        await _vm.ConfigureAppCommand.ExecuteAsync(card);
 
         Assert.Multiple(() =>
         {
-            Assert.That(_vm.SelectedDotfile, Is.EqualTo(group));
+            Assert.That(_vm.SelectedApp, Is.EqualTo(card));
             Assert.That(_vm.Detail, Is.EqualTo(detail));
             Assert.That(_vm.ShowDetailView, Is.True);
         });
@@ -556,16 +556,16 @@ public sealed class DotfilesViewModelTests
     [Test]
     public async Task ConfigureAsync_SetsIsLoadingDetail()
     {
-        var group = MakeDotfileGroup("bashrc", CardStatus.Linked);
+        var card = MakeDotfileCard("bashrc", CardStatus.Linked);
         var isLoadingDuringLoad = false;
-        _detailService.LoadDetailAsync(group, Arg.Any<CancellationToken>())
+        _detailService.LoadDetailAsync(card, Arg.Any<CancellationToken>())
             .Returns(callInfo =>
             {
                 isLoadingDuringLoad = _vm.IsLoadingDetail;
-                return new DotfileDetail(group, null, null, null, null, []);
+                return new AppDetail(card, null, null, null, null, []);
             });
 
-        await _vm.ConfigureCommand.ExecuteAsync(group);
+        await _vm.ConfigureAppCommand.ExecuteAsync(card);
 
         Assert.Multiple(() =>
         {
@@ -578,9 +578,9 @@ public sealed class DotfilesViewModelTests
     public async Task LinkedCount_OnlyCountsLinkedStatus()
     {
         var dotfiles = ImmutableArray.Create(
-            MakeDotfileGroup("bashrc", CardStatus.Linked),
-            MakeDotfileGroup("gitconfig", CardStatus.Detected),
-            MakeDotfileGroup("vimrc", CardStatus.Linked));
+            MakeDotfileCard("bashrc", CardStatus.Linked),
+            MakeDotfileCard("gitconfig", CardStatus.Detected),
+            MakeDotfileCard("vimrc", CardStatus.Linked));
 
         _detectionService.DetectDotfilesAsync(Arg.Any<CancellationToken>())
             .Returns(dotfiles);
@@ -597,13 +597,13 @@ public sealed class DotfilesViewModelTests
     [Test]
     public async Task HasModule_WhenDetailHasOwningModule_ReturnsTrue()
     {
-        var group = MakeDotfileGroup("bashrc", CardStatus.Linked);
+        var card = MakeDotfileCard("bashrc", CardStatus.Linked);
         var module = new AppModule("bash", "Bash", true, "/modules/bash", [], []);
-        var detail = new DotfileDetail(group, module, null, null, null, []);
-        _detailService.LoadDetailAsync(group, Arg.Any<CancellationToken>())
+        var detail = new AppDetail(card, module, null, null, null, []);
+        _detailService.LoadDetailAsync(card, Arg.Any<CancellationToken>())
             .Returns(detail);
 
-        await _vm.ConfigureCommand.ExecuteAsync(group);
+        await _vm.ConfigureAppCommand.ExecuteAsync(card);
 
         Assert.That(_vm.HasModule, Is.True);
     }
@@ -611,20 +611,20 @@ public sealed class DotfilesViewModelTests
     [Test]
     public async Task HasNoModule_WhenDetailHasNullModule_ReturnsTrue()
     {
-        var group = MakeDotfileGroup("bashrc", CardStatus.Linked);
-        var detail = new DotfileDetail(group, null, null, null, null, []);
-        _detailService.LoadDetailAsync(group, Arg.Any<CancellationToken>())
+        var card = MakeDotfileCard("bashrc", CardStatus.Linked);
+        var detail = new AppDetail(card, null, null, null, null, []);
+        _detailService.LoadDetailAsync(card, Arg.Any<CancellationToken>())
             .Returns(detail);
 
-        await _vm.ConfigureCommand.ExecuteAsync(group);
+        await _vm.ConfigureAppCommand.ExecuteAsync(card);
 
         Assert.That(_vm.HasNoModule, Is.True);
     }
 
-    private static DotfileGroupCardModel MakeDotfileGroup(string name, CardStatus status)
+    private static AppCardModel MakeDotfileCard(string name, CardStatus status)
     {
         var entry = new CatalogEntry(name, name, name, "Shell", [], null, null, null, null, null, null, CatalogKind.Dotfile);
-        return new DotfileGroupCardModel(entry, [], status);
+        return new AppCardModel(entry, CardTier.Other, status);
     }
 }
 

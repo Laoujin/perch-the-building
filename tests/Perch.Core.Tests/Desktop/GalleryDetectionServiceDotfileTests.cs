@@ -93,12 +93,7 @@ public sealed class GalleryDetectionServiceDotfileTests
 
         var result = await _service.DetectDotfilesAsync();
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result, Has.Length.EqualTo(1));
-            Assert.That(result[0].Files, Has.Length.EqualTo(2));
-            Assert.That(result[0].FileCountLabel, Is.EqualTo("2 files"));
-        });
+        Assert.That(result, Has.Length.EqualTo(1));
     }
 
     [Test]
@@ -217,11 +212,7 @@ public sealed class GalleryDetectionServiceDotfileTests
 
         var result = await _service.DetectDotfilesAsync();
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result[0].Files[0].Status, Is.EqualTo(CardStatus.Drift));
-            Assert.That(result[0].Status, Is.EqualTo(CardStatus.Drift));
-        });
+        Assert.That(result[0].Status, Is.EqualTo(CardStatus.Drift));
     }
 
     [Test]
@@ -249,11 +240,7 @@ public sealed class GalleryDetectionServiceDotfileTests
 
         var result = await _service.DetectDotfilesAsync();
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result[0].Files[0].Status, Is.EqualTo(CardStatus.Linked));
-            Assert.That(result[0].Status, Is.EqualTo(CardStatus.Linked));
-        });
+        Assert.That(result[0].Status, Is.EqualTo(CardStatus.Linked));
     }
 
     [Test]
@@ -278,7 +265,7 @@ public sealed class GalleryDetectionServiceDotfileTests
 
         var result = await _service.DetectDotfilesAsync();
 
-        Assert.That(result[0].Files[0].Status, Is.EqualTo(CardStatus.Linked));
+        Assert.That(result[0].Status, Is.EqualTo(CardStatus.Linked));
     }
 
     [Test]
@@ -314,12 +301,7 @@ public sealed class GalleryDetectionServiceDotfileTests
 
         var result = await _service.DetectDotfilesAsync();
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(result[0].Files[0].Status, Is.EqualTo(CardStatus.Linked));
-            Assert.That(result[0].Files[1].Status, Is.EqualTo(CardStatus.Drift));
-            Assert.That(result[0].Status, Is.EqualTo(CardStatus.Drift));
-        });
+        Assert.That(result[0].Status, Is.EqualTo(CardStatus.Drift));
     }
 
     private static CatalogConfigLink MakeLink(string source, string target) =>

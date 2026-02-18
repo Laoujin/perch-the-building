@@ -37,7 +37,6 @@ public partial class App : Application
             services.AddPerchCore();
             services.AddSingleton<IPendingChangesService, PendingChangesService>();
             services.AddSingleton<IGalleryDetectionService, GalleryDetectionService>();
-            services.AddSingleton<IDotfileDetailService, DotfileDetailService>();
             services.AddSingleton<IAppDetailService, AppDetailService>();
 
             services.AddSingleton<INavigationWindow, MainWindow>();

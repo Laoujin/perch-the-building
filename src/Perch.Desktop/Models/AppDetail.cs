@@ -11,4 +11,12 @@ public sealed record AppDetail(
     AppManifest? Manifest,
     string? ManifestYaml,
     string? ManifestPath,
-    ImmutableArray<CatalogEntry> Alternatives);
+    ImmutableArray<CatalogEntry> Alternatives,
+    ImmutableArray<DotfileFileStatus> FileStatuses = default);
+
+public sealed record DotfileFileStatus(
+    string FileName,
+    string FullPath,
+    bool Exists,
+    bool IsSymlink,
+    CardStatus Status);
