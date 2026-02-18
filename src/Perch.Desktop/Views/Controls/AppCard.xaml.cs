@@ -83,6 +83,10 @@ public partial class AppCard : UserControl
         EventManager.RegisterRoutedEvent(nameof(ToggleChanged), RoutingStrategy.Bubble,
             typeof(RoutedEventHandler), typeof(AppCard));
 
+    public static readonly RoutedEvent ConfigureClickedEvent =
+        EventManager.RegisterRoutedEvent(nameof(ConfigureClicked), RoutingStrategy.Bubble,
+            typeof(RoutedEventHandler), typeof(AppCard));
+
     public static readonly RoutedEvent TagClickedEvent =
         EventManager.RegisterRoutedEvent(nameof(TagClicked), RoutingStrategy.Bubble,
             typeof(RoutedEventHandler), typeof(AppCard));
@@ -189,6 +193,12 @@ public partial class AppCard : UserControl
         set => SetValue(TagsProperty, value);
     }
 
+    public event RoutedEventHandler ConfigureClicked
+    {
+        add => AddHandler(ConfigureClickedEvent, value);
+        remove => RemoveHandler(ConfigureClickedEvent, value);
+    }
+
     public event RoutedEventHandler ToggleChanged
     {
         add => AddHandler(ToggleChangedEvent, value);
@@ -205,6 +215,9 @@ public partial class AppCard : UserControl
     {
         InitializeComponent();
     }
+
+    private void OnConfigureClick(object sender, RoutedEventArgs e) =>
+        RaiseEvent(new RoutedEventArgs(ConfigureClickedEvent, this));
 
     private void OnToggleChanged(object sender, RoutedEventArgs e) =>
         RaiseEvent(new RoutedEventArgs(ToggleChangedEvent, this));
