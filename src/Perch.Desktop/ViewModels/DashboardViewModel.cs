@@ -5,11 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 using Perch.Core.Config;
-using Perch.Core.Deploy;
-using Perch.Core.Startup;
 using Perch.Core.Status;
-using Perch.Core.Symlinks;
-using Perch.Core.Tweaks;
 using Perch.Desktop.Services;
 
 using Wpf.Ui;
@@ -21,9 +17,7 @@ public sealed partial class DashboardViewModel : ViewModelBase
     private readonly IStatusService _statusService;
     private readonly ISettingsProvider _settingsProvider;
     private readonly IPendingChangesService _pendingChanges;
-    private readonly IAppLinkService _appLinkService;
-    private readonly ITweakService _tweakService;
-    private readonly IStartupService _startupService;
+    private readonly IApplyChangesService _applyChangesService;
     private readonly ISnackbarService _snackbarService;
 
     [ObservableProperty]
@@ -68,17 +62,13 @@ public sealed partial class DashboardViewModel : ViewModelBase
         IStatusService statusService,
         ISettingsProvider settingsProvider,
         IPendingChangesService pendingChanges,
-        IAppLinkService appLinkService,
-        ITweakService tweakService,
-        IStartupService startupService,
+        IApplyChangesService applyChangesService,
         ISnackbarService snackbarService)
     {
         _statusService = statusService;
         _settingsProvider = settingsProvider;
         _pendingChanges = pendingChanges;
-        _appLinkService = appLinkService;
-        _tweakService = tweakService;
-        _startupService = startupService;
+        _applyChangesService = applyChangesService;
         _snackbarService = snackbarService;
 
         _pendingChanges.PropertyChanged += OnPendingChangesPropertyChanged;
@@ -169,100 +159,17 @@ public sealed partial class DashboardViewModel : ViewModelBase
             return;
 
         IsApplying = true;
-        var errors = new List<string>();
-        var applied = 0;
-        var changes = _pendingChanges.Changes.ToList();
-
-        foreach (var change in changes.Where(c => c.Kind == PendingChangeKind.LinkApp))
-        {
-            try
-            {
-                var app = ((LinkAppChange)change).App;
-                var results = await _appLinkService.LinkAppAsync(app.CatalogEntry, cancellationToken);
-                if (results.Any(r => r.Level == ResultLevel.Error))
-                    errors.Add($"Link {app.DisplayLabel}: {results.First(r => r.Level == ResultLevel.Error).Message}");
-                else
-                {
-                    app.Status = Models.CardStatus.Linked;
-                    applied++;
-                }
-            }
-            catch (Exception ex) { errors.Add($"Link: {ex.Message}"); }
-        }
-
-        foreach (var change in changes.Where(c => c.Kind == PendingChangeKind.UnlinkApp))
-        {
-            try
-            {
-                var app = ((UnlinkAppChange)change).App;
-                var results = await _appLinkService.UnlinkAppAsync(app.CatalogEntry, cancellationToken);
-                if (results.Any(r => r.Level == ResultLevel.Error))
-                    errors.Add($"Unlink {app.DisplayLabel}: {results.First(r => r.Level == ResultLevel.Error).Message}");
-                else
-                {
-                    app.Status = Models.CardStatus.Detected;
-                    applied++;
-                }
-            }
-            catch (Exception ex) { errors.Add($"Unlink: {ex.Message}"); }
-        }
-
-        foreach (var change in changes.Where(c => c.Kind == PendingChangeKind.ApplyTweak))
-        {
-            try
-            {
-                var tweak = ((ApplyTweakChange)change).Tweak;
-                _tweakService.Apply(tweak.CatalogEntry);
-                applied++;
-            }
-            catch (Exception ex) { errors.Add($"Apply tweak: {ex.Message}"); }
-        }
-
-        foreach (var change in changes.Where(c => c.Kind == PendingChangeKind.RevertTweak))
-        {
-            try
-            {
-                var tweak = ((RevertTweakChange)change).Tweak;
-                _tweakService.Revert(tweak.CatalogEntry);
-                applied++;
-            }
-            catch (Exception ex) { errors.Add($"Revert tweak: {ex.Message}"); }
-        }
-
-        foreach (var change in changes.Where(c => c.Kind == PendingChangeKind.RevertTweakToCaptured))
-        {
-            try
-            {
-                var tweak = ((RevertTweakToCapturedChange)change).Tweak;
-                await _tweakService.RevertToCapturedAsync(tweak.CatalogEntry, cancellationToken: cancellationToken);
-                applied++;
-            }
-            catch (Exception ex) { errors.Add($"Revert to captured: {ex.Message}"); }
-        }
-
-        foreach (var change in changes.Where(c => c.Kind == PendingChangeKind.ToggleStartup))
-        {
-            try
-            {
-                var sc = (ToggleStartupChange)change;
-                await _startupService.SetEnabledAsync(sc.Startup.Entry, sc.Enable, cancellationToken);
-                sc.Startup.IsEnabled = sc.Enable;
-                applied++;
-            }
-            catch (Exception ex) { errors.Add($"Startup: {ex.Message}"); }
-        }
-
+        var result = await _applyChangesService.ApplyAsync(cancellationToken);
         IsApplying = false;
 
-        if (errors.Count == 0)
+        if (result.Success)
         {
-            _pendingChanges.Clear();
-            _snackbarService.Show("Applied", $"{applied} change{(applied == 1 ? "" : "s")} applied successfully",
+            _snackbarService.Show("Applied", $"{result.Applied} change{(result.Applied == 1 ? "" : "s")} applied successfully",
                 Wpf.Ui.Controls.ControlAppearance.Success, null, TimeSpan.FromSeconds(3));
         }
         else
         {
-            _snackbarService.Show("Errors", $"{errors.Count} error{(errors.Count == 1 ? "" : "s")}: {errors[0]}",
+            _snackbarService.Show("Errors", $"{result.Errors.Count} error{(result.Errors.Count == 1 ? "" : "s")}: {result.Errors[0]}",
                 Wpf.Ui.Controls.ControlAppearance.Danger, null, TimeSpan.FromSeconds(5));
         }
     }

@@ -2,7 +2,6 @@ using System.Collections.Immutable;
 using Perch.Core;
 using Perch.Core.Backup;
 using Perch.Core.Deploy;
-using Perch.Core.Fonts;
 using Perch.Core.Machines;
 using Perch.Core.Modules;
 using Perch.Core.Packages;
@@ -74,7 +73,7 @@ public sealed class DeployServiceTests
         _cleanFilterService.SetupAsync(Arg.Any<string>(), Arg.Any<ImmutableArray<AppModule>>(), Arg.Any<CancellationToken>())
             .Returns(ImmutableArray<CleanFilterResult>.Empty);
         _installResolver = Substitute.For<IInstallResolver>();
-        _deployService = new DeployService(_discoveryService, _orchestrator, _platformDetector, _globResolver, _snapshotProvider, _hookRunner, _machineProfileService, _registryProvider, _globalPackageInstaller, _vscodeExtensionInstaller, _psModuleInstaller, new PackageManifestParser(), new InstallManifestParser(), _installResolver, _systemPackageInstaller, new TemplateProcessor(), _referenceResolver, _variableResolver, _cleanFilterService, new FontManifestParser());
+        _deployService = new DeployService(_discoveryService, _orchestrator, _platformDetector, _globResolver, _snapshotProvider, _hookRunner, _machineProfileService, _registryProvider, _globalPackageInstaller, _vscodeExtensionInstaller, _psModuleInstaller, new PackageManifestParser(), new InstallManifestParser(), _installResolver, _systemPackageInstaller, new TemplateProcessor(), _referenceResolver, _variableResolver, _cleanFilterService);
         _reported = new List<DeployResult>();
         _progress = new SynchronousProgress<DeployResult>(r => _reported.Add(r));
     }
@@ -1898,85 +1897,4 @@ public sealed class DeployServiceTests
         }
     }
 
-    [Test]
-    public async Task DeployAsync_FontsYamlExists_InstallsFonts()
-    {
-        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(tempDir);
-        File.WriteAllText(Path.Combine(tempDir, "fonts.yaml"), """
-            - cascadia-code-nf
-            - meslo-nf
-            """);
-
-        try
-        {
-            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-                .Returns(new DiscoveryResult(ImmutableArray<AppModule>.Empty, ImmutableArray<string>.Empty));
-
-            _installResolver.ResolveFontsAsync(Arg.Any<ImmutableArray<string>>(), Arg.Any<Platform>(), Arg.Any<CancellationToken>())
-                .Returns(new InstallResolution(
-                    ImmutableArray.Create(new PackageDefinition("cascadia-code-nerd-font", PackageManager.Chocolatey)),
-                    ImmutableArray<string>.Empty));
-
-            int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
-
-            Assert.That(exitCode, Is.EqualTo(0));
-            await _systemPackageInstaller.Received(1).InstallAsync("cascadia-code-nerd-font", PackageManager.Chocolatey, false, Arg.Any<CancellationToken>());
-        }
-        finally
-        {
-            Directory.Delete(tempDir, true);
-        }
-    }
-
-    [Test]
-    public async Task DeployAsync_FontsYamlDryRun_PassesDryRunToInstaller()
-    {
-        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(tempDir);
-        File.WriteAllText(Path.Combine(tempDir, "fonts.yaml"), """
-            - cascadia-code-nf
-            """);
-
-        try
-        {
-            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-                .Returns(new DiscoveryResult(ImmutableArray<AppModule>.Empty, ImmutableArray<string>.Empty));
-
-            _installResolver.ResolveFontsAsync(Arg.Any<ImmutableArray<string>>(), Arg.Any<Platform>(), Arg.Any<CancellationToken>())
-                .Returns(new InstallResolution(
-                    ImmutableArray.Create(new PackageDefinition("cascadia-code-nerd-font", PackageManager.Chocolatey)),
-                    ImmutableArray<string>.Empty));
-
-            await _deployService.DeployAsync(tempDir, new DeployOptions { DryRun = true, Progress = _progress });
-
-            await _systemPackageInstaller.Received(1).InstallAsync("cascadia-code-nerd-font", PackageManager.Chocolatey, true, Arg.Any<CancellationToken>());
-        }
-        finally
-        {
-            Directory.Delete(tempDir, true);
-        }
-    }
-
-    [Test]
-    public async Task DeployAsync_NoFontsYaml_SkipsFonts()
-    {
-        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(tempDir);
-
-        try
-        {
-            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-                .Returns(new DiscoveryResult(ImmutableArray<AppModule>.Empty, ImmutableArray<string>.Empty));
-
-            int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
-
-            Assert.That(exitCode, Is.EqualTo(0));
-            await _installResolver.DidNotReceive().ResolveFontsAsync(Arg.Any<ImmutableArray<string>>(), Arg.Any<Platform>(), Arg.Any<CancellationToken>());
-        }
-        finally
-        {
-            Directory.Delete(tempDir, true);
-        }
-    }
 }
