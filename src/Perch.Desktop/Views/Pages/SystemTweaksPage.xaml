@@ -754,6 +754,7 @@
                                                 Grid.Row="1"
                                                 Text="{Binding Command, Mode=OneWay}"
                                                 IsReadOnly="True"
+                                                TextWrapping="Wrap"
                                                 BorderThickness="0"
                                                 Background="Transparent"
                                                 FontFamily="Cascadia Code,Consolas,Courier New"

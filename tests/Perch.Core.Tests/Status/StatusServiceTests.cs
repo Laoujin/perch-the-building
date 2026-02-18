@@ -7,6 +7,8 @@ using Perch.Core.Packages;
 using Perch.Core.Registry;
 using Perch.Core.Status;
 using Perch.Core.Symlinks;
+using Perch.Core.Deploy;
+using Perch.Core.Fonts;
 using Perch.Core.Templates;
 
 namespace Perch.Core.Tests.Status;
@@ -57,7 +59,9 @@ public sealed class StatusServiceTests
             _packageManagerProviders,
             _packageManifestParser,
             _processRunner,
-            new TemplateProcessor());
+            new TemplateProcessor(),
+            new FontManifestParser(),
+            Substitute.For<IInstallResolver>());
 
     [Test]
     public async Task CheckAsync_AllLinksCorrect_ReturnsZero()

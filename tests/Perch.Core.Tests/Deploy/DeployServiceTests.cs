@@ -8,6 +8,7 @@ using Perch.Core.Packages;
 using Perch.Core.Registry;
 using Perch.Core.Git;
 using Perch.Core.Symlinks;
+using Perch.Core.Fonts;
 using Perch.Core.Templates;
 using NSubstitute.ReceivedExtensions;
 
@@ -73,7 +74,7 @@ public sealed class DeployServiceTests
         _cleanFilterService.SetupAsync(Arg.Any<string>(), Arg.Any<ImmutableArray<AppModule>>(), Arg.Any<CancellationToken>())
             .Returns(ImmutableArray<CleanFilterResult>.Empty);
         _installResolver = Substitute.For<IInstallResolver>();
-        _deployService = new DeployService(_discoveryService, _orchestrator, _platformDetector, _globResolver, _snapshotProvider, _hookRunner, _machineProfileService, _registryProvider, _globalPackageInstaller, _vscodeExtensionInstaller, _psModuleInstaller, new PackageManifestParser(), new InstallManifestParser(), _installResolver, _systemPackageInstaller, new TemplateProcessor(), _referenceResolver, _variableResolver, _cleanFilterService);
+        _deployService = new DeployService(_discoveryService, _orchestrator, _platformDetector, _globResolver, _snapshotProvider, _hookRunner, _machineProfileService, _registryProvider, _globalPackageInstaller, _vscodeExtensionInstaller, _psModuleInstaller, new PackageManifestParser(), new InstallManifestParser(), _installResolver, _systemPackageInstaller, new TemplateProcessor(), _referenceResolver, _variableResolver, _cleanFilterService, new FontManifestParser());
         _reported = new List<DeployResult>();
         _progress = new SynchronousProgress<DeployResult>(r => _reported.Add(r));
     }
