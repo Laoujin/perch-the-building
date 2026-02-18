@@ -29,6 +29,8 @@ public partial class FontCardModel : ObservableObject
     [ObservableProperty]
     private string _sampleText = "The quick brown fox jumps over the lazy dog";
 
+    public string? FileName => FullPath is not null ? System.IO.Path.GetFileName(FullPath) : null;
+
     public FontCardModel(
         string id,
         string name,
@@ -70,5 +72,14 @@ public partial class FontCardModel : ObservableObject
             return;
 
         Process.Start(new ProcessStartInfo(FullPath) { UseShellExecute = true });
+    }
+
+    [RelayCommand]
+    private void OpenLocation()
+    {
+        if (FullPath is null)
+            return;
+
+        Process.Start("explorer", $"/select,\"{FullPath}\"");
     }
 }

@@ -370,6 +370,16 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
         };
     }
 
+    [RelayCommand]
+    private void TrackAllInstalledFonts()
+    {
+        foreach (var group in FilteredInstalledFontGroups)
+        {
+            if (!group.IsSelected)
+                group.IsSelected = true;
+        }
+    }
+
     private void BuildFontGroups()
     {
         _allInstalledFontGroups = InstalledFonts

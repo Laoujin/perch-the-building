@@ -361,6 +361,15 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
                 matchedGallery = entry;
                 matchedGalleryIds.Add(entry.Id);
             }
+            else if (font.FamilyName is not null)
+            {
+                var normalizedFamily = NormalizeFontName(font.FamilyName);
+                if (galleryByNormalized.TryGetValue(normalizedFamily, out var familyEntry))
+                {
+                    matchedGallery = familyEntry;
+                    matchedGalleryIds.Add(familyEntry.Id);
+                }
+            }
 
             detected.Add(new FontCardModel(
                 matchedGallery?.Id ?? font.Name,

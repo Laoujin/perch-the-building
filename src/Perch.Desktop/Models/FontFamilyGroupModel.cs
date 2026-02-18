@@ -7,7 +7,20 @@ namespace Perch.Desktop.Models;
 
 public partial class FontFamilyGroupModel : ObservableObject
 {
+    private static readonly string[] FallbackSpecimens =
+    [
+        "Sphinx of black quartz, judge my vow",
+        "Pack my box with five dozen liquor jugs",
+        "How vexingly quick daft zebras jump",
+        "Amazingly few discotheques provide jukeboxes",
+        "The five boxing wizards jump quickly",
+        "Jackdaws love my big sphinx of quartz",
+        "Grumpy wizards make toxic brew for the evil queen and jack",
+        "A wizard's job is to vex chumps quickly in fog",
+    ];
+
     public string FamilyName { get; }
+    public string SpecimenPhrase { get; }
     public ObservableCollection<FontCardModel> Fonts { get; }
 
     [ObservableProperty]
@@ -22,6 +35,8 @@ public partial class FontFamilyGroupModel : ObservableObject
     {
         FamilyName = familyName;
         Fonts = new ObservableCollection<FontCardModel>(fonts);
+        SpecimenPhrase = Fonts.FirstOrDefault(f => f.PreviewText is not null)?.PreviewText
+            ?? FallbackSpecimens[Math.Abs(familyName.GetHashCode()) % FallbackSpecimens.Length];
 
         foreach (var font in Fonts)
             font.PropertyChanged += OnChildPropertyChanged;
