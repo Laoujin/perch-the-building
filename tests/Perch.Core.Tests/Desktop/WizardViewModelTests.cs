@@ -527,6 +527,41 @@ public sealed class WizardShellViewModelTests
         Assert.That(_vm.SelectedAppCount, Is.EqualTo(1));
     }
 
+    [Test]
+    public async Task NotifySelectionCounts_CountsEachCategorySeparately()
+    {
+        var app = MakeApp("vscode", "Development/IDEs");
+        var dotfile = MakeDotfile("bashrc", CardStatus.Linked);
+        var tweak = MakeTweak("disable-telemetry", "Privacy");
+
+        _detectionService.DetectAppsAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
+            .Returns(new GalleryDetectionResult(
+                ImmutableArray.Create(app),
+                ImmutableArray<AppCardModel>.Empty,
+                ImmutableArray<AppCardModel>.Empty));
+        _detectionService.DetectDotfilesAsync(Arg.Any<CancellationToken>())
+            .Returns(ImmutableArray.Create(dotfile));
+        _detectionService.DetectTweaksAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
+            .Returns(ImmutableArray.Create(tweak));
+
+        _vm.ConfigRepoPath = Path.GetTempPath();
+        _vm.CurrentStepIndex = 1;
+        await _vm.GoNextCommand.ExecuteAsync(null);
+
+        // Manually select tweak
+        _vm.Tweaks[0].IsSelected = true;
+        _vm.NotifySelectionCounts();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_vm.SelectedAppCount, Is.EqualTo(1));
+            Assert.That(_vm.SelectedDotfileCount, Is.EqualTo(1));
+            Assert.That(_vm.SelectedTweakCount, Is.EqualTo(1));
+            Assert.That(_vm.SelectedFontCount, Is.EqualTo(0));
+            Assert.That(_vm.TotalSelectedCount, Is.EqualTo(3));
+        });
+    }
+
     // --- ShowCrash ---
 
     [Test]
@@ -664,6 +699,36 @@ public sealed class WizardShellViewModelTests
     }
 
     [Test]
+    public async Task DeployAsync_FontOnboarding_AccumulatesErrors()
+    {
+        _settingsProvider.LoadAsync(Arg.Any<CancellationToken>())
+            .Returns(new PerchSettings { ConfigRepoPath = Path.GetTempPath() });
+
+        _deployService.DeployAsync(Arg.Any<string>(), Arg.Any<DeployOptions>(), Arg.Any<CancellationToken>())
+            .Returns(0);
+
+        _fontOnboardingService.OnboardAsync(
+            Arg.Any<IReadOnlyList<string>>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(new FontOnboardingResult(
+                ImmutableArray.Create("font1.ttf"),
+                ImmutableArray.Create("failed to copy font2.ttf")));
+
+        var font = new FontCardModel("arial", "Arial", "Arial", null, null, @"C:\fonts\arial.ttf", FontCardSource.Detected, [], CardStatus.Detected);
+        font.IsSelected = true;
+        _vm.InstalledFonts.Add(font);
+
+        await _vm.DeployCommand.ExecuteAsync(null);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_vm.DeployedCount, Is.EqualTo(1));
+            Assert.That(_vm.ErrorCount, Is.EqualTo(1));
+            Assert.That(_vm.HasErrors, Is.True);
+            Assert.That(_vm.DeployStatusMessage, Does.Contain("1 error"));
+        });
+    }
+
+    [Test]
     public async Task DeployAsync_NoFontsSelected_SkipsFontOnboarding()
     {
         _settingsProvider.LoadAsync(Arg.Any<CancellationToken>())
@@ -734,6 +799,81 @@ public sealed class WizardShellViewModelTests
         // Hasn't run detection yet — CanNavigateToStep blocks forward past Config
         var result = await _vm.NavigateToStepAsync(3);
         Assert.That(result, Is.False);
+    }
+
+    // --- ValidateConfigPath ---
+
+    [Test]
+    public void ValidateConfigPath_EmptyPath_ClearsAllFlags()
+    {
+        _vm.ConfigRepoPath = "something";
+        _vm.ConfigRepoPath = string.Empty;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_vm.ConfigIsGitRepo, Is.False);
+            Assert.That(_vm.ConfigPathNotGitWarning, Is.False);
+            Assert.That(_vm.ConfigPathNotExistWarning, Is.False);
+        });
+    }
+
+    [Test]
+    public void ValidateConfigPath_NonExistentPath_SetsNotExistWarning()
+    {
+        _vm.ConfigRepoPath = @"C:\definitely\does\not\exist\path_" + Guid.NewGuid();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_vm.ConfigPathNotExistWarning, Is.True);
+            Assert.That(_vm.ConfigIsGitRepo, Is.False);
+            Assert.That(_vm.ConfigPathNotGitWarning, Is.False);
+        });
+    }
+
+    [Test]
+    public void ValidateConfigPath_ExistingDirWithoutGit_SetsNotGitWarning()
+    {
+        _vm.ConfigRepoPath = Path.GetTempPath();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_vm.ConfigPathNotExistWarning, Is.False);
+            Assert.That(_vm.ConfigPathNotGitWarning, Is.True);
+            Assert.That(_vm.ConfigIsGitRepo, Is.False);
+        });
+    }
+
+    [Test]
+    public void ValidateConfigPath_ExistingGitRepo_SetsConfigIsGitRepo()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), "perch_test_" + Guid.NewGuid());
+        Directory.CreateDirectory(Path.Combine(tempDir, ".git"));
+        try
+        {
+            _vm.ConfigRepoPath = tempDir;
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(_vm.ConfigIsGitRepo, Is.True);
+                Assert.That(_vm.ConfigPathNotGitWarning, Is.False);
+                Assert.That(_vm.ConfigPathNotExistWarning, Is.False);
+            });
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public void ConfigRepoPathChange_ResetsDetectionRun()
+    {
+        // After detection has run, changing the path should block forward navigation
+        // (CanNavigateToStep checks _detectionRun internally)
+        _vm.ConfigRepoPath = Path.GetTempPath();
+
+        // _detectionRun is false, so forward past Config is blocked
+        Assert.That(_vm.CanNavigateToStep(2), Is.False);
     }
 
     // --- GetCurrentStepName ---

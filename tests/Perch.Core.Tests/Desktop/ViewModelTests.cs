@@ -193,6 +193,45 @@ public sealed class AppsViewModelTests
     }
 
     [Test]
+    public async Task LinkAppAsync_WithWarnings_StillSetsLinked()
+    {
+        var card = MakeCard("vscode", "Development/IDEs");
+        _appLinkService.LinkAppAsync(card.CatalogEntry, Arg.Any<CancellationToken>())
+            .Returns(new List<DeployResult>
+            {
+                new("vscode", "s", "t", ResultLevel.Ok, "ok"),
+                new("vscode", "s2", "t2", ResultLevel.Warning, "warning"),
+            });
+
+        await _vm.LinkAppCommand.ExecuteAsync(card);
+
+        Assert.That(card.Status, Is.EqualTo(CardStatus.Linked));
+    }
+
+    [Test]
+    public async Task SelectCategory_SortsAppsByStatusThenName()
+    {
+        var apps = ImmutableArray.Create(
+            MakeCard("zapp", "Dev/IDEs", CardStatus.Detected),
+            MakeCard("aapp", "Dev/IDEs", CardStatus.Linked),
+            MakeCard("mapp", "Dev/IDEs", CardStatus.Broken));
+
+        _detectionService.DetectAllAppsAsync(Arg.Any<CancellationToken>())
+            .Returns(apps);
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+        _vm.SelectCategoryCommand.Execute("Dev");
+
+        var orderedApps = _vm.FilteredCategoryApps[0].Apps;
+        Assert.Multiple(() =>
+        {
+            Assert.That(orderedApps[0].Name, Is.EqualTo("aapp"));
+            Assert.That(orderedApps[1].Name, Is.EqualTo("mapp"));
+            Assert.That(orderedApps[2].Name, Is.EqualTo("zapp"));
+        });
+    }
+
+    [Test]
     public async Task LinkAppAsync_OnSuccess_SetsStatusToLinked()
     {
         var card = MakeCard("vscode", "Development/IDEs");
