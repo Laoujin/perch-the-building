@@ -116,6 +116,35 @@ public sealed class ModuleDiscoveryServiceTests
             () => _service.DiscoverAsync(_tempDir, cts.Token));
     }
 
+    [Test]
+    public async Task DiscoverAsync_UnreadableManifest_ReportsErrorAndContinues()
+    {
+        CreateModule("good", """
+            links:
+              - source: config
+                target: "C:\\test\\config"
+            """);
+        CreateModule("locked", """
+            links:
+              - source: data
+                target: "C:\\test\\data"
+            """);
+
+        var lockedPath = Path.Combine(_tempDir, "locked", "manifest.yaml");
+        using var lockHandle = File.Open(lockedPath, FileMode.Open, FileAccess.Read, FileShare.None);
+
+        DiscoveryResult result = await _service.DiscoverAsync(_tempDir);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Modules, Has.Length.EqualTo(1));
+            Assert.That(result.Modules[0].Name, Is.EqualTo("good"));
+            Assert.That(result.Errors, Has.Length.EqualTo(1));
+            Assert.That(result.Errors[0], Does.Contain("locked"));
+            Assert.That(result.Errors[0], Does.Contain("Failed to read manifest"));
+        });
+    }
+
     private void CreateModule(string name, string manifestYaml)
     {
         string moduleDir = Path.Combine(_tempDir, name);

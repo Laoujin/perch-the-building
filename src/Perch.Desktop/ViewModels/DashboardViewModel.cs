@@ -140,6 +140,12 @@ public sealed partial class DashboardViewModel : ViewModelBase
         {
             return;
         }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Failed to check status: {ex.Message}";
+            IsLoading = false;
+            return;
+        }
 
         var total = LinkedCount + AttentionCount + BrokenCount;
         HealthPercent = total > 0 ? (int)(LinkedCount * 100.0 / total) : 100;

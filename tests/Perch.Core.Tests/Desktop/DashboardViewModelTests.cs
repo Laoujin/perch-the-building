@@ -226,6 +226,21 @@ public sealed class DashboardViewModelTests
     }
 
     [Test]
+    public async Task RefreshAsync_StatusServiceThrows_ShowsErrorAndResetsLoading()
+    {
+        _statusService.CheckAsync(Arg.Any<string>(), Arg.Any<IProgress<StatusResult>>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("manifest is corrupted"));
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_vm.IsLoading, Is.False);
+            Assert.That(_vm.StatusMessage, Does.Contain("manifest is corrupted"));
+        });
+    }
+
+    [Test]
     public void DiscardChange_RemovesSingleChange()
     {
         var app = CreateAppCard("app1");

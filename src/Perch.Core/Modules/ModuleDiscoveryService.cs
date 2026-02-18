@@ -43,25 +43,36 @@ public sealed class ModuleDiscoveryService : IModuleDiscoveryService
         {
             cancellationToken.ThrowIfCancellationRequested();
 
+            string moduleName = Path.GetFileName(subdir);
             string manifestPath = Path.Combine(subdir, "manifest.yaml");
             if (!File.Exists(manifestPath))
             {
                 continue;
             }
 
-            string yaml = await File.ReadAllTextAsync(manifestPath, cancellationToken).ConfigureAwait(false);
-            string moduleName = Path.GetFileName(subdir);
-            ManifestParseResult parseResult = _parser.Parse(yaml, moduleName);
+            try
+            {
+                string yaml = await File.ReadAllTextAsync(manifestPath, cancellationToken).ConfigureAwait(false);
+                ManifestParseResult parseResult = _parser.Parse(yaml, moduleName);
 
-            if (parseResult.IsSuccess)
-            {
-                AppManifest manifest = parseResult.Manifest!;
-                manifest = await ApplyGalleryOverlayAsync(manifest, errors, cancellationToken).ConfigureAwait(false);
-                modules.Add(new AppModule(manifest.ModuleName, manifest.DisplayName, manifest.Enabled, subdir, manifest.Platforms, manifest.Links, manifest.Hooks, manifest.CleanFilter, manifest.Registry, manifest.GlobalPackages, manifest.VscodeExtensions, manifest.PsModules));
+                if (parseResult.IsSuccess)
+                {
+                    AppManifest manifest = parseResult.Manifest!;
+                    manifest = await ApplyGalleryOverlayAsync(manifest, errors, cancellationToken).ConfigureAwait(false);
+                    modules.Add(new AppModule(manifest.ModuleName, manifest.DisplayName, manifest.Enabled, subdir, manifest.Platforms, manifest.Links, manifest.Hooks, manifest.CleanFilter, manifest.Registry, manifest.GlobalPackages, manifest.VscodeExtensions, manifest.PsModules));
+                }
+                else
+                {
+                    errors.Add($"[{moduleName}] {parseResult.Error}");
+                }
             }
-            else
+            catch (OperationCanceledException)
             {
-                errors.Add($"[{moduleName}] {parseResult.Error}");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"[{moduleName}] Failed to read manifest: {ex.Message}");
             }
         }
 
