@@ -55,6 +55,7 @@ internal sealed class TweakCatalogYamlModel
     public List<string>? Profiles { get; set; }
     public bool Hidden { get; set; }
     public string? License { get; set; }
+    public string? Source { get; set; }
     public List<TweakRegistryYamlModel>? Registry { get; set; }
     public string? Script { get; set; }
 

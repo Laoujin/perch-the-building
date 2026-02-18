@@ -142,7 +142,8 @@ public sealed class CatalogParser
             ToImmutableTags(model.Alternatives),
             model.WindowsVersions?.ToImmutableArray() ?? ImmutableArray<int>.Empty,
             model.Hidden,
-            model.License);
+            model.License,
+            model.Source);
 
         return CatalogParseResult<TweakCatalogEntry>.Ok(entry);
     }
