@@ -5,8 +5,6 @@ using Perch.Core.Packages;
 using Perch.Core.Registry;
 using Perch.Core.Status;
 using Perch.Core.Symlinks;
-using Perch.Core.Deploy;
-using Perch.Core.Fonts;
 using Perch.Core.Templates;
 
 namespace Perch.Core.Tests.Status;
@@ -46,7 +44,7 @@ public sealed class StatusServiceTests
         _progress = new SynchronousProgress<StatusResult>(r => _reported.Add(r));
     }
 
-    private StatusService CreateService(IRegistryProvider? registryProvider = null, IInstallResolver? installResolver = null) =>
+    private StatusService CreateService(IRegistryProvider? registryProvider = null) =>
         new(
             _discoveryService,
             _symlinkProvider,
@@ -57,9 +55,7 @@ public sealed class StatusServiceTests
             _packageManagerProviders,
             _packageManifestParser,
             _processRunner,
-            new TemplateProcessor(),
-            new FontManifestParser(),
-            installResolver ?? Substitute.For<IInstallResolver>());
+            new TemplateProcessor());
 
     [Test]
     public async Task CheckAsync_AllLinksCorrect_ReturnsZero()
@@ -1049,118 +1045,6 @@ public sealed class StatusServiceTests
                 Assert.That(_reported, Has.Count.EqualTo(1));
                 Assert.That(_reported[0].Level, Is.EqualTo(DriftLevel.Ok));
                 Assert.That(_reported[0].TargetPath, Is.EqualTo(targetFile));
-            });
-        }
-        finally
-        {
-            Directory.Delete(tempDir, true);
-        }
-    }
-
-    [Test]
-    public async Task CheckAsync_FontInstalled_ReportsOk()
-    {
-        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(tempDir);
-        File.WriteAllText(Path.Combine(tempDir, "fonts.yaml"), """
-            - cascadia-code-nf
-            """);
-
-        try
-        {
-            var chocoProvider = Substitute.For<IPackageManagerProvider>();
-            chocoProvider.Manager.Returns(PackageManager.Chocolatey);
-            chocoProvider.ScanInstalledAsync(Arg.Any<CancellationToken>())
-                .Returns(new PackageManagerScanResult(true, ImmutableArray.Create(new InstalledPackage("cascadia-code-nerd-font", PackageManager.Chocolatey)), null));
-            _packageManagerProviders.Add(chocoProvider);
-
-            var installResolver = Substitute.For<IInstallResolver>();
-            installResolver.ResolveFontsAsync(Arg.Any<ImmutableArray<string>>(), Arg.Any<Platform>(), Arg.Any<CancellationToken>())
-                .Returns(new InstallResolution(
-                    ImmutableArray.Create(new PackageDefinition("cascadia-code-nerd-font", PackageManager.Chocolatey)),
-                    ImmutableArray<string>.Empty));
-
-            _statusService = CreateService(installResolver: installResolver);
-            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-                .Returns(new DiscoveryResult(ImmutableArray<AppModule>.Empty, ImmutableArray<string>.Empty));
-
-            int exitCode = await _statusService.CheckAsync(tempDir, _progress);
-
-            var fontResults = _reported.Where(r => r.Category == StatusCategory.Font).ToList();
-            Assert.Multiple(() =>
-            {
-                Assert.That(exitCode, Is.EqualTo(0));
-                Assert.That(fontResults, Has.Count.EqualTo(1));
-                Assert.That(fontResults[0].Level, Is.EqualTo(DriftLevel.Ok));
-            });
-        }
-        finally
-        {
-            Directory.Delete(tempDir, true);
-        }
-    }
-
-    [Test]
-    public async Task CheckAsync_FontMissing_ReportsMissing()
-    {
-        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(tempDir);
-        File.WriteAllText(Path.Combine(tempDir, "fonts.yaml"), """
-            - cascadia-code-nf
-            """);
-
-        try
-        {
-            var chocoProvider = Substitute.For<IPackageManagerProvider>();
-            chocoProvider.Manager.Returns(PackageManager.Chocolatey);
-            chocoProvider.ScanInstalledAsync(Arg.Any<CancellationToken>())
-                .Returns(new PackageManagerScanResult(true, ImmutableArray<InstalledPackage>.Empty, null));
-            _packageManagerProviders.Add(chocoProvider);
-
-            var installResolver = Substitute.For<IInstallResolver>();
-            installResolver.ResolveFontsAsync(Arg.Any<ImmutableArray<string>>(), Arg.Any<Platform>(), Arg.Any<CancellationToken>())
-                .Returns(new InstallResolution(
-                    ImmutableArray.Create(new PackageDefinition("cascadia-code-nerd-font", PackageManager.Chocolatey)),
-                    ImmutableArray<string>.Empty));
-
-            _statusService = CreateService(installResolver: installResolver);
-            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-                .Returns(new DiscoveryResult(ImmutableArray<AppModule>.Empty, ImmutableArray<string>.Empty));
-
-            int exitCode = await _statusService.CheckAsync(tempDir, _progress);
-
-            var fontResults = _reported.Where(r => r.Category == StatusCategory.Font).ToList();
-            Assert.Multiple(() =>
-            {
-                Assert.That(exitCode, Is.EqualTo(1));
-                Assert.That(fontResults, Has.Count.EqualTo(1));
-                Assert.That(fontResults[0].Level, Is.EqualTo(DriftLevel.Missing));
-                Assert.That(fontResults[0].Message, Does.Contain("cascadia-code-nerd-font"));
-            });
-        }
-        finally
-        {
-            Directory.Delete(tempDir, true);
-        }
-    }
-
-    [Test]
-    public async Task CheckAsync_NoFontsYaml_SkipsFontCheck()
-    {
-        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(tempDir);
-
-        try
-        {
-            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-                .Returns(new DiscoveryResult(ImmutableArray<AppModule>.Empty, ImmutableArray<string>.Empty));
-
-            int exitCode = await _statusService.CheckAsync(tempDir, _progress);
-
-            Assert.Multiple(() =>
-            {
-                Assert.That(exitCode, Is.EqualTo(0));
-                Assert.That(_reported.Where(r => r.Category == StatusCategory.Font).ToList(), Is.Empty);
             });
         }
         finally
