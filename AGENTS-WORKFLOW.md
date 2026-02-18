@@ -91,7 +91,27 @@ EOF
 )"
 ```
 
-### 7. Open in Browser
+### 7. Upload Screenshots to PR
+
+Upload relevant screenshots as release assets and add them as a PR comment:
+
+```bash
+# Copy with PR-unique name and upload
+cp tests/Perch.SmokeTests/screenshots/03-apps.png /tmp/pr-<NUMBER>-apps.png
+gh release upload screenshots /tmp/pr-<NUMBER>-apps.png --clobber
+
+# Add PR comment with embedded images
+BASE="https://github.com/Laoujin/Perch/releases/download/screenshots"
+gh pr comment <PR_NUMBER> --body "$(cat <<EOF
+## Screenshots
+![apps]($BASE/pr-<NUMBER>-apps.png)
+EOF
+)"
+```
+
+Only include pages affected by the change.
+
+### 8. Open in Browser
 
 ```bash
 start <PR_URL>
@@ -99,7 +119,7 @@ start <PR_URL>
 
 Report the PR URL and what was changed.
 
-### 8. Clean Up and Repeat
+### 9. Clean Up and Repeat
 
 After the PR is approved/merged:
 
@@ -110,6 +130,8 @@ git pull origin master
 git worktree remove ../perch-issue-<NUMBER>
 git branch -d issue-<NUMBER>-<short-slug>
 ```
+
+Optionally clean up screenshot assets: `gh release delete-asset screenshots pr-<NUMBER>-apps.png --yes`
 
 Then go back to step 1.
 
