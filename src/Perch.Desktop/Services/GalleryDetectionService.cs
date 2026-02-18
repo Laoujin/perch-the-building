@@ -74,6 +74,7 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
         var settings = await _settingsProvider.LoadAsync(cancellationToken);
         var platform = _platformDetector.CurrentPlatform;
         var installedIds = await ScanInstalledPackageIdsAsync(cancellationToken);
+        var logoBaseUrl = GetLogoBaseUrl(settings);
 
         var yourApps = ImmutableArray.CreateBuilder<AppCardModel>();
         var suggested = ImmutableArray.CreateBuilder<AppCardModel>();
@@ -89,17 +90,19 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
             else if (detected) status = CardStatus.Detected;
             else status = CardStatus.NotInstalled;
 
+            var logoUrl = $"{logoBaseUrl}{app.Id}.png";
+
             if (detected)
             {
-                yourApps.Add(new AppCardModel(app, CardTier.YourApps, status));
+                yourApps.Add(new AppCardModel(app, CardTier.YourApps, status, logoUrl));
             }
             else if (IsSuggestedForProfiles(app, selectedProfiles))
             {
-                suggested.Add(new AppCardModel(app, CardTier.Suggested, status));
+                suggested.Add(new AppCardModel(app, CardTier.Suggested, status, logoUrl));
             }
             else
             {
-                other.Add(new AppCardModel(app, CardTier.Other, status));
+                other.Add(new AppCardModel(app, CardTier.Other, status, logoUrl));
             }
         }
 
@@ -116,12 +119,13 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
         var settings = await _settingsProvider.LoadAsync(cancellationToken);
         var platform = _platformDetector.CurrentPlatform;
         var installedIds = await ScanInstalledPackageIdsAsync(cancellationToken);
+        var logoBaseUrl = GetLogoBaseUrl(settings);
         var builder = ImmutableArray.CreateBuilder<AppCardModel>();
 
         foreach (var app in allApps)
         {
             var status = ResolveStatus(app, platform, settings.ConfigRepoPath, installedIds);
-            builder.Add(new AppCardModel(app, CardTier.Other, status));
+            builder.Add(new AppCardModel(app, CardTier.Other, status, $"{logoBaseUrl}{app.Id}.png"));
         }
 
         return builder.ToImmutable();
@@ -431,6 +435,12 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
         => name.Replace(" ", "", StringComparison.Ordinal)
                .Replace("-", "", StringComparison.Ordinal)
                .Replace("_", "", StringComparison.Ordinal);
+
+    private static string GetLogoBaseUrl(PerchSettings settings)
+    {
+        var baseUrl = settings.GalleryUrl.TrimEnd('/');
+        return $"{baseUrl}/catalog/logos/";
+    }
 
     private bool IsAppDetected(CatalogEntry app, Platform platform, HashSet<string> installedIds)
     {
