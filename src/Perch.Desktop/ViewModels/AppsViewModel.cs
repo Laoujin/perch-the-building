@@ -13,14 +13,10 @@ namespace Perch.Desktop.ViewModels;
 public sealed partial class AppsViewModel : ViewModelBase
 {
     private readonly IGalleryDetectionService _detectionService;
-    private readonly IAppDetailService _detailService;
     private readonly ISettingsProvider _settingsProvider;
     private readonly IPendingChangesService _pendingChanges;
 
-    private ImmutableArray<AppCardModel> _allYourApps = [];
-    private ImmutableArray<AppCardModel> _allSuggested = [];
-    private ImmutableArray<AppCardModel> _allOther = [];
-    private readonly Dictionary<string, AppDetail> _detailCache = new(StringComparer.Ordinal);
+    private ImmutableArray<AppCardModel> _allApps = [];
 
     [ObservableProperty]
     private bool _isLoading;
@@ -40,9 +36,7 @@ public sealed partial class AppsViewModel : ViewModelBase
     [ObservableProperty]
     private int _detectedCount;
 
-    public ObservableCollection<AppCardModel> YourApps { get; } = [];
-    public ObservableCollection<AppCardModel> SuggestedApps { get; } = [];
-    public ObservableCollection<AppCategoryCardModel> BrowseCategories { get; } = [];
+    public ObservableCollection<AppCategoryCardModel> Categories { get; } = [];
 
     public AppsViewModel(
         IGalleryDetectionService detectionService,
@@ -51,12 +45,12 @@ public sealed partial class AppsViewModel : ViewModelBase
         IPendingChangesService pendingChanges)
     {
         _detectionService = detectionService;
-        _detailService = detailService;
+        _ = detailService; // kept for DI compatibility
         _settingsProvider = settingsProvider;
         _pendingChanges = pendingChanges;
     }
 
-    partial void OnSearchTextChanged(string value) => RebuildTiers();
+    partial void OnSearchTextChanged(string value) => RebuildCategories();
 
     [RelayCommand]
     private async Task RefreshAsync(CancellationToken cancellationToken)
@@ -71,7 +65,7 @@ public sealed partial class AppsViewModel : ViewModelBase
 
             BuildDependencyGraph(result.YourApps, result.Suggested, result.OtherApps);
 
-            RebuildTiers();
+            RebuildCategories();
         }
         catch (OperationCanceledException)
         {
@@ -87,29 +81,20 @@ public sealed partial class AppsViewModel : ViewModelBase
         }
     }
 
-    private void RebuildTiers()
+    private void RebuildCategories()
     {
         var query = SearchText;
+        Categories.Clear();
 
-        YourApps.Clear();
-        SuggestedApps.Clear();
-        BrowseCategories.Clear();
-
-        foreach (var app in SortTier1(_allYourApps.Where(a => a.MatchesSearch(query))))
-            YourApps.Add(app);
-
-        foreach (var app in _allSuggested.Where(a => a.MatchesSearch(query)).OrderBy(a => a.DisplayLabel, StringComparer.OrdinalIgnoreCase))
-            SuggestedApps.Add(app);
-
-        var otherFiltered = _allOther.Where(a => a.MatchesSearch(query));
-        var groups = otherFiltered
+        var filtered = _allApps.Where(a => a.MatchesSearch(query));
+        var groups = filtered
             .GroupBy(a => a.BroadCategory, StringComparer.OrdinalIgnoreCase)
             .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
 
         foreach (var group in groups)
         {
             var items = group.ToList();
-            BrowseCategories.Add(new AppCategoryCardModel(
+            Categories.Add(new AppCategoryCardModel(
                 group.Key,
                 group.Key,
                 items.Count,
@@ -121,21 +106,17 @@ public sealed partial class AppsViewModel : ViewModelBase
 
     private void UpdateSummary()
     {
-        var all = _allYourApps.AsEnumerable()
-            .Concat(_allSuggested)
-            .Concat(_allOther);
-
-        LinkedCount = all.Count(a => a.Status == CardStatus.Linked);
-        DriftedCount = all.Count(a => a.Status is CardStatus.Drift or CardStatus.Broken);
-        DetectedCount = all.Count(a => a.Status == CardStatus.Detected);
+        LinkedCount = _allApps.Count(a => a.Status == CardStatus.Linked);
+        DriftedCount = _allApps.Count(a => a.Status is CardStatus.Drift or CardStatus.Broken);
+        DetectedCount = _allApps.Count(a => a.Status == CardStatus.Detected);
     }
 
-    private static IEnumerable<AppCardModel> SortTier1(IEnumerable<AppCardModel> apps)
+    private static int TierSortOrder(CardTier tier) => tier switch
     {
-        return apps
-            .OrderBy(a => StatusSortOrder(a.Status))
-            .ThenBy(a => a.DisplayLabel, StringComparer.OrdinalIgnoreCase);
-    }
+        CardTier.YourApps => 0,
+        CardTier.Suggested => 1,
+        _ => 2,
+    };
 
     private static int StatusSortOrder(CardStatus status) => status switch
     {
@@ -171,46 +152,21 @@ public sealed partial class AppsViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task ExpandAppAsync(AppCardModel app)
-    {
-        app.IsExpanded = !app.IsExpanded;
-
-        if (!app.IsExpanded || app.Detail is not null)
-            return;
-
-        if (_detailCache.TryGetValue(app.Id, out var cached))
-        {
-            app.Detail = cached;
-            return;
-        }
-
-        app.IsLoadingDetail = true;
-        try
-        {
-            var detail = await _detailService.LoadDetailAsync(app);
-            _detailCache[app.Id] = detail;
-            app.Detail = detail;
-        }
-        catch
-        {
-            // Detail load failure is non-critical — card stays expanded without detail sections
-        }
-        finally
-        {
-            app.IsLoadingDetail = false;
-        }
-    }
-
-    [RelayCommand]
     private void TagClick(string tag) => SearchText = tag;
 
-    public IEnumerable<AppCardModel> GetCategoryApps(string broadCategory)
+    public IEnumerable<AppCategoryGroup> GetCategorySubGroups(string broadCategory)
     {
-        return _allOther
+        return _allApps
             .Where(a => string.Equals(a.BroadCategory, broadCategory, StringComparison.OrdinalIgnoreCase))
             .Where(a => a.MatchesSearch(SearchText))
-            .OrderBy(a => StatusSortOrder(a.Status))
-            .ThenBy(a => a.DisplayLabel, StringComparer.OrdinalIgnoreCase);
+            .GroupBy(a => a.SubCategory, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(g => new AppCategoryGroup(
+                g.Key,
+                new ObservableCollection<AppCardModel>(
+                    g.OrderBy(a => TierSortOrder(a.Tier))
+                     .ThenBy(a => StatusSortOrder(a.Status))
+                     .ThenBy(a => a.DisplayLabel, StringComparer.OrdinalIgnoreCase))));
     }
 
     private void BuildDependencyGraph(
@@ -221,7 +177,6 @@ public sealed partial class AppsViewModel : ViewModelBase
         var allApps = yourApps.AsEnumerable().Concat(suggested).Concat(other).ToList();
         var byId = allApps.ToDictionary(a => a.Id, StringComparer.OrdinalIgnoreCase);
 
-        // Build reverse map: parent -> children that require it
         var reverseMap = new Dictionary<string, List<AppCardModel>>(StringComparer.OrdinalIgnoreCase);
         var childIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -235,7 +190,6 @@ public sealed partial class AppsViewModel : ViewModelBase
                 if (!byId.ContainsKey(reqId))
                     continue;
 
-                // Circular check: if parent also requires this app, skip
                 var parent = byId[reqId];
                 if (!parent.CatalogEntry.Requires.IsDefaultOrEmpty &&
                     parent.CatalogEntry.Requires.Contains(app.Id, StringComparer.OrdinalIgnoreCase))
@@ -251,17 +205,13 @@ public sealed partial class AppsViewModel : ViewModelBase
             }
         }
 
-        // Assign dependents to parents
         foreach (var (parentId, dependents) in reverseMap)
         {
             if (byId.TryGetValue(parentId, out var parent))
                 parent.DependentApps = [.. dependents];
         }
 
-        // Filter children from top-level collections
-        _allYourApps = yourApps.Where(a => !childIds.Contains(a.Id)).ToImmutableArray();
-        _allSuggested = suggested.Where(a => !childIds.Contains(a.Id)).ToImmutableArray();
-        _allOther = other.Where(a => !childIds.Contains(a.Id)).ToImmutableArray();
+        _allApps = allApps.Where(a => !childIds.Contains(a.Id)).ToImmutableArray();
     }
 
     private async Task<HashSet<UserProfile>> LoadProfilesAsync(CancellationToken cancellationToken)

@@ -30,6 +30,18 @@ public partial class AppCard : UserControl
         DependencyProperty.Register(nameof(GitHub), typeof(string), typeof(AppCard),
             new PropertyMetadata(null));
 
+    public static readonly DependencyProperty WebsiteProperty =
+        DependencyProperty.Register(nameof(Website), typeof(string), typeof(AppCard),
+            new PropertyMetadata(null));
+
+    public static readonly DependencyProperty DocsProperty =
+        DependencyProperty.Register(nameof(Docs), typeof(string), typeof(AppCard),
+            new PropertyMetadata(null));
+
+    public static readonly DependencyProperty LicenseProperty =
+        DependencyProperty.Register(nameof(License), typeof(string), typeof(AppCard),
+            new PropertyMetadata(null));
+
     public static readonly DependencyProperty IsManagedProperty =
         DependencyProperty.Register(nameof(IsManaged), typeof(bool), typeof(AppCard),
             new PropertyMetadata(false));
@@ -66,10 +78,6 @@ public partial class AppCard : UserControl
         EventManager.RegisterRoutedEvent(nameof(TagClicked), RoutingStrategy.Bubble,
             typeof(RoutedEventHandler), typeof(AppCard));
 
-    public static readonly RoutedEvent ExpandRequestedEvent =
-        EventManager.RegisterRoutedEvent(nameof(ExpandRequested), RoutingStrategy.Bubble,
-            typeof(RoutedEventHandler), typeof(AppCard));
-
     public string DisplayLabel
     {
         get => (string)GetValue(DisplayLabelProperty);
@@ -98,6 +106,24 @@ public partial class AppCard : UserControl
     {
         get => (string?)GetValue(GitHubProperty);
         set => SetValue(GitHubProperty, value);
+    }
+
+    public string? Website
+    {
+        get => (string?)GetValue(WebsiteProperty);
+        set => SetValue(WebsiteProperty, value);
+    }
+
+    public string? Docs
+    {
+        get => (string?)GetValue(DocsProperty);
+        set => SetValue(DocsProperty, value);
+    }
+
+    public string? License
+    {
+        get => (string?)GetValue(LicenseProperty);
+        set => SetValue(LicenseProperty, value);
     }
 
     public bool IsManaged
@@ -154,12 +180,6 @@ public partial class AppCard : UserControl
         remove => RemoveHandler(TagClickedEvent, value);
     }
 
-    public event RoutedEventHandler ExpandRequested
-    {
-        add => AddHandler(ExpandRequestedEvent, value);
-        remove => RemoveHandler(ExpandRequestedEvent, value);
-    }
-
     public AppCard()
     {
         InitializeComponent();
@@ -174,15 +194,12 @@ public partial class AppCard : UserControl
         FallbackIcon.Visibility = Visibility.Visible;
     }
 
-    private void OnGitHubClick(object sender, RoutedEventArgs e)
+    private void OnLinkClick(object sender, RoutedEventArgs e)
     {
-        if (!string.IsNullOrEmpty(GitHub))
-            Process.Start(new ProcessStartInfo(GitHub) { UseShellExecute = true });
+        if (sender is FrameworkElement { Tag: string url } && !string.IsNullOrEmpty(url))
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
     }
 
     private void OnTagClick(object sender, MouseButtonEventArgs e) =>
         RaiseEvent(new RoutedEventArgs(TagClickedEvent, this));
-
-    private void OnExpandClick(object sender, RoutedEventArgs e) =>
-        RaiseEvent(new RoutedEventArgs(ExpandRequestedEvent, this));
 }

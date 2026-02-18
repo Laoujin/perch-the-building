@@ -55,14 +55,12 @@ public sealed class AppsViewModelTests
         {
             Assert.That(_vm.IsLoading, Is.False);
             Assert.That(_vm.ErrorMessage, Is.Null);
-            Assert.That(_vm.YourApps, Is.Empty);
-            Assert.That(_vm.SuggestedApps, Is.Empty);
-            Assert.That(_vm.BrowseCategories, Is.Empty);
+            Assert.That(_vm.Categories, Is.Empty);
         });
     }
 
     [Test]
-    public async Task RefreshAsync_PopulatesTiers()
+    public async Task RefreshAsync_PopulatesCategories()
     {
         var yourApp = MakeCard("vscode", "Development/IDEs", CardStatus.Linked);
         var suggested = MakeCard("rider", "Development/IDEs", CardStatus.Detected);
@@ -78,9 +76,11 @@ public sealed class AppsViewModelTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(_vm.YourApps, Has.Count.EqualTo(1));
-            Assert.That(_vm.SuggestedApps, Has.Count.EqualTo(1));
-            Assert.That(_vm.BrowseCategories, Has.Count.EqualTo(1));
+            Assert.That(_vm.Categories, Has.Count.EqualTo(2));
+            Assert.That(_vm.Categories[0].BroadCategory, Is.EqualTo("Development"));
+            Assert.That(_vm.Categories[0].ItemCount, Is.EqualTo(2));
+            Assert.That(_vm.Categories[1].BroadCategory, Is.EqualTo("Media"));
+            Assert.That(_vm.Categories[1].ItemCount, Is.EqualTo(1));
             Assert.That(_vm.LinkedCount, Is.EqualTo(1));
             Assert.That(_vm.DetectedCount, Is.EqualTo(2));
             Assert.That(_vm.IsLoading, Is.False);
@@ -154,7 +154,7 @@ public sealed class AppsViewModelTests
     }
 
     [Test]
-    public async Task SearchText_FiltersAllTiers()
+    public async Task SearchText_FiltersCategories()
     {
         var yourApp = MakeCard("vscode", "Development/IDEs");
         var suggested = MakeCard("rider", "Development/IDEs");
@@ -167,82 +167,43 @@ public sealed class AppsViewModelTests
                 ImmutableArray.Create(other)));
 
         await _vm.RefreshCommand.ExecuteAsync(null);
-        Assert.That(_vm.YourApps, Has.Count.EqualTo(1));
-        Assert.That(_vm.SuggestedApps, Has.Count.EqualTo(1));
-        Assert.That(_vm.BrowseCategories, Has.Count.EqualTo(1));
+        Assert.That(_vm.Categories, Has.Count.EqualTo(2));
 
         _vm.SearchText = "vscode";
-        Assert.That(_vm.YourApps, Has.Count.EqualTo(1));
-        Assert.That(_vm.SuggestedApps, Is.Empty);
-        Assert.That(_vm.BrowseCategories, Is.Empty);
+        Assert.That(_vm.Categories, Has.Count.EqualTo(1));
+        Assert.That(_vm.Categories[0].BroadCategory, Is.EqualTo("Development"));
+        Assert.That(_vm.Categories[0].ItemCount, Is.EqualTo(1));
     }
 
     [Test]
-    public async Task YourApps_SortedByStatusThenName()
+    public async Task GetCategorySubGroups_SortsByTierThenStatusThenName()
     {
         var apps = ImmutableArray.Create(
-            MakeCard("zapp", "Dev/IDEs", CardStatus.Detected),
-            MakeCard("aapp", "Dev/IDEs", CardStatus.Linked),
-            MakeCard("mapp", "Dev/IDEs", CardStatus.Broken));
+            MakeCard("zapp", "Dev/IDEs", CardStatus.Detected, CardTier.Other),
+            MakeCard("aapp", "Dev/IDEs", CardStatus.Linked, CardTier.YourApps),
+            MakeCard("mapp", "Dev/IDEs", CardStatus.Broken, CardTier.YourApps),
+            MakeCard("sapp", "Dev/IDEs", CardStatus.Detected, CardTier.Suggested));
 
         _detectionService.DetectAppsAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
-            .Returns(new GalleryDetectionResult(apps, [], []));
+            .Returns(new GalleryDetectionResult(
+                apps.Where(a => a.Tier == CardTier.YourApps).ToImmutableArray(),
+                apps.Where(a => a.Tier == CardTier.Suggested).ToImmutableArray(),
+                apps.Where(a => a.Tier == CardTier.Other).ToImmutableArray()));
 
         await _vm.RefreshCommand.ExecuteAsync(null);
 
+        var subGroups = _vm.GetCategorySubGroups("Dev").ToList();
+        Assert.That(subGroups, Has.Count.EqualTo(1));
+
+        var group = subGroups[0];
         Assert.Multiple(() =>
         {
-            Assert.That(_vm.YourApps[0].Name, Is.EqualTo("mapp"));
-            Assert.That(_vm.YourApps[1].Name, Is.EqualTo("zapp"));
-            Assert.That(_vm.YourApps[2].Name, Is.EqualTo("aapp"));
+            Assert.That(group.SubCategory, Is.EqualTo("IDEs"));
+            Assert.That(group.Apps[0].Name, Is.EqualTo("mapp"));  // YourApps + Broken (status 0)
+            Assert.That(group.Apps[1].Name, Is.EqualTo("aapp"));  // YourApps + Linked (status 2)
+            Assert.That(group.Apps[2].Name, Is.EqualTo("sapp"));  // Suggested
+            Assert.That(group.Apps[3].Name, Is.EqualTo("zapp"));  // Other
         });
-    }
-
-    [Test]
-    public async Task ExpandApp_LoadsDetail()
-    {
-        var card = MakeCard("vscode", "Development/IDEs");
-        var detail = new AppDetail(card, null, null, null, null, []);
-        _detailService.LoadDetailAsync(card, Arg.Any<CancellationToken>()).Returns(detail);
-
-        await _vm.ExpandAppCommand.ExecuteAsync(card);
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(card.IsExpanded, Is.True);
-            Assert.That(card.Detail, Is.EqualTo(detail));
-            Assert.That(card.IsLoadingDetail, Is.False);
-        });
-    }
-
-    [Test]
-    public async Task ExpandApp_CachesDetail()
-    {
-        var card = MakeCard("vscode", "Development/IDEs");
-        var detail = new AppDetail(card, null, null, null, null, []);
-        _detailService.LoadDetailAsync(card, Arg.Any<CancellationToken>()).Returns(detail);
-
-        await _vm.ExpandAppCommand.ExecuteAsync(card);
-        card.IsExpanded = false;
-        card.Detail = null;
-        await _vm.ExpandAppCommand.ExecuteAsync(card);
-
-        Assert.That(card.Detail, Is.EqualTo(detail));
-        await _detailService.Received(1).LoadDetailAsync(card, Arg.Any<CancellationToken>());
-    }
-
-    [Test]
-    public async Task CollapseApp_TogglesExpanded()
-    {
-        var card = MakeCard("vscode", "Development/IDEs");
-        var detail = new AppDetail(card, null, null, null, null, []);
-        _detailService.LoadDetailAsync(card, Arg.Any<CancellationToken>()).Returns(detail);
-
-        await _vm.ExpandAppCommand.ExecuteAsync(card);
-        Assert.That(card.IsExpanded, Is.True);
-
-        await _vm.ExpandAppCommand.ExecuteAsync(card);
-        Assert.That(card.IsExpanded, Is.False);
     }
 
     [Test]
@@ -256,13 +217,16 @@ public sealed class AppsViewModelTests
 
         await _vm.RefreshCommand.ExecuteAsync(null);
 
+        var subGroups = _vm.GetCategorySubGroups("Development").ToList();
+        var runtimes = subGroups.Single(g => g.SubCategory == "Runtimes");
+
         Assert.Multiple(() =>
         {
-            Assert.That(_vm.YourApps, Has.Count.EqualTo(1));
-            Assert.That(_vm.YourApps[0].Name, Is.EqualTo("dotnet-sdk"));
-            Assert.That(_vm.YourApps[0].HasDependents, Is.True);
-            Assert.That(_vm.YourApps[0].DependentApps, Has.Length.EqualTo(1));
-            Assert.That(_vm.YourApps[0].DependentApps[0].Name, Is.EqualTo("vscode"));
+            Assert.That(runtimes.Apps, Has.Count.EqualTo(1));
+            Assert.That(runtimes.Apps[0].Name, Is.EqualTo("dotnet-sdk"));
+            Assert.That(runtimes.Apps[0].HasDependents, Is.True);
+            Assert.That(runtimes.Apps[0].DependentApps, Has.Length.EqualTo(1));
+            Assert.That(runtimes.Apps[0].DependentApps[0].Name, Is.EqualTo("vscode"));
         });
     }
 
@@ -277,9 +241,11 @@ public sealed class AppsViewModelTests
 
         await _vm.RefreshCommand.ExecuteAsync(null);
 
+        var subGroups = _vm.GetCategorySubGroups("Dev").ToList();
         Assert.Multiple(() =>
         {
-            Assert.That(_vm.YourApps, Has.Count.EqualTo(2));
+            Assert.That(subGroups, Has.Count.EqualTo(1));
+            Assert.That(subGroups[0].Apps, Has.Count.EqualTo(2));
             Assert.That(a.HasDependents, Is.False);
             Assert.That(b.HasDependents, Is.False);
         });
@@ -297,8 +263,10 @@ public sealed class AppsViewModelTests
         await _vm.RefreshCommand.ExecuteAsync(null);
 
         _vm.SearchText = "my-child";
-        Assert.That(_vm.YourApps, Has.Count.EqualTo(1));
-        Assert.That(_vm.YourApps[0].Name, Is.EqualTo("dotnet-sdk"));
+        Assert.That(_vm.Categories, Has.Count.EqualTo(1));
+        var subGroups = _vm.GetCategorySubGroups("Development").ToList();
+        Assert.That(subGroups, Has.Count.EqualTo(1));
+        Assert.That(subGroups[0].Apps[0].Name, Is.EqualTo("dotnet-sdk"));
     }
 
     [Test]

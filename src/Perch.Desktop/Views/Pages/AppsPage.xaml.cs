@@ -31,7 +31,7 @@ public partial class AppsPage : Page
             ViewModel.ToggleAppCommand.Execute(app);
     }
 
-    private void OnBrowseCategoryClick(object sender, MouseButtonEventArgs e)
+    private void OnCategoryClick(object sender, MouseButtonEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: AppCategoryCardModel card })
         {
@@ -39,26 +39,18 @@ public partial class AppsPage : Page
         }
     }
 
-    private void OnCategoryAppsPanelLoaded(object sender, RoutedEventArgs e)
+    private void OnCategorySubGroupsLoaded(object sender, RoutedEventArgs e)
     {
         if (sender is ItemsControl { Tag: string broadCategory } itemsControl)
         {
-            itemsControl.ItemsSource = ViewModel.GetCategoryApps(broadCategory);
+            itemsControl.ItemsSource = ViewModel.GetCategorySubGroups(broadCategory);
         }
-    }
-
-    private void OnExpandRequested(object sender, RoutedEventArgs e)
-    {
-        if (GetAppModel(sender) is { } app && ViewModel.ExpandAppCommand.CanExecute(app))
-            ViewModel.ExpandAppCommand.Execute(app);
     }
 
     private void OnTagClicked(object sender, RoutedEventArgs e)
     {
         if (sender is AppCard card && card.DataContext is AppCardModel)
         {
-            // The tag text is the DataContext of the clicked element inside the tag ItemsControl.
-            // The AppCard raises the event; we find the tag from the original source.
             if (e.OriginalSource is FrameworkElement { DataContext: string tag })
                 ViewModel.TagClickCommand.Execute(tag);
         }

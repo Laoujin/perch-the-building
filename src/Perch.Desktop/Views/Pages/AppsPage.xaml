@@ -95,198 +95,140 @@
             </Border>
         </ScrollViewer>
 
-        <!-- Scrollable 3-tier content -->
+        <!-- Category list -->
         <ScrollViewer
             Grid.Row="1"
             Margin="0,16,0,0"
             VerticalScrollBarVisibility="Auto"
             Visibility="{Binding IsLoading, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
-            <StackPanel>
+            <ItemsControl ItemsSource="{Binding Categories}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type models:AppCategoryCardModel}">
+                        <StackPanel Margin="0,0,0,4">
+                            <!-- Category header -->
+                            <Border
+                                Background="#1A1A2E"
+                                BorderBrush="#333350"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="12"
+                                Margin="0,0,0,8"
+                                Cursor="Hand"
+                                MouseLeftButtonUp="OnCategoryClick">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
 
-                <!-- Tier 1: Your Apps -->
-                <StackPanel Visibility="{Binding YourApps.Count, Converter={StaticResource CountToVisibilityConverter}, FallbackValue=Collapsed}">
-                    <controls:TierSectionHeader
-                        Title="Your Apps"
-                        ItemCount="{Binding YourApps.Count}" />
-                    <ItemsControl ItemsSource="{Binding YourApps}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type models:AppCardModel}">
-                                <controls:AppCard
-                                    DisplayLabel="{Binding DisplayLabel}"
-                                    Description="{Binding Description}"
-                                    Category="{Binding Category}"
-                                    Status="{Binding Status}"
-                                    LogoUrl="{Binding LogoUrl}"
-                                    GitHub="{Binding GitHub}"
-                                    IsManaged="{Binding IsManaged}"
-                                    CanToggle="{Binding CanToggle}"
-                                    IsSuggested="{Binding IsSuggested}"
-                                    KindBadge="{Binding KindBadge}"
-                                    Tags="{Binding Tags}"
-                                    ToggleChanged="OnToggleChanged"
-                                    TagClicked="OnTagClicked"
-                                    ExpandRequested="OnExpandRequested"
-                                    Margin="0,0,12,12" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
+                                    <ui:SymbolIcon
+                                        Grid.Column="0"
+                                        Symbol="{Binding IconSymbol}"
+                                        FontSize="20"
+                                        Foreground="#10B981"
+                                        VerticalAlignment="Center"
+                                        Margin="0,0,12,0" />
 
-                <!-- Tier 2: Suggested -->
-                <StackPanel Visibility="{Binding SuggestedApps.Count, Converter={StaticResource CountToVisibilityConverter}, FallbackValue=Collapsed}">
-                    <controls:TierSectionHeader
-                        Title="Suggested for You"
-                        ItemCount="{Binding SuggestedApps.Count}" />
-                    <ItemsControl ItemsSource="{Binding SuggestedApps}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type models:AppCardModel}">
-                                <controls:AppCard
-                                    DisplayLabel="{Binding DisplayLabel}"
-                                    Description="{Binding Description}"
-                                    Category="{Binding Category}"
-                                    Status="{Binding Status}"
-                                    LogoUrl="{Binding LogoUrl}"
-                                    GitHub="{Binding GitHub}"
-                                    IsManaged="{Binding IsManaged}"
-                                    CanToggle="{Binding CanToggle}"
-                                    IsSuggested="{Binding IsSuggested}"
-                                    KindBadge="{Binding KindBadge}"
-                                    Tags="{Binding Tags}"
-                                    ToggleChanged="OnToggleChanged"
-                                    TagClicked="OnTagClicked"
-                                    ExpandRequested="OnExpandRequested"
-                                    Margin="0,0,12,12" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Text="{Binding DisplayName}"
+                                        FontSize="14"
+                                        FontWeight="SemiBold"
+                                        Foreground="White"
+                                        VerticalAlignment="Center" />
 
-                <!-- Tier 3: Browse All -->
-                <StackPanel Visibility="{Binding BrowseCategories.Count, Converter={StaticResource CountToVisibilityConverter}, FallbackValue=Collapsed}">
-                    <controls:TierSectionHeader
-                        Title="Browse All"
-                        ItemCount="{Binding BrowseCategories.Count}" />
-                    <ItemsControl ItemsSource="{Binding BrowseCategories}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type models:AppCategoryCardModel}">
-                                <StackPanel>
-                                    <!-- Collapsed category card -->
-                                    <Border
-                                        Background="#1A1A2E"
-                                        BorderBrush="#333350"
-                                        BorderThickness="1"
-                                        CornerRadius="8"
-                                        Padding="12"
-                                        Margin="0,0,0,8"
-                                        Cursor="Hand"
-                                        MouseLeftButtonUp="OnBrowseCategoryClick">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
+                                    <TextBlock
+                                        Grid.Column="2"
+                                        FontSize="11"
+                                        Foreground="#888888"
+                                        VerticalAlignment="Center"
+                                        Margin="0,0,12,0">
+                                        <Run Text="{Binding ItemCount, Mode=OneWay}" />
+                                        <Run Text=" apps" />
+                                    </TextBlock>
 
-                                            <ui:SymbolIcon
-                                                Grid.Column="0"
-                                                Symbol="{Binding IconSymbol}"
-                                                FontSize="20"
-                                                Foreground="#10B981"
-                                                VerticalAlignment="Center"
-                                                Margin="0,0,12,0" />
+                                    <ui:SymbolIcon
+                                        Grid.Column="3"
+                                        Symbol="ChevronDown24"
+                                        FontSize="12"
+                                        Foreground="#666666"
+                                        VerticalAlignment="Center"
+                                        RenderTransformOrigin="0.5,0.5">
+                                        <ui:SymbolIcon.Style>
+                                            <Style TargetType="ui:SymbolIcon">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                                                        <Setter Property="RenderTransform">
+                                                            <Setter.Value>
+                                                                <RotateTransform Angle="180" />
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </ui:SymbolIcon.Style>
+                                    </ui:SymbolIcon>
+                                </Grid>
+                            </Border>
 
+                            <!-- Expanded sub-groups -->
+                            <ItemsControl
+                                x:Name="CategorySubGroupsPanel"
+                                Visibility="{Binding IsExpanded, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                Margin="0,0,0,12"
+                                Tag="{Binding BroadCategory}"
+                                Loaded="OnCategorySubGroupsLoaded">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:AppCategoryGroup}">
+                                        <StackPanel Margin="24,0,0,8">
+                                            <!-- Sub-category header -->
                                             <TextBlock
-                                                Grid.Column="1"
-                                                Text="{Binding DisplayName}"
-                                                FontSize="14"
-                                                FontWeight="SemiBold"
-                                                Foreground="White"
-                                                VerticalAlignment="Center" />
-
-                                            <TextBlock
-                                                Grid.Column="2"
-                                                FontSize="11"
-                                                Foreground="#888888"
-                                                VerticalAlignment="Center"
-                                                Margin="0,0,12,0">
-                                                <Run Text="{Binding ItemCount, Mode=OneWay}" />
-                                                <Run Text=" apps" />
-                                            </TextBlock>
-
-                                            <ui:SymbolIcon
-                                                Grid.Column="3"
-                                                Symbol="ChevronDown24"
+                                                Text="{Binding SubCategory}"
                                                 FontSize="12"
-                                                Foreground="#666666"
-                                                VerticalAlignment="Center"
-                                                RenderTransformOrigin="0.5,0.5">
-                                                <ui:SymbolIcon.Style>
-                                                    <Style TargetType="ui:SymbolIcon">
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsExpanded}" Value="True">
-                                                                <Setter Property="RenderTransform">
-                                                                    <Setter.Value>
-                                                                        <RotateTransform Angle="180" />
-                                                                    </Setter.Value>
-                                                                </Setter>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </ui:SymbolIcon.Style>
-                                            </ui:SymbolIcon>
-                                        </Grid>
-                                    </Border>
+                                                FontWeight="SemiBold"
+                                                Foreground="#94A3B8"
+                                                Margin="0,0,0,6" />
 
-                                    <!-- Expanded app cards -->
-                                    <ItemsControl
-                                        x:Name="CategoryAppsPanel"
-                                        Visibility="{Binding IsExpanded, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                        Margin="0,0,0,12"
-                                        Tag="{Binding BroadCategory}"
-                                        Loaded="OnCategoryAppsPanelLoaded">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <WrapPanel Margin="24,0,0,0" />
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate DataType="{x:Type models:AppCardModel}">
-                                                <controls:AppCard
-                                                    DisplayLabel="{Binding DisplayLabel}"
-                                                    Description="{Binding Description}"
-                                                    Category="{Binding Category}"
-                                                    Status="{Binding Status}"
-                                                    GitHub="{Binding GitHub}"
-                                                    IsManaged="{Binding IsManaged}"
-                                                    CanToggle="{Binding CanToggle}"
-                                                    IsSuggested="{Binding IsSuggested}"
-                                                    KindBadge="{Binding KindBadge}"
-                                                    Tags="{Binding Tags}"
-                                                    ToggleChanged="OnToggleChanged"
-                                                    TagClicked="OnTagClicked"
-                                                    ExpandRequested="OnExpandRequested"
-                                                    Margin="0,0,12,12" />
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </StackPanel>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-
-            </StackPanel>
+                                            <!-- App cards -->
+                                            <ItemsControl ItemsSource="{Binding Apps}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <WrapPanel />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate DataType="{x:Type models:AppCardModel}">
+                                                        <controls:AppCard
+                                                            DisplayLabel="{Binding DisplayLabel}"
+                                                            Description="{Binding Description}"
+                                                            Category="{Binding Category}"
+                                                            Status="{Binding Status}"
+                                                            LogoUrl="{Binding LogoUrl}"
+                                                            Website="{Binding Website}"
+                                                            Docs="{Binding Docs}"
+                                                            GitHub="{Binding GitHub}"
+                                                            License="{Binding License}"
+                                                            IsManaged="{Binding IsManaged}"
+                                                            CanToggle="{Binding CanToggle}"
+                                                            IsSuggested="{Binding IsSuggested}"
+                                                            KindBadge="{Binding KindBadge}"
+                                                            Tags="{Binding Tags}"
+                                                            ToggleChanged="OnToggleChanged"
+                                                            TagClicked="OnTagClicked"
+                                                            Margin="0,0,12,12" />
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
         </ScrollViewer>
     </Grid>
 

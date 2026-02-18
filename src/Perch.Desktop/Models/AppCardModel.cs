@@ -20,6 +20,8 @@ public partial class AppCardModel : ObservableObject
     public CatalogEntry CatalogEntry { get; }
     public string? Website { get; }
     public string? GitHub { get; }
+    public string? Docs { get; }
+    public string? License { get; }
     public string? LogoUrl { get; }
 
     [ObservableProperty]
@@ -27,9 +29,6 @@ public partial class AppCardModel : ObservableObject
 
     [ObservableProperty]
     private bool _isSelected;
-
-    [ObservableProperty]
-    private bool _isExpanded;
 
     [ObservableProperty]
     private bool _isLoadingDetail;
@@ -72,6 +71,8 @@ public partial class AppCardModel : ObservableObject
         CatalogEntry = entry;
         Website = entry.Links?.Website;
         GitHub = entry.Links?.GitHub;
+        Docs = entry.Links?.Docs;
+        License = entry.License;
         LogoUrl = logoUrl;
     }
 
