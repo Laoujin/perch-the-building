@@ -15,6 +15,7 @@ using Perch.Core.Startup;
 using Perch.Core.Status;
 using Perch.Core.Symlinks;
 using Perch.Core.Templates;
+using Perch.Core.Tweaks;
 
 namespace Perch.Core;
 
@@ -78,6 +79,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IVariableResolver, MachineVariableResolver>();
         services.AddSingleton<IContentFilterProcessor, ContentFilterProcessor>();
         services.AddSingleton<IAppScanService, AppScanService>();
+        services.AddSingleton<ITweakService, TweakService>();
 
         services.AddSingleton<CatalogParser>();
         services.AddSingleton(new System.Net.Http.HttpClient());

@@ -8,8 +8,10 @@ using Perch.Core;
 using Perch.Core.Catalog;
 using Perch.Core.Config;
 using Perch.Core.Modules;
+using Perch.Core.Registry;
 using Perch.Core.Scanner;
 using Perch.Core.Symlinks;
+using Perch.Core.Tweaks;
 using Perch.Desktop.Models;
 using Perch.Desktop.Services;
 
@@ -21,12 +23,14 @@ namespace Perch.Core.Tests.Desktop;
 public sealed class GalleryDetectionServiceTweakTests
 {
     private ICatalogService _catalog = null!;
+    private ITweakService _tweakService = null!;
     private GalleryDetectionService _service = null!;
 
     [SetUp]
     public void SetUp()
     {
         _catalog = Substitute.For<ICatalogService>();
+        _tweakService = Substitute.For<ITweakService>();
         var settingsProvider = Substitute.For<ISettingsProvider>();
         settingsProvider.LoadAsync(Arg.Any<CancellationToken>())
             .Returns(new PerchSettings { ConfigRepoPath = @"C:\config" });
@@ -34,13 +38,17 @@ public sealed class GalleryDetectionServiceTweakTests
         var platformDetector = Substitute.For<IPlatformDetector>();
         platformDetector.CurrentPlatform.Returns(Platform.Windows);
 
+        _tweakService.Detect(Arg.Any<TweakCatalogEntry>())
+            .Returns(new TweakDetectionResult(TweakStatus.NotApplied, ImmutableArray<RegistryEntryStatus>.Empty));
+
         _service = new GalleryDetectionService(
             _catalog,
             Substitute.For<IFontScanner>(),
             platformDetector,
             Substitute.For<ISymlinkProvider>(),
             settingsProvider,
-            []);
+            [],
+            _tweakService);
     }
 
     [Test]
@@ -123,27 +131,78 @@ public sealed class GalleryDetectionServiceTweakTests
     }
 
     [Test]
-    public async Task DetectTweaksAsync_AllTweaksHaveNotInstalledStatus()
+    public async Task DetectTweaksAsync_NotApplied_MapsToNotInstalled()
     {
-        var tweaks = ImmutableArray.Create(
-            MakeTweak("tweak1", "Tweak 1", []),
-            MakeTweak("tweak2", "Tweak 2", []));
-
+        var tweak = MakeTweak("tweak1", "Tweak 1", []);
         _catalog.GetAllTweaksAsync(Arg.Any<CancellationToken>())
-            .Returns(tweaks);
+            .Returns(ImmutableArray.Create(tweak));
+
+        _tweakService.Detect(tweak)
+            .Returns(new TweakDetectionResult(TweakStatus.NotApplied, ImmutableArray<RegistryEntryStatus>.Empty));
+
+        var result = await _service.DetectTweaksAsync(
+            new HashSet<UserProfile> { UserProfile.Developer });
+
+        Assert.That(result[0].Status, Is.EqualTo(CardStatus.NotInstalled));
+    }
+
+    [Test]
+    public async Task DetectTweaksAsync_Applied_MapsToDetected()
+    {
+        var tweak = MakeTweakWithRegistry("tweak1", "Tweak 1");
+        _catalog.GetAllTweaksAsync(Arg.Any<CancellationToken>())
+            .Returns(ImmutableArray.Create(tweak));
+
+        var entryStatus = new RegistryEntryStatus(tweak.Registry[0], 1, true);
+        _tweakService.Detect(tweak)
+            .Returns(new TweakDetectionResult(TweakStatus.Applied, [entryStatus]));
 
         var result = await _service.DetectTweaksAsync(
             new HashSet<UserProfile> { UserProfile.Developer });
 
         Assert.Multiple(() =>
         {
-            Assert.That(result[0].Status, Is.EqualTo(CardStatus.NotInstalled));
-            Assert.That(result[1].Status, Is.EqualTo(CardStatus.NotInstalled));
+            Assert.That(result[0].Status, Is.EqualTo(CardStatus.Detected));
+            Assert.That(result[0].AppliedCount, Is.EqualTo(1));
+        });
+    }
+
+    [Test]
+    public async Task DetectTweaksAsync_Partial_MapsToDrift()
+    {
+        var tweak = MakeTweakWithTwoEntries("tweak1", "Tweak 1");
+        _catalog.GetAllTweaksAsync(Arg.Any<CancellationToken>())
+            .Returns(ImmutableArray.Create(tweak));
+
+        var entries = ImmutableArray.Create(
+            new RegistryEntryStatus(tweak.Registry[0], 1, true),
+            new RegistryEntryStatus(tweak.Registry[1], 99, false));
+        _tweakService.Detect(tweak)
+            .Returns(new TweakDetectionResult(TweakStatus.Partial, entries));
+
+        var result = await _service.DetectTweaksAsync(
+            new HashSet<UserProfile> { UserProfile.Developer });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result[0].Status, Is.EqualTo(CardStatus.Drift));
+            Assert.That(result[0].AppliedCount, Is.EqualTo(1));
         });
     }
 
     private static TweakCatalogEntry MakeTweak(string id, string name, string[] profiles) =>
         new(id, name, "System", [], null, true,
             profiles.ToImmutableArray(), []);
+
+    private static TweakCatalogEntry MakeTweakWithRegistry(string id, string name) =>
+        new(id, name, "System", [], null, true, [],
+            [new RegistryEntryDefinition(@"HKCU\Software\Test", "Value1", 1, RegistryValueType.DWord)]);
+
+    private static TweakCatalogEntry MakeTweakWithTwoEntries(string id, string name) =>
+        new(id, name, "System", [], null, true, [],
+            [
+                new RegistryEntryDefinition(@"HKCU\Software\Test", "A", 1, RegistryValueType.DWord),
+                new RegistryEntryDefinition(@"HKCU\Software\Test", "B", 2, RegistryValueType.DWord),
+            ]);
 }
 #endif

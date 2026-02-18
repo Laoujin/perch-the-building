@@ -889,6 +889,49 @@ public sealed class CatalogParserTests
     }
 
     [Test]
+    public void ParseTweak_WithSource_ParsesSource()
+    {
+        string yaml = """
+            name: Show File Extensions
+            category: Developer Settings
+            tags: [explorer]
+            source: winutil
+            reversible: true
+            registry:
+              - key: HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+                name: HideFileExt
+                value: 0
+                type: dword
+            """;
+
+        var result = _parser.ParseTweak(yaml, "show-file-extensions");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value!.Source, Is.EqualTo("winutil"));
+    }
+
+    [Test]
+    public void ParseTweak_WithoutSource_SourceIsNull()
+    {
+        string yaml = """
+            name: Test Tweak
+            category: Test
+            tags: [test]
+            reversible: true
+            registry:
+              - key: HKCU\Software\Test
+                name: TestValue
+                value: 1
+                type: dword
+            """;
+
+        var result = _parser.ParseTweak(yaml, "test");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value!.Source, Is.Null);
+    }
+
+    [Test]
     public void ParseIndex_WithProfilesAndHidden_ParsesCorrectly()
     {
         string yaml = """
