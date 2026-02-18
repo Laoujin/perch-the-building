@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:controls="clr-namespace:Perch.Desktop.Views.Controls"
     xmlns:pages="clr-namespace:Perch.Desktop.Views.Pages"
     xmlns:vm="clr-namespace:Perch.Desktop.ViewModels"
     Title="Perch"
@@ -17,6 +18,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <ui:TitleBar
@@ -112,6 +114,13 @@
             VerticalAlignment="Bottom"
             HorizontalAlignment="Center"
             Margin="0,0,0,16" />
+
+        <controls:DeployBar
+            Grid.Row="2"
+            SelectedCount="{Binding PendingChangeCount}"
+            IsDeploying="{Binding IsDeploying}"
+            DeployRequested="OnDeployRequested"
+            ClearRequested="OnClearRequested" />
     </Grid>
 
 </ui:FluentWindow>

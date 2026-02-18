@@ -9,6 +9,7 @@ namespace Perch.Desktop.Views;
 public partial class MainWindow : INavigationWindow
 {
     private readonly INavigationService _navigationService;
+    private readonly MainWindowViewModel _viewModel;
 
     public MainWindow(
         INavigationService navigationService,
@@ -16,6 +17,7 @@ public partial class MainWindow : INavigationWindow
         MainWindowViewModel viewModel)
     {
         _navigationService = navigationService;
+        _viewModel = viewModel;
         DataContext = viewModel;
 
         InitializeComponent();
@@ -42,5 +44,17 @@ public partial class MainWindow : INavigationWindow
     private void PaneToggleButton_Click(object sender, RoutedEventArgs e)
     {
         RootNavigation.IsPaneOpen = !RootNavigation.IsPaneOpen;
+    }
+
+    private async void OnDeployRequested(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel.DeployCommand.CanExecute(null))
+            await _viewModel.DeployCommand.ExecuteAsync(null);
+    }
+
+    private void OnClearRequested(object sender, RoutedEventArgs e)
+    {
+        if (_viewModel.ClearPendingChangesCommand.CanExecute(null))
+            _viewModel.ClearPendingChangesCommand.Execute(null);
     }
 }

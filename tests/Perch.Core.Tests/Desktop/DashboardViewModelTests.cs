@@ -6,10 +6,7 @@ using NSubstitute.ExceptionExtensions;
 
 using Perch.Core.Catalog;
 using Perch.Core.Config;
-using Perch.Core.Startup;
 using Perch.Core.Status;
-using Perch.Core.Symlinks;
-using Perch.Core.Tweaks;
 using Perch.Desktop.Models;
 using Perch.Desktop.Services;
 using Perch.Desktop.ViewModels;
@@ -26,9 +23,7 @@ public sealed class DashboardViewModelTests
     private IStatusService _statusService = null!;
     private ISettingsProvider _settingsProvider = null!;
     private PendingChangesService _pendingChanges = null!;
-    private IAppLinkService _appLinkService = null!;
-    private ITweakService _tweakService = null!;
-    private IStartupService _startupService = null!;
+    private IApplyChangesService _applyChangesService = null!;
     private ISnackbarService _snackbarService = null!;
     private DashboardViewModel _vm = null!;
     private SynchronizationContext? _originalContext;
@@ -45,14 +40,12 @@ public sealed class DashboardViewModelTests
             .Returns(new PerchSettings { ConfigRepoPath = @"C:\config" });
 
         _pendingChanges = new PendingChangesService();
-        _appLinkService = Substitute.For<IAppLinkService>();
-        _tweakService = Substitute.For<ITweakService>();
-        _startupService = Substitute.For<IStartupService>();
+        _applyChangesService = Substitute.For<IApplyChangesService>();
         _snackbarService = Substitute.For<ISnackbarService>();
 
         _vm = new DashboardViewModel(
             _statusService, _settingsProvider, _pendingChanges,
-            _appLinkService, _tweakService, _startupService, _snackbarService);
+            _applyChangesService, _snackbarService);
     }
 
     [TearDown]
