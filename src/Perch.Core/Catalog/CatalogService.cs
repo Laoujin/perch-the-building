@@ -128,22 +128,10 @@ public sealed class CatalogService : ICatalogService
 
     public async Task<ImmutableArray<CatalogEntry>> GetAllDotfileAppsAsync(CancellationToken cancellationToken = default)
     {
-        var index = await GetIndexAsync(cancellationToken).ConfigureAwait(false);
-        var dotfileEntries = index.Apps.Where(e => e.Kind == CatalogKind.Dotfile);
-        var apps = new List<CatalogEntry>();
-        foreach (var entry in dotfileEntries)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            var fetchPath = entry.Path ?? $"apps/{entry.Id}.yaml";
-            string content = await FetchWithCacheAsync(fetchPath, cancellationToken).ConfigureAwait(false);
-            var parsed = _parser.ParseApp(content, entry.Id);
-            if (parsed.Value != null)
-            {
-                apps.Add(parsed.Value);
-            }
-        }
-
-        return apps.ToImmutableArray();
+        var allApps = await GetAllAppsAsync(cancellationToken).ConfigureAwait(false);
+        return allApps
+            .Where(a => a.Kind == CatalogKind.Dotfile)
+            .ToImmutableArray();
     }
 
     private async Task<string> ResolvePathAsync(string type, string id, CancellationToken cancellationToken)
