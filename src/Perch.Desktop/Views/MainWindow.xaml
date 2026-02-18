@@ -46,6 +46,7 @@
             x:Name="RootNavigation"
             Grid.Row="1"
             PaneDisplayMode="Left"
+            OpenPaneLength="230"
             IsBackButtonVisible="Collapsed"
             IsPaneToggleVisible="False">
 
