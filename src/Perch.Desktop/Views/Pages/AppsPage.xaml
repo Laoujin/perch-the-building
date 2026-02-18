@@ -238,6 +238,7 @@
                                                             Website="{Binding Website}"
                                                             Docs="{Binding Docs}"
                                                             GitHub="{Binding GitHub}"
+                                                            ConfigPath="{Binding ConfigPath}"
                                                             License="{Binding License}"
                                                             IsManaged="{Binding IsManaged}"
                                                             CanToggle="{Binding CanToggle}"

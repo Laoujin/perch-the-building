@@ -75,6 +75,10 @@ public partial class AppCard : UserControl
         DependencyProperty.Register(nameof(IsTopPick), typeof(bool), typeof(AppCard),
             new PropertyMetadata(false));
 
+    public static readonly DependencyProperty ConfigPathProperty =
+        DependencyProperty.Register(nameof(ConfigPath), typeof(string), typeof(AppCard),
+            new PropertyMetadata(null));
+
     public static readonly DependencyProperty TagsProperty =
         DependencyProperty.Register(nameof(Tags), typeof(ImmutableArray<string>), typeof(AppCard),
             new PropertyMetadata(ImmutableArray<string>.Empty));
@@ -183,6 +187,12 @@ public partial class AppCard : UserControl
         set => SetValue(IsTopPickProperty, value);
     }
 
+    public string? ConfigPath
+    {
+        get => (string?)GetValue(ConfigPathProperty);
+        set => SetValue(ConfigPathProperty, value);
+    }
+
     public ImmutableArray<string> Tags
     {
         get => (ImmutableArray<string>)GetValue(TagsProperty);
@@ -262,6 +272,17 @@ public partial class AppCard : UserControl
     {
         if (sender is FrameworkElement { Tag: string url } && !string.IsNullOrEmpty(url))
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+    }
+
+    private void OnOpenLocationClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: string path } && !string.IsNullOrEmpty(path))
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = $"/select,\"{path}\"",
+                UseShellExecute = true,
+            });
     }
 
     private void OnTagClick(object sender, MouseButtonEventArgs e) =>

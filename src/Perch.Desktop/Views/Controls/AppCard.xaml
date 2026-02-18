@@ -205,6 +205,19 @@
                             Visibility="{Binding GitHubStarsFormatted, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource CountToVisibilityConverter}}" />
                     </StackPanel>
                 </Button>
+                <Button
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Padding="4,2"
+                    Click="OnOpenLocationClick"
+                    Tag="{Binding ConfigPath, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                    ToolTip="{Binding ConfigPath, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                    Visibility="{Binding ConfigPath, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource CountToVisibilityConverter}}">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="FolderOpen24" FontSize="12" Foreground="#6B7280" />
+                        <TextBlock Text="Open Location" FontSize="10" Foreground="#6B7280" Margin="4,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
             </StackPanel>
 
             <!-- Row 4: Tag pills -->

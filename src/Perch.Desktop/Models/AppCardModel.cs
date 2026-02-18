@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 
+using Perch.Core;
 using Perch.Core.Catalog;
 
 namespace Perch.Desktop.Models;
@@ -49,6 +50,11 @@ public partial class AppCardModel : ObservableObject
     public ImmutableArray<AppCardModel> DependentApps { get; set; } = [];
     public bool HasDependents => !DependentApps.IsDefaultOrEmpty;
     public int DependentAppCount => DependentApps.IsDefaultOrEmpty ? 0 : DependentApps.Length;
+
+    public string? ConfigPath => Config?.Links
+        .Where(l => l.Targets.ContainsKey(Platform.Windows))
+        .Select(l => Environment.ExpandEnvironmentVariables(l.Targets[Platform.Windows].Replace('/', '\\')))
+        .FirstOrDefault();
 
     public string DisplayLabel => DisplayName ?? Name;
     public string BroadCategory => Category.Split('/')[0];

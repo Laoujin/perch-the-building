@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -20,5 +21,16 @@ public partial class DotfilesPage : Page
     {
         if (ViewModel.RefreshCommand.CanExecute(null))
             ViewModel.RefreshCommand.Execute(null);
+    }
+
+    private void OnOpenFileLocationClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: string path } && !string.IsNullOrEmpty(path))
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = $"/select,\"{path}\"",
+                UseShellExecute = true,
+            });
     }
 }

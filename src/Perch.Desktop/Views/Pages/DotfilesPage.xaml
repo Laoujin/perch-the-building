@@ -244,6 +244,7 @@
                                                 <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
                                             <ui:SymbolIcon
                                                 Grid.Column="0"
@@ -269,6 +270,18 @@
                                             <TextBlock Grid.Column="1" Text="{Binding FileName}" FontSize="11" Foreground="White" Margin="0,0,8,0" />
                                             <TextBlock Grid.Column="2" Text="{Binding FullPath}" FontSize="10" Foreground="#666666"
                                                        TextTrimming="CharacterEllipsis" ToolTip="{Binding FullPath}" />
+                                            <Button
+                                                Grid.Column="3"
+                                                Background="Transparent"
+                                                BorderThickness="0"
+                                                Padding="4,2"
+                                                Margin="4,0,0,0"
+                                                Click="OnOpenFileLocationClick"
+                                                Tag="{Binding FullPath}"
+                                                ToolTip="Open in Explorer"
+                                                Visibility="{Binding Exists, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                <ui:SymbolIcon Symbol="FolderOpen24" FontSize="12" Foreground="#6B7280" />
+                                            </Button>
                                         </Grid>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
