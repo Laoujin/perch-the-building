@@ -371,6 +371,16 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void TrackAllNewStartupItems()
+    {
+        foreach (var item in FilteredStartupItems)
+        {
+            if (!item.IsTracked)
+                item.IsTracked = true;
+        }
+    }
+
+    [RelayCommand]
     private void TrackAllInstalledFonts()
     {
         foreach (var group in FilteredInstalledFontGroups)

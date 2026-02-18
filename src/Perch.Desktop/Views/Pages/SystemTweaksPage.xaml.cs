@@ -79,15 +79,9 @@ public partial class SystemTweaksPage : Page
             group.IsExpanded = !group.IsExpanded;
     }
 
-    private void OnStartupToggleChecked(object sender, RoutedEventArgs e)
+    private void OnStartupToggleEnabledClick(object sender, RoutedEventArgs e)
     {
-        if (GetStartupCardModel(sender) is { IsEnabled: false } card)
-            ViewModel.ToggleStartupEnabledCommand.Execute(card);
-    }
-
-    private void OnStartupToggleUnchecked(object sender, RoutedEventArgs e)
-    {
-        if (GetStartupCardModel(sender) is { IsEnabled: true } card)
+        if (GetStartupCardModel(sender) is { } card)
             ViewModel.ToggleStartupEnabledCommand.Execute(card);
     }
 

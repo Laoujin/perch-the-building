@@ -14,6 +14,9 @@ public partial class StartupCardModel : ObservableObject
     [ObservableProperty]
     private bool _isEnabled;
 
+    [ObservableProperty]
+    private bool _isTracked;
+
     public StartupCardModel(StartupEntry entry)
     {
         Entry = entry;
