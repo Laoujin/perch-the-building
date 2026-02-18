@@ -1,6 +1,4 @@
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Windows;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -52,16 +50,10 @@ public partial class StartupCardModel : ObservableObject
                 break;
             case StartupSource.RegistryCurrentUser:
             case StartupSource.RegistryLocalMachine:
-                try
-                {
-                    var key = Entry.Source == StartupSource.RegistryCurrentUser
-                        ? @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
-                        : @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
-                    Process.Start(new ProcessStartInfo("regedit", $"/m \"{key}\"") { UseShellExecute = true, Verb = "runas" });
-                }
-                catch (Win32Exception ex) when (ex.NativeErrorCode == 1223) // ERROR_CANCELLED (user declined UAC)
-                {
-                }
+                var key = Entry.Source == StartupSource.RegistryCurrentUser
+                    ? @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
+                    : @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
+                RegeditLauncher.OpenAt(key);
                 break;
         }
     }

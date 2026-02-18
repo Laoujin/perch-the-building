@@ -379,8 +379,7 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
         if (card.Registry.IsDefaultOrEmpty)
             return;
 
-        var key = card.Registry[0].Key;
-        Process.Start("regedit", $"/m \"{key}\"");
+        RegeditLauncher.OpenAt(card.Registry[0].Key);
     }
 
     [RelayCommand]
