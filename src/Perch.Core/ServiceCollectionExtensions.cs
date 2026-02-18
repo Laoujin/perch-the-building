@@ -99,7 +99,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ICertificateScanner, CertificateScanner>();
         services.AddSingleton<IFontScanner, FontScanner>();
         services.AddSingleton<IFontOnboardingService, FontOnboardingService>();
-        services.AddSingleton<FontManifestParser>();
         services.AddSingleton<IVsCodeService, VsCodeService>();
         services.AddSingleton<ISystemScanner, SystemScanner>();
         return services;
