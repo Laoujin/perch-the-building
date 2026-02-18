@@ -1036,6 +1036,14 @@
                                                                         </TextBlock>
                                                                     </StackPanel>
                                                                 </Border>
+                                                                <ui:Button
+                                                                    Icon="{ui:SymbolIcon Delete24}"
+                                                                    Content="Delete"
+                                                                    Padding="6,4"
+                                                                    FontSize="11"
+                                                                    Margin="0,6,0,0"
+                                                                    HorizontalAlignment="Left"
+                                                                    Click="OnCertificateDeleteClick" />
                                                             </StackPanel>
                                                         </Grid>
                                                     </Border>

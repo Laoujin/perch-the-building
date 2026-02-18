@@ -107,6 +107,21 @@ public partial class SystemTweaksPage : Page
             cert.IsExpanded = !cert.IsExpanded;
     }
 
+    private void OnCertificateDeleteClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: CertificateCardModel card })
+            return;
+
+        var result = System.Windows.MessageBox.Show(
+            $"Delete certificate \"{card.SubjectDisplayName}\" from {card.Certificate.Store} store?\n\nThis cannot be undone.",
+            "Delete Certificate",
+            System.Windows.MessageBoxButton.YesNo,
+            System.Windows.MessageBoxImage.Warning);
+
+        if (result == System.Windows.MessageBoxResult.Yes)
+            ViewModel.RemoveCertificateCommand.Execute(card);
+    }
+
     private void OnCertificateExpiryFilterClick(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: string filter })
