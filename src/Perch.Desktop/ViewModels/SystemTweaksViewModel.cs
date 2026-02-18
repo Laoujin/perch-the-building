@@ -111,11 +111,30 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
 
             await Task.WhenAll(tweaksTask, fontsTask, startupTask);
 
+            var tweakResult = tweaksTask.Result;
             Tweaks.Clear();
-            foreach (var tweak in tweaksTask.Result)
+            foreach (var tweak in tweakResult.Tweaks)
             {
                 tweak.IsSuggested = tweak.MatchesProfile(_userProfiles);
                 Tweaks.Add(tweak);
+            }
+
+            if (!tweakResult.Errors.IsEmpty)
+            {
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine($"Failed to detect {tweakResult.Errors.Length} tweak(s):");
+                sb.AppendLine();
+                foreach (var err in tweakResult.Errors)
+                {
+                    sb.AppendLine($"  Tweak: {err.TweakName} ({err.TweakId})");
+                    if (err.RegistryKey is not null)
+                        sb.AppendLine($"  Key:   {err.RegistryKey}");
+                    if (err.SourceFile is not null)
+                        sb.AppendLine($"  File:  {err.SourceFile}");
+                    sb.AppendLine($"  Error: {err.ErrorMessage}");
+                    sb.AppendLine();
+                }
+                ErrorMessage = sb.ToString().TrimEnd();
             }
 
             var fontResult = fontsTask.Result;

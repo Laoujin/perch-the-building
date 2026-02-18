@@ -9,7 +9,7 @@ public interface IGalleryDetectionService
     Task WarmUpAsync(CancellationToken cancellationToken = default);
     Task<GalleryDetectionResult> DetectAppsAsync(IReadOnlySet<UserProfile> selectedProfiles, CancellationToken cancellationToken = default);
     Task<ImmutableArray<AppCardModel>> DetectAllAppsAsync(CancellationToken cancellationToken = default);
-    Task<ImmutableArray<TweakCardModel>> DetectTweaksAsync(IReadOnlySet<UserProfile> selectedProfiles, CancellationToken cancellationToken = default);
+    Task<TweakDetectionPageResult> DetectTweaksAsync(IReadOnlySet<UserProfile> selectedProfiles, CancellationToken cancellationToken = default);
     Task<ImmutableArray<DotfileGroupCardModel>> DetectDotfilesAsync(CancellationToken cancellationToken = default);
     Task<FontDetectionResult> DetectFontsAsync(CancellationToken cancellationToken = default);
 }
@@ -22,3 +22,14 @@ public sealed record GalleryDetectionResult(
 public sealed record FontDetectionResult(
     ImmutableArray<FontCardModel> InstalledFonts,
     ImmutableArray<FontCardModel> NerdFonts);
+
+public sealed record TweakDetectionPageResult(
+    ImmutableArray<TweakCardModel> Tweaks,
+    ImmutableArray<TweakDetectionError> Errors);
+
+public sealed record TweakDetectionError(
+    string TweakName,
+    string TweakId,
+    string? RegistryKey,
+    string? SourceFile,
+    string ErrorMessage);

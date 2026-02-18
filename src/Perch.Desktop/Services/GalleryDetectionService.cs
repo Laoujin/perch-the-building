@@ -181,34 +181,43 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
 
     public void InvalidatePackageCache() => _cachedInstalledIds = null;
 
-    public async Task<ImmutableArray<TweakCardModel>> DetectTweaksAsync(
+    public async Task<TweakDetectionPageResult> DetectTweaksAsync(
         IReadOnlySet<UserProfile> selectedProfiles,
         CancellationToken cancellationToken = default)
     {
         var allTweaks = await _catalog.GetAllTweaksAsync(cancellationToken);
         var builder = ImmutableArray.CreateBuilder<TweakCardModel>();
+        var errors = ImmutableArray.CreateBuilder<TweakDetectionError>();
 
         foreach (var tweak in allTweaks)
         {
-            var detection = _tweakService.Detect(tweak);
-            CardStatus status = detection.Status switch
+            try
             {
-                TweakStatus.Applied => CardStatus.Detected,
-                TweakStatus.Partial => CardStatus.Drift,
-                _ => CardStatus.NotInstalled,
-            };
+                var detection = _tweakService.Detect(tweak);
+                CardStatus status = detection.Status switch
+                {
+                    TweakStatus.Applied => CardStatus.Detected,
+                    TweakStatus.Partial => CardStatus.Drift,
+                    _ => CardStatus.NotInstalled,
+                };
 
-            var model = new TweakCardModel(tweak, status);
-            model.AppliedCount = detection.Entries.Count(e => e.IsApplied);
-            model.DetectedEntries = detection.Entries;
+                var model = new TweakCardModel(tweak, status);
+                model.AppliedCount = detection.Entries.Count(e => e.IsApplied);
+                model.DetectedEntries = detection.Entries;
 
-            if (model.MatchesProfile(selectedProfiles))
+                if (model.MatchesProfile(selectedProfiles))
+                {
+                    builder.Add(model);
+                }
+            }
+            catch (Exception ex)
             {
-                builder.Add(model);
+                string? firstKey = tweak.Registry.IsDefaultOrEmpty ? null : tweak.Registry[0].Key;
+                errors.Add(new TweakDetectionError(tweak.Name, tweak.Id, firstKey, tweak.Source, ex.Message));
             }
         }
 
-        return builder.ToImmutable();
+        return new TweakDetectionPageResult(builder.ToImmutable(), errors.ToImmutable());
     }
 
     public async Task<ImmutableArray<DotfileGroupCardModel>> DetectDotfilesAsync(

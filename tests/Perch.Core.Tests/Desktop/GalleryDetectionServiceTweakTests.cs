@@ -66,8 +66,8 @@ public sealed class GalleryDetectionServiceTweakTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(result, Has.Length.EqualTo(1));
-            Assert.That(result[0].Id, Is.EqualTo("dark-mode"));
+            Assert.That(result.Tweaks, Has.Length.EqualTo(1));
+            Assert.That(result.Tweaks[0].Id, Is.EqualTo("dark-mode"));
         });
     }
 
@@ -83,7 +83,7 @@ public sealed class GalleryDetectionServiceTweakTests
         var result = await _service.DetectTweaksAsync(
             new HashSet<UserProfile> { UserProfile.Gamer });
 
-        Assert.That(result, Has.Length.EqualTo(1));
+        Assert.That(result.Tweaks, Has.Length.EqualTo(1));
     }
 
     [Test]
@@ -95,7 +95,7 @@ public sealed class GalleryDetectionServiceTweakTests
         var result = await _service.DetectTweaksAsync(
             new HashSet<UserProfile> { UserProfile.Developer });
 
-        Assert.That(result, Is.Empty);
+        Assert.That(result.Tweaks, Is.Empty);
     }
 
     [Test]
@@ -110,7 +110,7 @@ public sealed class GalleryDetectionServiceTweakTests
         var result = await _service.DetectTweaksAsync(
             new HashSet<UserProfile> { UserProfile.PowerUser });
 
-        Assert.That(result, Has.Length.EqualTo(1));
+        Assert.That(result.Tweaks, Has.Length.EqualTo(1));
     }
 
     [Test]
@@ -127,7 +127,7 @@ public sealed class GalleryDetectionServiceTweakTests
         var result = await _service.DetectTweaksAsync(
             new HashSet<UserProfile> { UserProfile.Developer, UserProfile.Gamer });
 
-        Assert.That(result, Has.Length.EqualTo(2));
+        Assert.That(result.Tweaks, Has.Length.EqualTo(2));
     }
 
     [Test]
@@ -143,7 +143,7 @@ public sealed class GalleryDetectionServiceTweakTests
         var result = await _service.DetectTweaksAsync(
             new HashSet<UserProfile> { UserProfile.Developer });
 
-        Assert.That(result[0].Status, Is.EqualTo(CardStatus.NotInstalled));
+        Assert.That(result.Tweaks[0].Status, Is.EqualTo(CardStatus.NotInstalled));
     }
 
     [Test]
@@ -162,8 +162,8 @@ public sealed class GalleryDetectionServiceTweakTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(result[0].Status, Is.EqualTo(CardStatus.Detected));
-            Assert.That(result[0].AppliedCount, Is.EqualTo(1));
+            Assert.That(result.Tweaks[0].Status, Is.EqualTo(CardStatus.Detected));
+            Assert.That(result.Tweaks[0].AppliedCount, Is.EqualTo(1));
         });
     }
 
@@ -185,8 +185,8 @@ public sealed class GalleryDetectionServiceTweakTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(result[0].Status, Is.EqualTo(CardStatus.Drift));
-            Assert.That(result[0].AppliedCount, Is.EqualTo(1));
+            Assert.That(result.Tweaks[0].Status, Is.EqualTo(CardStatus.Drift));
+            Assert.That(result.Tweaks[0].AppliedCount, Is.EqualTo(1));
         });
     }
 

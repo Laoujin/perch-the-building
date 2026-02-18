@@ -511,7 +511,7 @@ public sealed partial class WizardShellViewModel : ViewModelBase
             foreach (var app in appResult.YourApps) { app.IsSelected = true; YourApps.Add(app); }
             foreach (var app in appResult.Suggested) SuggestedApps.Add(app);
             foreach (var app in appResult.OtherApps) OtherApps.Add(app);
-            foreach (var tweak in tweakResult) Tweaks.Add(tweak);
+            foreach (var tweak in tweakResult.Tweaks) Tweaks.Add(tweak);
             foreach (var df in dotfileResult) { df.IsSelected = df.Status == CardStatus.Linked; Dotfiles.Add(df); }
             foreach (var f in fontResult.InstalledFonts) InstalledFonts.Add(f);
             foreach (var f in fontResult.NerdFonts) NerdFonts.Add(f);

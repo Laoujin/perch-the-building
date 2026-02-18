@@ -51,7 +51,7 @@ public sealed class WizardShellViewModelTests
                 ImmutableArray<AppCardModel>.Empty));
 
         _detectionService.DetectTweaksAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
-            .Returns(ImmutableArray<TweakCardModel>.Empty);
+            .Returns(new TweakDetectionPageResult(ImmutableArray<TweakCardModel>.Empty, ImmutableArray<TweakDetectionError>.Empty));
 
         _detectionService.DetectDotfilesAsync(Arg.Any<CancellationToken>())
             .Returns(ImmutableArray<DotfileGroupCardModel>.Empty);
@@ -380,7 +380,7 @@ public sealed class WizardShellViewModelTests
     {
         var tweak = MakeTweak("disable-telemetry", "Privacy");
         _detectionService.DetectTweaksAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
-            .Returns(ImmutableArray.Create(tweak));
+            .Returns(new TweakDetectionPageResult(ImmutableArray.Create(tweak), ImmutableArray<TweakDetectionError>.Empty));
 
         _vm.ConfigRepoPath = Path.GetTempPath();
         _vm.CurrentStepIndex = 1;
@@ -542,7 +542,7 @@ public sealed class WizardShellViewModelTests
         _detectionService.DetectDotfilesAsync(Arg.Any<CancellationToken>())
             .Returns(ImmutableArray.Create(dotfile));
         _detectionService.DetectTweaksAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
-            .Returns(ImmutableArray.Create(tweak));
+            .Returns(new TweakDetectionPageResult(ImmutableArray.Create(tweak), ImmutableArray<TweakDetectionError>.Empty));
 
         _vm.ConfigRepoPath = Path.GetTempPath();
         _vm.CurrentStepIndex = 1;
