@@ -145,15 +145,38 @@
                                         Foreground="White"
                                         VerticalAlignment="Center" />
 
-                                    <TextBlock
+                                    <StackPanel
                                         Grid.Column="2"
-                                        FontSize="11"
-                                        Foreground="#888888"
+                                        Orientation="Horizontal"
                                         VerticalAlignment="Center"
                                         Margin="0,0,12,0">
-                                        <Run Text="{Binding ItemCount, Mode=OneWay}" />
-                                        <Run Text=" apps" />
-                                    </TextBlock>
+                                        <Border
+                                            Background="#1A3B82F6"
+                                            CornerRadius="8"
+                                            Padding="6,2"
+                                            Margin="0,0,6,0"
+                                            Visibility="{Binding DetectedCount, Converter={StaticResource CountToVisibilityConverter}}">
+                                            <TextBlock FontSize="10">
+                                                <Run Text="{Binding DetectedCount, Mode=OneWay}" Foreground="#3B82F6" FontWeight="SemiBold" />
+                                                <Run Text=" detected" Foreground="#3B82F6" />
+                                            </TextBlock>
+                                        </Border>
+                                        <Border
+                                            Background="#1A93C5FD"
+                                            CornerRadius="8"
+                                            Padding="6,2"
+                                            Margin="0,0,6,0"
+                                            Visibility="{Binding SuggestedCount, Converter={StaticResource CountToVisibilityConverter}}">
+                                            <TextBlock FontSize="10">
+                                                <Run Text="{Binding SuggestedCount, Mode=OneWay}" Foreground="#93C5FD" FontWeight="SemiBold" />
+                                                <Run Text=" suggested" Foreground="#93C5FD" />
+                                            </TextBlock>
+                                        </Border>
+                                        <TextBlock FontSize="11" Foreground="#888888">
+                                            <Run Text="{Binding ItemCount, Mode=OneWay}" />
+                                            <Run Text=" apps" />
+                                        </TextBlock>
+                                    </StackPanel>
 
                                     <ui:SymbolIcon
                                         Grid.Column="3"

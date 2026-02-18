@@ -124,7 +124,9 @@ public sealed partial class AppsViewModel : ViewModelBase
                 group.Key,
                 group.Key,
                 items.Count,
-                items.Count(a => a.IsManaged)));
+                items.Count(a => a.IsManaged),
+                items.Count(a => a.Status is CardStatus.Detected or CardStatus.Linked or CardStatus.Drift or CardStatus.Broken),
+                items.Count(a => a.IsSuggested)));
         }
 
         UpdateSummary();

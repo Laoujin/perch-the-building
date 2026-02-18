@@ -17,19 +17,29 @@ public partial class AppCategoryCardModel : ObservableObject
     private int _selectedCount;
 
     [ObservableProperty]
+    private int _detectedCount;
+
+    [ObservableProperty]
+    private int _suggestedCount;
+
+    [ObservableProperty]
     private bool _isExpanded;
 
     public AppCategoryCardModel(
         string broadCategory,
         string displayName,
         int itemCount,
-        int selectedCount)
+        int selectedCount,
+        int detectedCount = 0,
+        int suggestedCount = 0)
     {
         BroadCategory = broadCategory;
         DisplayName = displayName;
         IconSymbol = GetIcon(broadCategory);
         ItemCount = itemCount;
         SelectedCount = selectedCount;
+        DetectedCount = detectedCount;
+        SuggestedCount = suggestedCount;
     }
 
     private static SymbolRegular GetIcon(string category) => category switch
