@@ -98,6 +98,13 @@
             </ui:NavigationView.FooterMenuItems>
 
         </ui:NavigationView>
+
+        <ui:SnackbarPresenter
+            x:Name="SnackbarPresenter"
+            Grid.Row="1"
+            VerticalAlignment="Bottom"
+            HorizontalAlignment="Center"
+            Margin="0,0,0,16" />
     </Grid>
 
 </ui:FluentWindow>

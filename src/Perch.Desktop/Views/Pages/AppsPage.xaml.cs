@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -26,48 +25,26 @@ public partial class AppsPage : Page
             ViewModel.RefreshCommand.Execute(null);
     }
 
-    private void OnAppCategoryCardClick(object sender, MouseButtonEventArgs e)
+    private void OnToggleChanged(object sender, RoutedEventArgs e)
+    {
+        if (GetAppModel(sender) is { } app && ViewModel.ToggleAppCommand.CanExecute(app))
+            ViewModel.ToggleAppCommand.Execute(app);
+    }
+
+    private void OnBrowseCategoryClick(object sender, MouseButtonEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: AppCategoryCardModel card })
         {
-            ViewModel.SelectCategoryCommand.Execute(card.BroadCategory);
+            ViewModel.ToggleCategoryExpandCommand.Execute(card);
         }
     }
 
-    private void OnLinkRequested(object sender, RoutedEventArgs e)
+    private void OnCategoryAppsPanelLoaded(object sender, RoutedEventArgs e)
     {
-        if (GetAppModel(sender) is { } app && ViewModel.LinkAppCommand.CanExecute(app))
-            ViewModel.LinkAppCommand.Execute(app);
-    }
-
-    private void OnUnlinkRequested(object sender, RoutedEventArgs e)
-    {
-        if (GetAppModel(sender) is { } app && ViewModel.UnlinkAppCommand.CanExecute(app))
-            ViewModel.UnlinkAppCommand.Execute(app);
-    }
-
-    private void OnFixRequested(object sender, RoutedEventArgs e)
-    {
-        if (GetAppModel(sender) is { } app && ViewModel.FixAppCommand.CanExecute(app))
-            ViewModel.FixAppCommand.Execute(app);
-    }
-
-    private void OnConfigureRequested(object sender, RoutedEventArgs e)
-    {
-        if (GetAppModel(sender) is { } app && ViewModel.ConfigureAppCommand.CanExecute(app))
-            ViewModel.ConfigureAppCommand.Execute(app);
-    }
-
-    private void OnExternalLinkClick(object sender, RoutedEventArgs e)
-    {
-        if (sender is FrameworkElement { Tag: string url } && !string.IsNullOrEmpty(url))
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-    }
-
-    private void OnStartupToggleChanged(object sender, RoutedEventArgs e)
-    {
-        if (ViewModel.ToggleAppStartupCommand.CanExecute(null))
-            ViewModel.ToggleAppStartupCommand.Execute(null);
+        if (sender is ItemsControl { Tag: string broadCategory } itemsControl)
+        {
+            itemsControl.ItemsSource = ViewModel.GetCategoryApps(broadCategory);
+        }
     }
 
     private static AppCardModel? GetAppModel(object sender) =>

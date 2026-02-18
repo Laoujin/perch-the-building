@@ -448,7 +448,7 @@
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                         <ItemsControl ItemsSource="{Binding FilteredAppsByCategory}">
                             <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="{x:Type vmBase:AppCategoryGroup}">
+                                <DataTemplate DataType="{x:Type models:AppCategoryGroup}">
                                     <StackPanel>
                                         <controls:TierSectionHeader
                                             Title="{Binding Category}"

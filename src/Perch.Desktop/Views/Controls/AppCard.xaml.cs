@@ -32,36 +32,20 @@ public partial class AppCard : UserControl
         DependencyProperty.Register(nameof(GitHub), typeof(string), typeof(AppCard),
             new PropertyMetadata(null));
 
-    public static readonly DependencyProperty CanLinkProperty =
-        DependencyProperty.Register(nameof(CanLink), typeof(bool), typeof(AppCard),
+    public static readonly DependencyProperty IsManagedProperty =
+        DependencyProperty.Register(nameof(IsManaged), typeof(bool), typeof(AppCard),
             new PropertyMetadata(false));
 
-    public static readonly DependencyProperty CanUnlinkProperty =
-        DependencyProperty.Register(nameof(CanUnlink), typeof(bool), typeof(AppCard),
-            new PropertyMetadata(false));
-
-    public static readonly DependencyProperty CanFixProperty =
-        DependencyProperty.Register(nameof(CanFix), typeof(bool), typeof(AppCard),
+    public static readonly DependencyProperty CanToggleProperty =
+        DependencyProperty.Register(nameof(CanToggle), typeof(bool), typeof(AppCard),
             new PropertyMetadata(false));
 
     public static readonly DependencyProperty IsSelectedProperty =
         DependencyProperty.Register(nameof(IsSelected), typeof(bool), typeof(AppCard),
             new PropertyMetadata(false));
 
-    public static readonly RoutedEvent LinkRequestedEvent =
-        EventManager.RegisterRoutedEvent(nameof(LinkRequested), RoutingStrategy.Bubble,
-            typeof(RoutedEventHandler), typeof(AppCard));
-
-    public static readonly RoutedEvent UnlinkRequestedEvent =
-        EventManager.RegisterRoutedEvent(nameof(UnlinkRequested), RoutingStrategy.Bubble,
-            typeof(RoutedEventHandler), typeof(AppCard));
-
-    public static readonly RoutedEvent FixRequestedEvent =
-        EventManager.RegisterRoutedEvent(nameof(FixRequested), RoutingStrategy.Bubble,
-            typeof(RoutedEventHandler), typeof(AppCard));
-
-    public static readonly RoutedEvent ConfigureRequestedEvent =
-        EventManager.RegisterRoutedEvent(nameof(ConfigureRequested), RoutingStrategy.Bubble,
+    public static readonly RoutedEvent ToggleChangedEvent =
+        EventManager.RegisterRoutedEvent(nameof(ToggleChanged), RoutingStrategy.Bubble,
             typeof(RoutedEventHandler), typeof(AppCard));
 
     public string DisplayLabel
@@ -100,22 +84,16 @@ public partial class AppCard : UserControl
         set => SetValue(GitHubProperty, value);
     }
 
-    public bool CanLink
+    public bool IsManaged
     {
-        get => (bool)GetValue(CanLinkProperty);
-        set => SetValue(CanLinkProperty, value);
+        get => (bool)GetValue(IsManagedProperty);
+        set => SetValue(IsManagedProperty, value);
     }
 
-    public bool CanUnlink
+    public bool CanToggle
     {
-        get => (bool)GetValue(CanUnlinkProperty);
-        set => SetValue(CanUnlinkProperty, value);
-    }
-
-    public bool CanFix
-    {
-        get => (bool)GetValue(CanFixProperty);
-        set => SetValue(CanFixProperty, value);
+        get => (bool)GetValue(CanToggleProperty);
+        set => SetValue(CanToggleProperty, value);
     }
 
     public bool IsSelected
@@ -124,28 +102,10 @@ public partial class AppCard : UserControl
         set => SetValue(IsSelectedProperty, value);
     }
 
-    public event RoutedEventHandler LinkRequested
+    public event RoutedEventHandler ToggleChanged
     {
-        add => AddHandler(LinkRequestedEvent, value);
-        remove => RemoveHandler(LinkRequestedEvent, value);
-    }
-
-    public event RoutedEventHandler UnlinkRequested
-    {
-        add => AddHandler(UnlinkRequestedEvent, value);
-        remove => RemoveHandler(UnlinkRequestedEvent, value);
-    }
-
-    public event RoutedEventHandler FixRequested
-    {
-        add => AddHandler(FixRequestedEvent, value);
-        remove => RemoveHandler(FixRequestedEvent, value);
-    }
-
-    public event RoutedEventHandler ConfigureRequested
-    {
-        add => AddHandler(ConfigureRequestedEvent, value);
-        remove => RemoveHandler(ConfigureRequestedEvent, value);
+        add => AddHandler(ToggleChangedEvent, value);
+        remove => RemoveHandler(ToggleChangedEvent, value);
     }
 
     public AppCard()
@@ -153,17 +113,8 @@ public partial class AppCard : UserControl
         InitializeComponent();
     }
 
-    private void OnLinkClick(object sender, RoutedEventArgs e) =>
-        RaiseEvent(new RoutedEventArgs(LinkRequestedEvent, this));
-
-    private void OnUnlinkClick(object sender, RoutedEventArgs e) =>
-        RaiseEvent(new RoutedEventArgs(UnlinkRequestedEvent, this));
-
-    private void OnFixClick(object sender, RoutedEventArgs e) =>
-        RaiseEvent(new RoutedEventArgs(FixRequestedEvent, this));
-
-    private void OnConfigureClick(object sender, RoutedEventArgs e) =>
-        RaiseEvent(new RoutedEventArgs(ConfigureRequestedEvent, this));
+    private void OnToggleChanged(object sender, RoutedEventArgs e) =>
+        RaiseEvent(new RoutedEventArgs(ToggleChangedEvent, this));
 
     private void OnWebsiteClick(object sender, RoutedEventArgs e)
     {

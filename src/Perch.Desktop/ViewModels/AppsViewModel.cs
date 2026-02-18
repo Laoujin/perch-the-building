@@ -4,10 +4,13 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-using Perch.Core.Startup;
+using Perch.Core.Config;
+using Perch.Core.Deploy;
 using Perch.Core.Symlinks;
 using Perch.Desktop.Models;
 using Perch.Desktop.Services;
+
+using Wpf.Ui;
 
 namespace Perch.Desktop.ViewModels;
 
@@ -16,7 +19,12 @@ public sealed partial class AppsViewModel : ViewModelBase
     private readonly IGalleryDetectionService _detectionService;
     private readonly IAppLinkService _appLinkService;
     private readonly IAppDetailService _detailService;
-    private readonly IStartupService _startupService;
+    private readonly ISettingsProvider _settingsProvider;
+    private readonly ISnackbarService _snackbarService;
+
+    private ImmutableArray<AppCardModel> _allYourApps = [];
+    private ImmutableArray<AppCardModel> _allSuggested = [];
+    private ImmutableArray<AppCardModel> _allOther = [];
 
     [ObservableProperty]
     private bool _isLoading;
@@ -28,122 +36,33 @@ public sealed partial class AppsViewModel : ViewModelBase
     private string _searchText = string.Empty;
 
     [ObservableProperty]
-    private string? _selectedAppCategory;
+    private int _linkedCount;
 
     [ObservableProperty]
-    private AppCardModel? _selectedApp;
+    private int _driftedCount;
 
     [ObservableProperty]
-    private AppDetail? _appDetail;
+    private int _detectedCount;
 
-    [ObservableProperty]
-    private bool _isLoadingAppDetail;
-
-    [ObservableProperty]
-    private bool _isInStartup;
-
-    public ObservableCollection<AppCategoryCardModel> AppCategories { get; } = [];
-    public ObservableCollection<AppCategoryGroup> FilteredCategoryApps { get; } = [];
-
-    public bool ShowAppCategories => SelectedAppCategory is null && SelectedApp is null;
-    public bool ShowAppDetail => SelectedAppCategory is not null && SelectedApp is null;
-    public bool ShowAppConfigDetail => SelectedApp is not null;
-
-    public bool HasModule => AppDetail?.OwningModule is not null;
-    public bool HasNoModule => AppDetail is not null && AppDetail.OwningModule is null;
-    private ImmutableArray<AppCardModel> _allApps = [];
+    public ObservableCollection<AppCardModel> YourApps { get; } = [];
+    public ObservableCollection<AppCardModel> SuggestedApps { get; } = [];
+    public ObservableCollection<AppCategoryCardModel> BrowseCategories { get; } = [];
 
     public AppsViewModel(
         IGalleryDetectionService detectionService,
         IAppLinkService appLinkService,
         IAppDetailService detailService,
-        IStartupService startupService)
+        ISettingsProvider settingsProvider,
+        ISnackbarService snackbarService)
     {
         _detectionService = detectionService;
         _appLinkService = appLinkService;
         _detailService = detailService;
-        _startupService = startupService;
+        _settingsProvider = settingsProvider;
+        _snackbarService = snackbarService;
     }
 
-    partial void OnSearchTextChanged(string value) => ApplyFilter();
-
-    partial void OnSelectedAppCategoryChanged(string? value)
-    {
-        OnPropertyChanged(nameof(ShowAppCategories));
-        OnPropertyChanged(nameof(ShowAppDetail));
-        OnPropertyChanged(nameof(ShowAppConfigDetail));
-    }
-
-    partial void OnSelectedAppChanged(AppCardModel? value)
-    {
-        OnPropertyChanged(nameof(ShowAppCategories));
-        OnPropertyChanged(nameof(ShowAppDetail));
-        OnPropertyChanged(nameof(ShowAppConfigDetail));
-    }
-
-    partial void OnAppDetailChanged(AppDetail? value)
-    {
-        OnPropertyChanged(nameof(HasModule));
-        OnPropertyChanged(nameof(HasNoModule));
-    }
-
-    [RelayCommand]
-    private async Task ConfigureAppAsync(AppCardModel card, CancellationToken cancellationToken)
-    {
-        SelectedApp = card;
-        AppDetail = null;
-        IsLoadingAppDetail = true;
-        IsInStartup = false;
-
-        try
-        {
-            var detailTask = _detailService.LoadDetailAsync(card, cancellationToken);
-            var startupTask = _startupService.GetAllAsync(cancellationToken);
-            await Task.WhenAll(detailTask, startupTask);
-
-            AppDetail = detailTask.Result;
-            IsInStartup = startupTask.Result.Any(s =>
-                s.Name.Equals(card.Name, StringComparison.OrdinalIgnoreCase));
-        }
-        catch (OperationCanceledException)
-        {
-            return;
-        }
-        finally
-        {
-            IsLoadingAppDetail = false;
-        }
-    }
-
-    [RelayCommand]
-    private async Task ToggleAppStartupAsync()
-    {
-        if (SelectedApp is null)
-            return;
-
-        var startupEntries = await _startupService.GetAllAsync();
-        var existing = startupEntries.FirstOrDefault(s =>
-            s.Name.Equals(SelectedApp.Name, StringComparison.OrdinalIgnoreCase));
-
-        if (existing is not null)
-        {
-            await _startupService.RemoveAsync(existing);
-            IsInStartup = false;
-        }
-        else
-        {
-            var command = SelectedApp.Install?.Winget ?? SelectedApp.Install?.Choco ?? SelectedApp.Name;
-            await _startupService.AddAsync(SelectedApp.Name, command, StartupSource.RegistryCurrentUser);
-            IsInStartup = true;
-        }
-    }
-
-    [RelayCommand]
-    private void BackToCategoryDetail()
-    {
-        SelectedApp = null;
-        AppDetail = null;
-    }
+    partial void OnSearchTextChanged(string value) => RebuildTiers();
 
     [RelayCommand]
     private async Task RefreshAsync(CancellationToken cancellationToken)
@@ -153,8 +72,14 @@ public sealed partial class AppsViewModel : ViewModelBase
 
         try
         {
-            _allApps = await _detectionService.DetectAllAppsAsync(cancellationToken);
-            ApplyFilter();
+            var profiles = await LoadProfilesAsync(cancellationToken);
+            var result = await _detectionService.DetectAppsAsync(profiles, cancellationToken);
+
+            _allYourApps = result.YourApps;
+            _allSuggested = result.Suggested;
+            _allOther = result.OtherApps;
+
+            RebuildTiers();
         }
         catch (OperationCanceledException)
         {
@@ -170,123 +95,143 @@ public sealed partial class AppsViewModel : ViewModelBase
         }
     }
 
-    private void ApplyFilter()
+    private void RebuildTiers()
     {
-        if (_allApps.IsDefaultOrEmpty)
-        {
-            AppCategories.Clear();
-            FilteredCategoryApps.Clear();
-            return;
-        }
+        var query = SearchText;
 
-        if (SelectedAppCategory is not null)
-        {
-            RebuildCategoryDetail(SelectedAppCategory);
-        }
+        YourApps.Clear();
+        SuggestedApps.Clear();
+        BrowseCategories.Clear();
 
-        RebuildCategories();
-    }
+        foreach (var app in SortTier1(_allYourApps.Where(a => a.MatchesSearch(query))))
+            YourApps.Add(app);
 
-    private void RebuildCategories()
-    {
-        AppCategories.Clear();
+        foreach (var app in _allSuggested.Where(a => a.MatchesSearch(query)).OrderBy(a => a.DisplayLabel, StringComparer.OrdinalIgnoreCase))
+            SuggestedApps.Add(app);
 
-        var filtered = _allApps.Where(a => a.MatchesSearch(SearchText));
-
-        var groups = filtered
+        var otherFiltered = _allOther.Where(a => a.MatchesSearch(query));
+        var groups = otherFiltered
             .GroupBy(a => a.BroadCategory, StringComparer.OrdinalIgnoreCase)
             .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
 
         foreach (var group in groups)
         {
             var items = group.ToList();
-            AppCategories.Add(new AppCategoryCardModel(
+            BrowseCategories.Add(new AppCategoryCardModel(
                 group.Key,
                 group.Key,
                 items.Count,
-                items.Count(a => a.IsSelected)));
+                items.Count(a => a.IsManaged)));
         }
+
+        UpdateSummary();
     }
 
-    [RelayCommand]
-    private void SelectCategory(string broadCategory)
+    private void UpdateSummary()
     {
-        RebuildCategoryDetail(broadCategory);
-        SelectedAppCategory = broadCategory;
+        var all = _allYourApps.AsEnumerable()
+            .Concat(_allSuggested)
+            .Concat(_allOther);
+
+        LinkedCount = all.Count(a => a.Status == CardStatus.Linked);
+        DriftedCount = all.Count(a => a.Status is CardStatus.Drift or CardStatus.Broken);
+        DetectedCount = all.Count(a => a.Status == CardStatus.Detected);
     }
 
-    [RelayCommand]
-    private void BackToCategories()
+    private static IEnumerable<AppCardModel> SortTier1(IEnumerable<AppCardModel> apps)
     {
-        SelectedAppCategory = null;
-        RebuildCategories();
-    }
-
-    private void RebuildCategoryDetail(string broadCategory)
-    {
-        FilteredCategoryApps.Clear();
-
-        var filtered = _allApps
-            .Where(a => string.Equals(a.BroadCategory, broadCategory, StringComparison.OrdinalIgnoreCase))
-            .Where(a => a.MatchesSearch(SearchText));
-
-        var subGroups = filtered
-            .GroupBy(a => a.SubCategory, StringComparer.OrdinalIgnoreCase)
-            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
-
-        foreach (var group in subGroups)
-        {
-            FilteredCategoryApps.Add(new AppCategoryGroup(
-                group.Key,
-                new ObservableCollection<AppCardModel>(
-                    group.OrderBy(a => StatusSortOrder(a.Status))
-                         .ThenBy(a => a.DisplayLabel, StringComparer.OrdinalIgnoreCase))));
-        }
+        return apps
+            .OrderBy(a => StatusSortOrder(a.Status))
+            .ThenBy(a => a.DisplayLabel, StringComparer.OrdinalIgnoreCase);
     }
 
     private static int StatusSortOrder(CardStatus status) => status switch
     {
-        CardStatus.Linked => 0,
-        CardStatus.Drift => 1,
-        CardStatus.Broken => 2,
-        CardStatus.Detected => 3,
-        CardStatus.NotInstalled => 4,
-        _ => 5,
+        CardStatus.Drift => 0,
+        CardStatus.Broken => 0,
+        CardStatus.Detected => 1,
+        CardStatus.Linked => 2,
+        _ => 3,
     };
 
     [RelayCommand]
-    private async Task LinkAppAsync(AppCardModel app)
+    private async Task ToggleAppAsync(AppCardModel app)
     {
-        var results = await _appLinkService.LinkAppAsync(app.CatalogEntry);
-        if (results.All(r => r.Level != Core.Deploy.ResultLevel.Error))
-            app.Status = CardStatus.Linked;
+        if (!app.CanToggle)
+            return;
+
+        IReadOnlyList<DeployResult> results;
+        string action;
+
+        if (app.Status is CardStatus.Broken or CardStatus.Drift)
+        {
+            results = await _appLinkService.FixAppLinksAsync(app.CatalogEntry);
+            action = "Fixed";
+        }
+        else if (app.IsManaged)
+        {
+            results = await _appLinkService.UnlinkAppAsync(app.CatalogEntry);
+            action = "Unlinked";
+        }
+        else
+        {
+            results = await _appLinkService.LinkAppAsync(app.CatalogEntry);
+            action = "Linked";
+        }
+
+        var hasErrors = results.Any(r => r.Level == ResultLevel.Error);
+
+        if (!hasErrors)
+        {
+            app.Status = action == "Unlinked" ? CardStatus.Detected : CardStatus.Linked;
+            _snackbarService.Show("Success", $"{action} {app.DisplayLabel}",
+                Wpf.Ui.Controls.ControlAppearance.Success,
+                null, TimeSpan.FromSeconds(3));
+        }
+        else
+        {
+            var errorMsg = results.First(r => r.Level == ResultLevel.Error).Message;
+            _snackbarService.Show("Error", $"Failed to {action.ToLowerInvariant()} {app.DisplayLabel}: {errorMsg}",
+                Wpf.Ui.Controls.ControlAppearance.Danger,
+                null, TimeSpan.FromSeconds(5));
+        }
+
+        UpdateSummary();
     }
 
     [RelayCommand]
-    private async Task UnlinkAppAsync(AppCardModel app)
+    private void ToggleCategoryExpand(AppCategoryCardModel category)
     {
-        var results = await _appLinkService.UnlinkAppAsync(app.CatalogEntry);
-        if (results.All(r => r.Level != Core.Deploy.ResultLevel.Error))
-            app.Status = CardStatus.Detected;
+        category.IsExpanded = !category.IsExpanded;
     }
 
-    [RelayCommand]
-    private async Task FixAppAsync(AppCardModel app)
+    public IEnumerable<AppCardModel> GetCategoryApps(string broadCategory)
     {
-        var results = await _appLinkService.FixAppLinksAsync(app.CatalogEntry);
-        if (results.All(r => r.Level != Core.Deploy.ResultLevel.Error))
-            app.Status = CardStatus.Linked;
+        return _allOther
+            .Where(a => string.Equals(a.BroadCategory, broadCategory, StringComparison.OrdinalIgnoreCase))
+            .Where(a => a.MatchesSearch(SearchText))
+            .OrderBy(a => StatusSortOrder(a.Status))
+            .ThenBy(a => a.DisplayLabel, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private async Task<HashSet<UserProfile>> LoadProfilesAsync(CancellationToken cancellationToken)
+    {
+        var settings = await _settingsProvider.LoadAsync(cancellationToken);
+        var profiles = new HashSet<UserProfile>();
+        if (settings.Profiles is { Count: > 0 })
+        {
+            foreach (var name in settings.Profiles)
+            {
+                if (Enum.TryParse<UserProfile>(name, ignoreCase: true, out var profile))
+                    profiles.Add(profile);
+            }
+        }
+
+        if (profiles.Count == 0)
+            profiles = [UserProfile.Developer, UserProfile.PowerUser];
+
+        return profiles;
     }
 }
 
-public sealed class AppCategoryGroup
-{
-    public string Category { get; }
-    public ObservableCollection<AppCardModel> Apps { get; }
-
-    public AppCategoryGroup(string category, ObservableCollection<AppCardModel> apps)
-    {
-        Category = category;
-        Apps = apps;
-    }
-}
+public sealed record AppCategoryGroup(string SubCategory, ObservableCollection<AppCardModel> Apps);

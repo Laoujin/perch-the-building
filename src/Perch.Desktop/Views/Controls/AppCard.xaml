@@ -11,67 +11,55 @@
         BorderThickness="1"
         CornerRadius="8"
         Padding="12"
-        Width="320">
+        Width="280">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- Row 0: Status ribbon -->
-            <controls:StatusRibbon
-                Grid.Row="0"
-                Status="{Binding Status, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                Margin="0,0,0,8" />
-
-            <!-- Row 1: Icon + Name + Configure -->
-            <Grid Grid.Row="1">
+            <!-- Row 0: Status ribbon + toggle -->
+            <Grid Grid.Row="0" Margin="0,0,0,8">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <ui:SymbolIcon
+                <controls:StatusRibbon
                     Grid.Column="0"
-                    Symbol="Apps24"
-                    FontSize="24"
-                    Foreground="#888888"
-                    VerticalAlignment="Center"
-                    Margin="0,0,8,0" />
+                    Status="{Binding Status, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                    VerticalAlignment="Center" />
 
-                <TextBlock
+                <ui:ToggleSwitch
                     Grid.Column="1"
-                    Text="{Binding DisplayLabel, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                    FontSize="14"
-                    FontWeight="SemiBold"
-                    Foreground="White"
-                    VerticalAlignment="Center"
-                    TextTrimming="CharacterEllipsis" />
-
-                <ui:Button
-                    Grid.Column="2"
-                    Icon="{ui:SymbolIcon Settings24}"
-                    Appearance="Secondary"
-                    Padding="4"
-                    Margin="4,0,0,0"
-                    VerticalAlignment="Center"
-                    Click="OnConfigureClick" />
+                    IsChecked="{Binding IsManaged, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=OneWay}"
+                    IsEnabled="{Binding CanToggle, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                    Checked="OnToggleChanged"
+                    Unchecked="OnToggleChanged"
+                    VerticalAlignment="Center" />
             </Grid>
+
+            <!-- Row 1: Name -->
+            <TextBlock
+                Grid.Row="1"
+                Text="{Binding DisplayLabel, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                FontSize="13"
+                FontWeight="SemiBold"
+                Foreground="White"
+                TextTrimming="CharacterEllipsis" />
 
             <!-- Row 2: Description -->
             <TextBlock
                 Grid.Row="2"
                 Text="{Binding Description, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                FontSize="12"
-                Foreground="#AAAAAA"
+                FontSize="11"
+                Foreground="#888888"
                 TextWrapping="Wrap"
                 TextTrimming="CharacterEllipsis"
-                MaxHeight="48"
-                Margin="0,6,0,0"
+                MaxHeight="32"
+                Margin="0,4,0,0"
                 Visibility="{Binding Description, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource CountToVisibilityConverter}}" />
 
             <!-- Row 3: Website + GitHub links -->
@@ -105,39 +93,6 @@
                         <TextBlock Text="GitHub" FontSize="11" Foreground="#6B7280" Margin="4,0,0,0" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
-            </StackPanel>
-
-            <!-- Row 4: Action buttons -->
-            <StackPanel
-                Grid.Row="4"
-                Orientation="Horizontal"
-                Margin="0,8,0,0">
-                <ui:Button
-                    x:Name="LinkButton"
-                    Content="Link"
-                    Appearance="Primary"
-                    Click="OnLinkClick"
-                    Padding="12,4"
-                    FontSize="11"
-                    Margin="0,0,6,0"
-                    Visibility="{Binding CanLink, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                <ui:Button
-                    x:Name="UnlinkButton"
-                    Content="Unlink"
-                    Appearance="Secondary"
-                    Click="OnUnlinkClick"
-                    Padding="12,4"
-                    FontSize="11"
-                    Margin="0,0,6,0"
-                    Visibility="{Binding CanUnlink, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                <ui:Button
-                    x:Name="FixButton"
-                    Content="Fix"
-                    Appearance="Caution"
-                    Click="OnFixClick"
-                    Padding="12,4"
-                    FontSize="11"
-                    Visibility="{Binding CanFix, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}" />
             </StackPanel>
         </Grid>
     </Border>

@@ -34,9 +34,8 @@ public partial class AppCardModel : ObservableObject
     public string BroadCategory => Category.Split('/')[0];
     public string SubCategory => Category.Contains('/') ? Category[(Category.IndexOf('/') + 1)..] : Category;
 
-    public bool CanLink => Status == CardStatus.Detected;
-    public bool CanUnlink => Status == CardStatus.Linked;
-    public bool CanFix => Status is CardStatus.Broken or CardStatus.Drift;
+    public bool IsManaged => Status is CardStatus.Linked or CardStatus.Drift or CardStatus.Broken;
+    public bool CanToggle => Status != CardStatus.NotInstalled;
 
     public AppCardModel(CatalogEntry entry, CardTier tier, CardStatus status)
     {
@@ -57,9 +56,8 @@ public partial class AppCardModel : ObservableObject
 
     partial void OnStatusChanged(CardStatus value)
     {
-        OnPropertyChanged(nameof(CanLink));
-        OnPropertyChanged(nameof(CanUnlink));
-        OnPropertyChanged(nameof(CanFix));
+        OnPropertyChanged(nameof(IsManaged));
+        OnPropertyChanged(nameof(CanToggle));
     }
 
     public bool MatchesSearch(string query)

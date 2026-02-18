@@ -16,6 +16,9 @@ public partial class AppCategoryCardModel : ObservableObject
     [ObservableProperty]
     private int _selectedCount;
 
+    [ObservableProperty]
+    private bool _isExpanded;
+
     public AppCategoryCardModel(
         string broadCategory,
         string displayName,

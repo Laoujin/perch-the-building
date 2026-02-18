@@ -12,6 +12,7 @@ public partial class MainWindow : INavigationWindow
 
     public MainWindow(
         INavigationService navigationService,
+        ISnackbarService snackbarService,
         MainWindowViewModel viewModel)
     {
         _navigationService = navigationService;
@@ -20,6 +21,7 @@ public partial class MainWindow : INavigationWindow
         InitializeComponent();
 
         _navigationService.SetNavigationControl(RootNavigation);
+        snackbarService.SetSnackbarPresenter(SnackbarPresenter);
     }
 
     public INavigationView GetNavigation() => RootNavigation;
