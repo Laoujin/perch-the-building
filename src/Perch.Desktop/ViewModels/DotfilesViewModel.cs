@@ -99,9 +99,9 @@ public sealed partial class DotfilesViewModel : ViewModelBase
     [RelayCommand]
     private void ToggleDotfile(AppCardModel app)
     {
-        if (app.IsManaged)
+        if (_pendingChanges.Contains(app.Id, PendingChangeKind.LinkDotfile))
             _pendingChanges.Remove(app.Id, PendingChangeKind.LinkDotfile);
-        else
+        else if (!app.IsManaged)
             _pendingChanges.Add(new LinkDotfileChange(app));
     }
 

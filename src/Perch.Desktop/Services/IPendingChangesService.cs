@@ -10,5 +10,6 @@ public interface IPendingChangesService : INotifyPropertyChanged
     bool HasChanges { get; }
     void Add(PendingChange change);
     void Remove(string id, PendingChangeKind kind);
+    bool Contains(string id, PendingChangeKind kind);
     void Clear();
 }

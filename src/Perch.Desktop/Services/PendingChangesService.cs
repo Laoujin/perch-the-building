@@ -51,6 +51,17 @@ public sealed partial class PendingChangesService : ObservableObject, IPendingCh
         }
     }
 
+    public bool Contains(string id, PendingChangeKind kind)
+    {
+        for (int i = 0; i < _changes.Count; i++)
+        {
+            if (_changes[i].Id == id && _changes[i].Kind == kind)
+                return true;
+        }
+
+        return false;
+    }
+
     public void Clear() => _changes.Clear();
 
     private void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)

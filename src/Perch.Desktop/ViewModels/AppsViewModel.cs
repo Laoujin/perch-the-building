@@ -188,14 +188,20 @@ public sealed partial class AppsViewModel : ViewModelBase
         if (!app.CanToggle)
             return;
 
-        if (app.IsManaged)
+        if (_pendingChanges.Contains(app.Id, PendingChangeKind.LinkApp))
         {
             _pendingChanges.Remove(app.Id, PendingChangeKind.LinkApp);
+        }
+        else if (_pendingChanges.Contains(app.Id, PendingChangeKind.UnlinkApp))
+        {
+            _pendingChanges.Remove(app.Id, PendingChangeKind.UnlinkApp);
+        }
+        else if (app.IsManaged)
+        {
             _pendingChanges.Add(new UnlinkAppChange(app));
         }
         else
         {
-            _pendingChanges.Remove(app.Id, PendingChangeKind.UnlinkApp);
             _pendingChanges.Add(new LinkAppChange(app));
         }
     }

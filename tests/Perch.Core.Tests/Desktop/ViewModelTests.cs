@@ -145,13 +145,27 @@ public sealed class AppsViewModelTests
     }
 
     [Test]
-    public void ToggleApp_Detected_RemovesPreviousUnlink()
+    public void ToggleApp_WithExistingLinkPending_RemovesIt()
     {
         var card = MakeCard("vscode", "Development/IDEs", CardStatus.Detected);
+        _pendingChanges.Contains(card.Id, PendingChangeKind.LinkApp).Returns(true);
+
+        _vm.ToggleAppCommand.Execute(card);
+
+        _pendingChanges.Received(1).Remove(card.Id, PendingChangeKind.LinkApp);
+        _pendingChanges.DidNotReceive().Add(Arg.Any<PendingChange>());
+    }
+
+    [Test]
+    public void ToggleApp_WithExistingUnlinkPending_RemovesIt()
+    {
+        var card = MakeCard("vscode", "Development/IDEs", CardStatus.Linked);
+        _pendingChanges.Contains(card.Id, PendingChangeKind.UnlinkApp).Returns(true);
 
         _vm.ToggleAppCommand.Execute(card);
 
         _pendingChanges.Received(1).Remove(card.Id, PendingChangeKind.UnlinkApp);
+        _pendingChanges.DidNotReceive().Add(Arg.Any<PendingChange>());
     }
 
     [Test]

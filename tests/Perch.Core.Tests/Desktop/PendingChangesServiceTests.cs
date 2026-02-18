@@ -136,6 +136,56 @@ public sealed class PendingChangesServiceTests
     }
 
     [Test]
+    public void Contains_ExistingChange_ReturnsTrue()
+    {
+        _sut.Add(new LinkAppChange(CreateAppCard("app1")));
+
+        Assert.That(_sut.Contains("app1", PendingChangeKind.LinkApp), Is.True);
+    }
+
+    [Test]
+    public void Contains_WrongKind_ReturnsFalse()
+    {
+        _sut.Add(new LinkAppChange(CreateAppCard("app1")));
+
+        Assert.That(_sut.Contains("app1", PendingChangeKind.UnlinkApp), Is.False);
+    }
+
+    [Test]
+    public void Contains_NonExistentId_ReturnsFalse()
+    {
+        _sut.Add(new LinkAppChange(CreateAppCard("app1")));
+
+        Assert.That(_sut.Contains("app2", PendingChangeKind.LinkApp), Is.False);
+    }
+
+    [Test]
+    public void Contains_AfterRemove_ReturnsFalse()
+    {
+        _sut.Add(new LinkAppChange(CreateAppCard("app1")));
+        _sut.Remove("app1", PendingChangeKind.LinkApp);
+
+        Assert.That(_sut.Contains("app1", PendingChangeKind.LinkApp), Is.False);
+    }
+
+    [Test]
+    public void ToggleApp_SecondToggle_RemovesPendingChange()
+    {
+        var app = CreateAppCard("app1");
+        _sut.Add(new UnlinkAppChange(app));
+
+        Assert.That(_sut.Contains("app1", PendingChangeKind.UnlinkApp), Is.True);
+
+        _sut.Remove("app1", PendingChangeKind.UnlinkApp);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_sut.Count, Is.Zero);
+            Assert.That(_sut.Contains("app1", PendingChangeKind.UnlinkApp), Is.False);
+        });
+    }
+
+    [Test]
     public void Add_MultipleTypes_TracksAll()
     {
         var app = CreateAppCard("app1");
