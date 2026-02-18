@@ -197,6 +197,7 @@ public sealed class ManifestParser
             {
                 "strip-xml-elements" => rule.Elements?.Where(e => !string.IsNullOrWhiteSpace(e)).ToImmutableArray() ?? ImmutableArray<string>.Empty,
                 "strip-ini-keys" => rule.Keys?.Where(k => !string.IsNullOrWhiteSpace(k)).ToImmutableArray() ?? ImmutableArray<string>.Empty,
+                "strip-json-keys" => rule.Keys?.Where(k => !string.IsNullOrWhiteSpace(k)).ToImmutableArray() ?? ImmutableArray<string>.Empty,
                 _ => ImmutableArray<string>.Empty,
             };
 

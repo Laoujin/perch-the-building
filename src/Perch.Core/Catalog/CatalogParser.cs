@@ -312,6 +312,7 @@ public sealed class CatalogParser
             {
                 "strip-xml-elements" => rule.Elements,
                 "strip-ini-keys" => rule.Keys,
+                "strip-json-keys" => rule.Keys,
                 _ => null,
             };
 

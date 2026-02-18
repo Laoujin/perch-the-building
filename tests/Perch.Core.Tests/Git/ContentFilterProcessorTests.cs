@@ -206,6 +206,137 @@ public sealed class ContentFilterProcessorTests
     }
 
     [Test]
+    public void Apply_StripJsonKeys_RemovesSingleKey()
+    {
+        string content = "{\n    \"editor.fontSize\": 14,\n    \"window.zoomLevel\": 2,\n    \"editor.tabSize\": 4\n}\n";
+
+        var rules = ImmutableArray.Create(new FilterRule("strip-json-keys", ImmutableArray.Create("window.zoomLevel")));
+
+        string result = _processor.Apply(content, rules);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Does.Contain("\"editor.fontSize\": 14"));
+            Assert.That(result, Does.Contain("\"editor.tabSize\": 4"));
+            Assert.That(result, Does.Not.Contain("window.zoomLevel"));
+        });
+    }
+
+    [Test]
+    public void Apply_StripJsonKeys_RemovesMultipleKeys()
+    {
+        string content = "{\n    \"editor.fontSize\": 14,\n    \"window.zoomLevel\": 2,\n    \"sync.gist\": \"abc123\",\n    \"editor.tabSize\": 4\n}\n";
+
+        var rules = ImmutableArray.Create(new FilterRule("strip-json-keys", ImmutableArray.Create("window.zoomLevel", "sync.gist")));
+
+        string result = _processor.Apply(content, rules);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Does.Contain("\"editor.fontSize\": 14"));
+            Assert.That(result, Does.Contain("\"editor.tabSize\": 4"));
+            Assert.That(result, Does.Not.Contain("window.zoomLevel"));
+            Assert.That(result, Does.Not.Contain("sync.gist"));
+        });
+    }
+
+    [Test]
+    public void Apply_StripJsonKeys_NoMatchingKeys_ReturnsUnchanged()
+    {
+        string content = "{\n    \"editor.fontSize\": 14\n}\n";
+
+        var rules = ImmutableArray.Create(new FilterRule("strip-json-keys", ImmutableArray.Create("window.zoomLevel")));
+
+        string result = _processor.Apply(content, rules);
+
+        Assert.That(result, Is.EqualTo(content));
+    }
+
+    [Test]
+    public void Apply_StripJsonKeys_StringValue()
+    {
+        string content = "{\n    \"julia.executablePath\": \"C:\\\\Julia\\\\bin\\\\julia.exe\",\n    \"editor.fontSize\": 14\n}\n";
+
+        var rules = ImmutableArray.Create(new FilterRule("strip-json-keys", ImmutableArray.Create("julia.executablePath")));
+
+        string result = _processor.Apply(content, rules);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Does.Contain("\"editor.fontSize\": 14"));
+            Assert.That(result, Does.Not.Contain("julia.executablePath"));
+        });
+    }
+
+    [Test]
+    public void Apply_StripJsonKeys_NestedObjectValue()
+    {
+        string content = "{\n    \"editor.fontSize\": 14,\n    \"workbench.colorCustomizations\": {\n        \"statusBar.background\": \"#1e1e1e\"\n    },\n    \"editor.tabSize\": 4\n}\n";
+
+        var rules = ImmutableArray.Create(new FilterRule("strip-json-keys", ImmutableArray.Create("workbench.colorCustomizations")));
+
+        string result = _processor.Apply(content, rules);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Does.Contain("\"editor.fontSize\": 14"));
+            Assert.That(result, Does.Contain("\"editor.tabSize\": 4"));
+            Assert.That(result, Does.Not.Contain("workbench.colorCustomizations"));
+            Assert.That(result, Does.Not.Contain("statusBar.background"));
+        });
+    }
+
+    [Test]
+    public void Apply_StripJsonKeys_ArrayValue()
+    {
+        string content = "{\n    \"editor.fontSize\": 14,\n    \"files.exclude\": [\n        \"**/.git\",\n        \"**/node_modules\"\n    ],\n    \"editor.tabSize\": 4\n}\n";
+
+        var rules = ImmutableArray.Create(new FilterRule("strip-json-keys", ImmutableArray.Create("files.exclude")));
+
+        string result = _processor.Apply(content, rules);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Does.Contain("\"editor.fontSize\": 14"));
+            Assert.That(result, Does.Contain("\"editor.tabSize\": 4"));
+            Assert.That(result, Does.Not.Contain("files.exclude"));
+        });
+    }
+
+    [Test]
+    public void Apply_StripJsonKeys_LastKeyNoTrailingComma()
+    {
+        string content = "{\n    \"editor.fontSize\": 14,\n    \"window.zoomLevel\": 2\n}\n";
+
+        var rules = ImmutableArray.Create(new FilterRule("strip-json-keys", ImmutableArray.Create("window.zoomLevel")));
+
+        string result = _processor.Apply(content, rules);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Does.Contain("\"editor.fontSize\": 14"));
+            Assert.That(result, Does.Not.Contain("window.zoomLevel"));
+        });
+    }
+
+    [Test]
+    public void Apply_StripJsonKeys_BooleanAndNullValues()
+    {
+        string content = "{\n    \"editor.minimap.enabled\": true,\n    \"editor.wordWrap\": \"off\",\n    \"editor.nullSetting\": null\n}\n";
+
+        var rules = ImmutableArray.Create(new FilterRule("strip-json-keys", ImmutableArray.Create("editor.minimap.enabled", "editor.nullSetting")));
+
+        string result = _processor.Apply(content, rules);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result, Does.Contain("\"editor.wordWrap\": \"off\""));
+            Assert.That(result, Does.Not.Contain("editor.minimap.enabled"));
+            Assert.That(result, Does.Not.Contain("editor.nullSetting"));
+        });
+    }
+
+    [Test]
     public void Apply_UnknownRuleType_SkipsRule()
     {
         string content = "some content";
