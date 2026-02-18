@@ -430,11 +430,12 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
         }
 
         FilteredNerdFonts.Clear();
-        foreach (var font in NerdFonts)
-        {
-            if (font.MatchesSearch(query))
-                FilteredNerdFonts.Add(font);
-        }
+        var sortedNerdFonts = NerdFonts
+            .Where(f => f.MatchesSearch(query))
+            .OrderBy(f => f.Status == CardStatus.Detected ? 0 : 1)
+            .ThenBy(f => f.Name, StringComparer.OrdinalIgnoreCase);
+        foreach (var font in sortedNerdFonts)
+            FilteredNerdFonts.Add(font);
     }
 
     private void ApplyStartupFilter()

@@ -91,7 +91,7 @@ public partial class FontCardModel : ObservableObject
         {
             FileName = "explorer.exe",
             Arguments = $"/select,\"{FullPath}\"",
-            UseShellExecute = false,
+            UseShellExecute = true,
         });
     }
 

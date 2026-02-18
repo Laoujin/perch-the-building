@@ -1,4 +1,7 @@
+using System.Diagnostics;
+
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 using Perch.Core.Startup;
 
@@ -10,6 +13,7 @@ public partial class StartupCardModel : ObservableObject
     public string Name => Entry.Name;
     public string Command => Entry.Command;
     public string SourceLabel { get; }
+    public bool IsRegistrySource => Entry.Source is StartupSource.RegistryCurrentUser or StartupSource.RegistryLocalMachine;
 
     [ObservableProperty]
     private bool _isEnabled;
@@ -29,6 +33,28 @@ public partial class StartupCardModel : ObservableObject
             StartupSource.StartupFolderAllUsers => "Startup Folder (All Users)",
             _ => entry.Source.ToString(),
         };
+    }
+
+    [RelayCommand]
+    private void OpenSource()
+    {
+        switch (Entry.Source)
+        {
+            case StartupSource.StartupFolderUser:
+                var userStartup = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
+                Process.Start(new ProcessStartInfo { FileName = "explorer.exe", Arguments = $"\"{userStartup}\"", UseShellExecute = true });
+                break;
+            case StartupSource.StartupFolderAllUsers:
+                var allStartup = Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup);
+                Process.Start(new ProcessStartInfo { FileName = "explorer.exe", Arguments = $"\"{allStartup}\"", UseShellExecute = true });
+                break;
+            case StartupSource.RegistryCurrentUser:
+                Process.Start("regedit", @"/m ""HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run""");
+                break;
+            case StartupSource.RegistryLocalMachine:
+                Process.Start("regedit", @"/m ""HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run""");
+                break;
+        }
     }
 
     public bool MatchesSearch(string query)

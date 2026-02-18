@@ -538,17 +538,15 @@
                                                     <ColumnDefinition Width="Auto" />
                                                 </Grid.ColumnDefinitions>
 
-                                                <Border
+                                                <ui:Button
                                                     Grid.Column="0"
-                                                    Background="#252545"
-                                                    CornerRadius="4"
+                                                    Content="{Binding SourceLabel}"
+                                                    Command="{Binding OpenSourceCommand}"
+                                                    ToolTip="Open source location"
                                                     Padding="6,2"
-                                                    VerticalAlignment="Center">
-                                                    <TextBlock
-                                                        Text="{Binding SourceLabel}"
-                                                        FontSize="10"
-                                                        Foreground="#10B981" />
-                                                </Border>
+                                                    FontSize="10"
+                                                    VerticalAlignment="Center"
+                                                    Cursor="Hand" />
 
                                                 <ui:Button
                                                     Grid.Column="2"
