@@ -1,5 +1,6 @@
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -60,8 +61,12 @@ public partial class App : Application
 
     public static IServiceProvider Services => _host.Services;
 
+    private Window? _splash;
+
     protected override async void OnStartup(StartupEventArgs e)
     {
+        ShowSplash();
+
         EventManager.RegisterClassHandler(typeof(ScrollViewer),
             UIElement.PreviewMouseWheelEvent,
             new MouseWheelEventHandler(OnScrollViewerPreviewMouseWheel));
@@ -78,6 +83,8 @@ public partial class App : Application
         var settings = await Services.GetRequiredService<ISettingsProvider>().LoadAsync();
         var isFirstRun = string.IsNullOrWhiteSpace(settings.ConfigRepoPath);
 
+        CloseSplash();
+
         if (isFirstRun)
         {
             ShowWizard();
@@ -88,6 +95,44 @@ public partial class App : Application
         }
 
         base.OnStartup(e);
+    }
+
+    private void ShowSplash()
+    {
+        var image = new BitmapImage(new Uri("pack://application:,,,/Assets/startpage.png"));
+        var screenWidth = SystemParameters.PrimaryScreenWidth;
+        var screenHeight = SystemParameters.PrimaryScreenHeight;
+        var maxWidth = screenWidth * 0.8;
+        var maxHeight = screenHeight * 0.8;
+
+        var width = image.PixelWidth;
+        var height = image.PixelHeight;
+        var scale = Math.Min(1.0, Math.Min(maxWidth / width, maxHeight / height));
+
+        _splash = new Window
+        {
+            WindowStyle = WindowStyle.None,
+            AllowsTransparency = true,
+            Background = System.Windows.Media.Brushes.Transparent,
+            ResizeMode = ResizeMode.NoResize,
+            WindowStartupLocation = WindowStartupLocation.CenterScreen,
+            SizeToContent = SizeToContent.WidthAndHeight,
+            Topmost = true,
+            ShowInTaskbar = false,
+            Content = new System.Windows.Controls.Image
+            {
+                Source = image,
+                Width = width * scale,
+                Height = height * scale,
+            },
+        };
+        _splash.Show();
+    }
+
+    private void CloseSplash()
+    {
+        _splash?.Close();
+        _splash = null;
     }
 
     public static void ShowWizard()
