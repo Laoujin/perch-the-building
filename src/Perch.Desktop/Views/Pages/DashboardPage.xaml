@@ -17,6 +17,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -59,9 +60,95 @@
                 Click="OnLaunchWizard" />
         </Grid>
 
+        <!-- Pending Changes -->
+        <Border
+            Grid.Row="2"
+            Background="#1A1A2E"
+            BorderBrush="#2A2A3E"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="16,12"
+            Margin="0,0,0,12"
+            Visibility="{Binding HasPendingChanges, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <StackPanel>
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <ui:SymbolIcon Symbol="ClipboardTask24" Foreground="#10B981" Margin="0,0,8,0" />
+                        <TextBlock FontSize="14" FontWeight="SemiBold" Foreground="White">
+                            <Run Text="{Binding PendingChangeCount, Mode=OneWay}" />
+                            <Run Text="pending change(s)" />
+                        </TextBlock>
+                    </StackPanel>
+
+                    <ui:Button
+                        Grid.Column="1"
+                        Content="Discard All"
+                        Appearance="Secondary"
+                        Command="{Binding DiscardAllCommand}"
+                        Margin="0,0,8,0" />
+
+                    <ui:Button
+                        Grid.Column="2"
+                        Content="Apply All"
+                        Appearance="Primary"
+                        Command="{Binding ApplyAllCommand}"
+                        IsEnabled="{Binding IsApplying, Converter={StaticResource InverseBooleanConverter}}" />
+                </Grid>
+
+                <ItemsControl ItemsSource="{Binding PendingChanges}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border
+                                Background="#12121E"
+                                CornerRadius="4"
+                                Padding="12,8"
+                                Margin="0,0,0,4">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock
+                                            Text="{Binding DisplayName}"
+                                            FontSize="12"
+                                            FontWeight="SemiBold"
+                                            Foreground="White" />
+                                        <TextBlock
+                                            Text="{Binding Description}"
+                                            FontSize="10"
+                                            Foreground="#888888" />
+                                    </StackPanel>
+
+                                    <Border
+                                        Grid.Column="1"
+                                        CornerRadius="4"
+                                        Padding="8,2"
+                                        Background="#1A10B981"
+                                        VerticalAlignment="Center">
+                                        <TextBlock
+                                            Text="{Binding Kind}"
+                                            FontSize="10"
+                                            Foreground="#10B981" />
+                                    </Border>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+
         <!-- No config message -->
         <ui:TextBlock
-            Grid.Row="2"
+            Grid.Row="3"
             FontTypography="Body"
             Text="No config repository configured. Go to Settings to set one up."
             Opacity="0.6"
@@ -71,7 +158,7 @@
 
         <!-- Attention items -->
         <ScrollViewer
-            Grid.Row="2"
+            Grid.Row="3"
             VerticalScrollBarVisibility="Auto"
             Visibility="{Binding HasConfigRepo, Converter={StaticResource BooleanToVisibilityConverter}}">
             <ItemsControl ItemsSource="{Binding AttentionItems}">

@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     xmlns:pages="clr-namespace:Perch.Desktop.Views.Pages"
+    xmlns:vm="clr-namespace:Perch.Desktop.ViewModels"
     Title="Perch"
     Icon="/Assets/logo-small-transparant.png"
     Width="1200" Height="850"
@@ -56,6 +57,11 @@
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Home24" />
                     </ui:NavigationViewItem.Icon>
+                    <ui:NavigationViewItem.InfoBadge>
+                        <ui:InfoBadge
+                            Value="{Binding PendingChangeCount}"
+                            Visibility="{Binding HasPendingChanges, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    </ui:NavigationViewItem.InfoBadge>
                 </ui:NavigationViewItem>
 
                 <ui:NavigationViewItem

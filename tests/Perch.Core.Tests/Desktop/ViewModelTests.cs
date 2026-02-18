@@ -7,17 +7,13 @@ using NSubstitute.ExceptionExtensions;
 
 using Perch.Core.Catalog;
 using Perch.Core.Config;
-using Perch.Core.Deploy;
 using Perch.Core.Modules;
 using Perch.Core.Registry;
 using Perch.Core.Startup;
-using Perch.Core.Symlinks;
 using Perch.Core.Tweaks;
 using Perch.Desktop.Models;
 using Perch.Desktop.Services;
 using Perch.Desktop.ViewModels;
-
-using Wpf.Ui;
 
 namespace Perch.Core.Tests.Desktop;
 
@@ -27,20 +23,18 @@ namespace Perch.Core.Tests.Desktop;
 public sealed class AppsViewModelTests
 {
     private IGalleryDetectionService _detectionService = null!;
-    private IAppLinkService _appLinkService = null!;
     private IAppDetailService _detailService = null!;
     private ISettingsProvider _settingsProvider = null!;
-    private ISnackbarService _snackbarService = null!;
+    private IPendingChangesService _pendingChanges = null!;
     private AppsViewModel _vm = null!;
 
     [SetUp]
     public void SetUp()
     {
         _detectionService = Substitute.For<IGalleryDetectionService>();
-        _appLinkService = Substitute.For<IAppLinkService>();
         _detailService = Substitute.For<IAppDetailService>();
         _settingsProvider = Substitute.For<ISettingsProvider>();
-        _snackbarService = Substitute.For<ISnackbarService>();
+        _pendingChanges = Substitute.For<IPendingChangesService>();
 
         _settingsProvider.LoadAsync(Arg.Any<CancellationToken>())
             .Returns(new PerchSettings { Profiles = ["Developer"] });
@@ -51,7 +45,7 @@ public sealed class AppsViewModelTests
                 ImmutableArray<AppCardModel>.Empty,
                 ImmutableArray<AppCardModel>.Empty));
 
-        _vm = new AppsViewModel(_detectionService, _appLinkService, _detailService, _settingsProvider, _snackbarService);
+        _vm = new AppsViewModel(_detectionService, _detailService, _settingsProvider, _pendingChanges);
     }
 
     [Test]
@@ -110,62 +104,53 @@ public sealed class AppsViewModelTests
     }
 
     [Test]
-    public async Task ToggleApp_Detected_Links()
+    public void ToggleApp_Detected_AddsLinkChange()
     {
         var card = MakeCard("vscode", "Development/IDEs", CardStatus.Detected);
-        _appLinkService.LinkAppAsync(card.CatalogEntry, Arg.Any<CancellationToken>())
-            .Returns(new List<DeployResult> { new("vscode", "s", "t", ResultLevel.Ok, "ok") });
 
-        await _vm.ToggleAppCommand.ExecuteAsync(card);
+        _vm.ToggleAppCommand.Execute(card);
 
-        Assert.That(card.Status, Is.EqualTo(CardStatus.Linked));
+        _pendingChanges.Received(1).Add(Arg.Is<LinkAppChange>(c => c.App == card));
     }
 
     [Test]
-    public async Task ToggleApp_Linked_Unlinks()
+    public void ToggleApp_Linked_AddsUnlinkChange()
     {
         var card = MakeCard("vscode", "Development/IDEs", CardStatus.Linked);
-        _appLinkService.UnlinkAppAsync(card.CatalogEntry, Arg.Any<CancellationToken>())
-            .Returns(new List<DeployResult> { new("vscode", "s", "t", ResultLevel.Ok, "ok") });
 
-        await _vm.ToggleAppCommand.ExecuteAsync(card);
+        _vm.ToggleAppCommand.Execute(card);
 
-        Assert.That(card.Status, Is.EqualTo(CardStatus.Detected));
+        _pendingChanges.Received(1).Add(Arg.Is<UnlinkAppChange>(c => c.App == card));
     }
 
     [Test]
-    public async Task ToggleApp_Broken_Fixes()
+    public void ToggleApp_Broken_AddsUnlinkChange()
     {
         var card = MakeCard("vscode", "Development/IDEs", CardStatus.Broken);
-        _appLinkService.FixAppLinksAsync(card.CatalogEntry, Arg.Any<CancellationToken>())
-            .Returns(new List<DeployResult> { new("vscode", "s", "t", ResultLevel.Ok, "ok") });
 
-        await _vm.ToggleAppCommand.ExecuteAsync(card);
+        _vm.ToggleAppCommand.Execute(card);
 
-        Assert.That(card.Status, Is.EqualTo(CardStatus.Linked));
+        _pendingChanges.Received(1).Add(Arg.Is<UnlinkAppChange>(c => c.App == card));
     }
 
     [Test]
-    public async Task ToggleApp_NotInstalled_NoOp()
+    public void ToggleApp_NotInstalled_NoOp()
     {
         var card = MakeCard("vscode", "Development/IDEs", CardStatus.NotInstalled);
 
-        await _vm.ToggleAppCommand.ExecuteAsync(card);
+        _vm.ToggleAppCommand.Execute(card);
 
-        Assert.That(card.Status, Is.EqualTo(CardStatus.NotInstalled));
-        await _appLinkService.DidNotReceive().LinkAppAsync(Arg.Any<CatalogEntry>(), Arg.Any<CancellationToken>());
+        _pendingChanges.DidNotReceive().Add(Arg.Any<PendingChange>());
     }
 
     [Test]
-    public async Task ToggleApp_OnError_DoesNotChangeStatus()
+    public void ToggleApp_Detected_RemovesPreviousUnlink()
     {
         var card = MakeCard("vscode", "Development/IDEs", CardStatus.Detected);
-        _appLinkService.LinkAppAsync(card.CatalogEntry, Arg.Any<CancellationToken>())
-            .Returns(new List<DeployResult> { new("vscode", "s", "t", ResultLevel.Error, "fail") });
 
-        await _vm.ToggleAppCommand.ExecuteAsync(card);
+        _vm.ToggleAppCommand.Execute(card);
 
-        Assert.That(card.Status, Is.EqualTo(CardStatus.Detected));
+        _pendingChanges.Received(1).Remove(card.Id, PendingChangeKind.UnlinkApp);
     }
 
     [Test]
@@ -344,6 +329,7 @@ public sealed class DotfilesViewModelTests
 {
     private IGalleryDetectionService _detectionService = null!;
     private IDotfileDetailService _detailService = null!;
+    private IPendingChangesService _pendingChanges = null!;
     private DotfilesViewModel _vm = null!;
 
     [SetUp]
@@ -351,11 +337,12 @@ public sealed class DotfilesViewModelTests
     {
         _detectionService = Substitute.For<IGalleryDetectionService>();
         _detailService = Substitute.For<IDotfileDetailService>();
+        _pendingChanges = Substitute.For<IPendingChangesService>();
 
         _detectionService.DetectDotfilesAsync(Arg.Any<CancellationToken>())
             .Returns(ImmutableArray<DotfileGroupCardModel>.Empty);
 
-        _vm = new DotfilesViewModel(_detectionService, _detailService);
+        _vm = new DotfilesViewModel(_detectionService, _detailService, _pendingChanges);
     }
 
     [Test]
@@ -545,6 +532,7 @@ public sealed class SystemTweaksViewModelTests
     private ISettingsProvider _settingsProvider = null!;
     private IStartupService _startupService = null!;
     private ITweakService _tweakService = null!;
+    private IPendingChangesService _pendingChanges = null!;
     private SystemTweaksViewModel _vm = null!;
 
     [SetUp]
@@ -554,6 +542,7 @@ public sealed class SystemTweaksViewModelTests
         _settingsProvider = Substitute.For<ISettingsProvider>();
         _startupService = Substitute.For<IStartupService>();
         _tweakService = Substitute.For<ITweakService>();
+        _pendingChanges = Substitute.For<IPendingChangesService>();
 
         _settingsProvider.LoadAsync(Arg.Any<CancellationToken>())
             .Returns(new PerchSettings { Profiles = ["Developer"] });
@@ -567,7 +556,7 @@ public sealed class SystemTweaksViewModelTests
         _startupService.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(Array.Empty<StartupEntry>());
 
-        _vm = new SystemTweaksViewModel(_detectionService, _settingsProvider, _startupService, _tweakService);
+        _vm = new SystemTweaksViewModel(_detectionService, _settingsProvider, _startupService, _tweakService, _pendingChanges);
     }
 
     [Test]
@@ -915,43 +904,29 @@ public sealed class SystemTweaksViewModelTests
     }
 
     [Test]
-    public void ApplyTweak_CallsServiceAndRefreshesCard()
+    public void ApplyTweak_QueuesPendingChange()
     {
         var reg = ImmutableArray.Create(new RegistryEntryDefinition("HKCU\\Test", "Val", 0, RegistryValueType.DWord));
         var entry = new TweakCatalogEntry("t1", "Tweak", "Explorer", [], null, true, [], reg);
         var card = new TweakCardModel(entry, CardStatus.NotInstalled);
 
-        var appliedDetection = new TweakDetectionResult(
-            TweakStatus.Applied,
-            ImmutableArray.Create(new RegistryEntryStatus(reg[0], 0, true)));
-        _tweakService.Apply(entry).Returns(new TweakOperationResult(ResultLevel.Ok, []));
-        _tweakService.Detect(entry).Returns(appliedDetection);
-
         _vm.ApplyTweakCommand.Execute(card);
 
-        _tweakService.Received(1).Apply(entry);
-        Assert.That(card.Status, Is.EqualTo(CardStatus.Detected));
-        Assert.That(card.AppliedCount, Is.EqualTo(1));
+        _pendingChanges.Received(1).Add(Arg.Is<ApplyTweakChange>(c => c.Tweak == card));
+        _pendingChanges.Received(1).Remove("t1", PendingChangeKind.RevertTweak);
     }
 
     [Test]
-    public void RevertTweak_CallsServiceAndRefreshesCard()
+    public void RevertTweak_QueuesPendingChange()
     {
         var reg = ImmutableArray.Create(new RegistryEntryDefinition("HKCU\\Test", "Val", 0, RegistryValueType.DWord, 1));
         var entry = new TweakCatalogEntry("t1", "Tweak", "Explorer", [], null, true, [], reg);
         var card = new TweakCardModel(entry, CardStatus.Detected);
 
-        var revertedDetection = new TweakDetectionResult(
-            TweakStatus.NotApplied,
-            ImmutableArray.Create(new RegistryEntryStatus(reg[0], 1, false)));
-        _tweakService.Revert(entry).Returns(new TweakOperationResult(ResultLevel.Ok, []));
-        _tweakService.Detect(entry).Returns(revertedDetection);
-
         _vm.RevertTweakCommand.Execute(card);
 
-        _tweakService.Received(1).Revert(entry);
-        Assert.That(card.Status, Is.EqualTo(CardStatus.NotInstalled));
-        Assert.That(card.AppliedCount, Is.EqualTo(0));
+        _pendingChanges.Received(1).Add(Arg.Is<RevertTweakChange>(c => c.Tweak == card));
+        _pendingChanges.Received(1).Remove("t1", PendingChangeKind.ApplyTweak);
     }
 
     [Test]

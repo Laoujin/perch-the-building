@@ -18,6 +18,7 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
     private readonly ISettingsProvider _settingsProvider;
     private readonly IStartupService _startupService;
     private readonly ITweakService _tweakService;
+    private readonly IPendingChangesService _pendingChanges;
 
     private const int MinSubCategorySize = 3;
 
@@ -70,12 +71,14 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
         IGalleryDetectionService detectionService,
         ISettingsProvider settingsProvider,
         IStartupService startupService,
-        ITweakService tweakService)
+        ITweakService tweakService,
+        IPendingChangesService pendingChanges)
     {
         _detectionService = detectionService;
         _settingsProvider = settingsProvider;
         _startupService = startupService;
         _tweakService = tweakService;
+        _pendingChanges = pendingChanges;
     }
 
     partial void OnSearchTextChanged(string value) => ApplyFilter();
@@ -138,10 +141,19 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
             }
 
             var fontResult = fontsTask.Result;
+            UnsubscribeFontChanges();
             InstalledFonts.Clear();
             NerdFonts.Clear();
-            foreach (var f in fontResult.InstalledFonts) InstalledFonts.Add(f);
-            foreach (var f in fontResult.NerdFonts) NerdFonts.Add(f);
+            foreach (var f in fontResult.InstalledFonts)
+            {
+                f.PropertyChanged += OnFontPropertyChanged;
+                InstalledFonts.Add(f);
+            }
+            foreach (var f in fontResult.NerdFonts)
+            {
+                f.PropertyChanged += OnFontPropertyChanged;
+                NerdFonts.Add(f);
+            }
 
             StartupItems.Clear();
             foreach (var entry in startupTask.Result)
@@ -337,11 +349,10 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task ToggleStartupEnabledAsync(StartupCardModel card)
+    private void ToggleStartupEnabled(StartupCardModel card)
     {
         var newState = !card.IsEnabled;
-        await _startupService.SetEnabledAsync(card.Entry, newState);
-        card.IsEnabled = newState;
+        _pendingChanges.Add(new ToggleStartupChange(card, newState));
     }
 
     [RelayCommand]
@@ -355,15 +366,15 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
     [RelayCommand]
     private void ApplyTweak(TweakCardModel card)
     {
-        var result = _tweakService.Apply(card.CatalogEntry);
-        RefreshTweakCard(card);
+        _pendingChanges.Remove(card.Id, PendingChangeKind.RevertTweak);
+        _pendingChanges.Add(new ApplyTweakChange(card));
     }
 
     [RelayCommand]
     private void RevertTweak(TweakCardModel card)
     {
-        var result = _tweakService.Revert(card.CatalogEntry);
-        RefreshTweakCard(card);
+        _pendingChanges.Remove(card.Id, PendingChangeKind.ApplyTweak);
+        _pendingChanges.Add(new RevertTweakChange(card));
     }
 
     [RelayCommand]
@@ -450,6 +461,25 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
 
     private void ApplyFilter()
     {
+    }
+
+    private void OnFontPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(FontCardModel.IsSelected) || sender is not FontCardModel font)
+            return;
+
+        if (font.IsSelected)
+            _pendingChanges.Add(new OnboardFontChange(font));
+        else
+            _pendingChanges.Remove(font.Id, PendingChangeKind.OnboardFont);
+    }
+
+    private void UnsubscribeFontChanges()
+    {
+        foreach (var f in InstalledFonts)
+            f.PropertyChanged -= OnFontPropertyChanged;
+        foreach (var f in NerdFonts)
+            f.PropertyChanged -= OnFontPropertyChanged;
     }
 
     private async Task<HashSet<UserProfile>> LoadProfilesAsync(CancellationToken cancellationToken)

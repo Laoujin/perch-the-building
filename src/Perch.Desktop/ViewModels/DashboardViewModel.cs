@@ -1,10 +1,18 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 using Perch.Core.Config;
+using Perch.Core.Deploy;
+using Perch.Core.Startup;
 using Perch.Core.Status;
+using Perch.Core.Symlinks;
+using Perch.Core.Tweaks;
+using Perch.Desktop.Services;
+
+using Wpf.Ui;
 
 namespace Perch.Desktop.ViewModels;
 
@@ -12,6 +20,11 @@ public sealed partial class DashboardViewModel : ViewModelBase
 {
     private readonly IStatusService _statusService;
     private readonly ISettingsProvider _settingsProvider;
+    private readonly IPendingChangesService _pendingChanges;
+    private readonly IAppLinkService _appLinkService;
+    private readonly ITweakService _tweakService;
+    private readonly IStartupService _startupService;
+    private readonly ISnackbarService _snackbarService;
 
     [ObservableProperty]
     private int _linkedCount;
@@ -34,12 +47,38 @@ public sealed partial class DashboardViewModel : ViewModelBase
     [ObservableProperty]
     private bool _hasConfigRepo = true;
 
+    [ObservableProperty]
+    private bool _isApplying;
+
+    public ReadOnlyObservableCollection<PendingChange> PendingChanges => _pendingChanges.Changes;
+    public bool HasPendingChanges => _pendingChanges.HasChanges;
+    public int PendingChangeCount => _pendingChanges.Count;
     public ObservableCollection<StatusItemViewModel> AttentionItems { get; } = [];
 
-    public DashboardViewModel(IStatusService statusService, ISettingsProvider settingsProvider)
+    public DashboardViewModel(
+        IStatusService statusService,
+        ISettingsProvider settingsProvider,
+        IPendingChangesService pendingChanges,
+        IAppLinkService appLinkService,
+        ITweakService tweakService,
+        IStartupService startupService,
+        ISnackbarService snackbarService)
     {
         _statusService = statusService;
         _settingsProvider = settingsProvider;
+        _pendingChanges = pendingChanges;
+        _appLinkService = appLinkService;
+        _tweakService = tweakService;
+        _startupService = startupService;
+        _snackbarService = snackbarService;
+
+        _pendingChanges.PropertyChanged += OnPendingChangesPropertyChanged;
+    }
+
+    private void OnPendingChangesPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        OnPropertyChanged(nameof(HasPendingChanges));
+        OnPropertyChanged(nameof(PendingChangeCount));
     }
 
     [RelayCommand]
@@ -97,6 +136,106 @@ public sealed partial class DashboardViewModel : ViewModelBase
             : $"{issues} item{(issues == 1 ? "" : "s")} need attention";
 
         IsLoading = false;
+    }
+
+    [RelayCommand]
+    private async Task ApplyAllAsync(CancellationToken cancellationToken)
+    {
+        if (!_pendingChanges.HasChanges)
+            return;
+
+        IsApplying = true;
+        var errors = new List<string>();
+        var applied = 0;
+        var changes = _pendingChanges.Changes.ToList();
+
+        foreach (var change in changes.Where(c => c.Kind == PendingChangeKind.LinkApp))
+        {
+            try
+            {
+                var app = ((LinkAppChange)change).App;
+                var results = await _appLinkService.LinkAppAsync(app.CatalogEntry, cancellationToken);
+                if (results.Any(r => r.Level == ResultLevel.Error))
+                    errors.Add($"Link {app.DisplayLabel}: {results.First(r => r.Level == ResultLevel.Error).Message}");
+                else
+                {
+                    app.Status = Models.CardStatus.Linked;
+                    applied++;
+                }
+            }
+            catch (Exception ex) { errors.Add($"Link: {ex.Message}"); }
+        }
+
+        foreach (var change in changes.Where(c => c.Kind == PendingChangeKind.UnlinkApp))
+        {
+            try
+            {
+                var app = ((UnlinkAppChange)change).App;
+                var results = await _appLinkService.UnlinkAppAsync(app.CatalogEntry, cancellationToken);
+                if (results.Any(r => r.Level == ResultLevel.Error))
+                    errors.Add($"Unlink {app.DisplayLabel}: {results.First(r => r.Level == ResultLevel.Error).Message}");
+                else
+                {
+                    app.Status = Models.CardStatus.Detected;
+                    applied++;
+                }
+            }
+            catch (Exception ex) { errors.Add($"Unlink: {ex.Message}"); }
+        }
+
+        foreach (var change in changes.Where(c => c.Kind == PendingChangeKind.ApplyTweak))
+        {
+            try
+            {
+                var tweak = ((ApplyTweakChange)change).Tweak;
+                _tweakService.Apply(tweak.CatalogEntry);
+                applied++;
+            }
+            catch (Exception ex) { errors.Add($"Apply tweak: {ex.Message}"); }
+        }
+
+        foreach (var change in changes.Where(c => c.Kind == PendingChangeKind.RevertTweak))
+        {
+            try
+            {
+                var tweak = ((RevertTweakChange)change).Tweak;
+                _tweakService.Revert(tweak.CatalogEntry);
+                applied++;
+            }
+            catch (Exception ex) { errors.Add($"Revert tweak: {ex.Message}"); }
+        }
+
+        foreach (var change in changes.Where(c => c.Kind == PendingChangeKind.ToggleStartup))
+        {
+            try
+            {
+                var sc = (ToggleStartupChange)change;
+                await _startupService.SetEnabledAsync(sc.Startup.Entry, sc.Enable, cancellationToken);
+                sc.Startup.IsEnabled = sc.Enable;
+                applied++;
+            }
+            catch (Exception ex) { errors.Add($"Startup: {ex.Message}"); }
+        }
+
+        IsApplying = false;
+
+        if (errors.Count == 0)
+        {
+            _pendingChanges.Clear();
+            _snackbarService.Show("Applied", $"{applied} change{(applied == 1 ? "" : "s")} applied successfully",
+                Wpf.Ui.Controls.ControlAppearance.Success, null, TimeSpan.FromSeconds(3));
+        }
+        else
+        {
+            _snackbarService.Show("Errors", $"{errors.Count} error{(errors.Count == 1 ? "" : "s")}: {errors[0]}",
+                Wpf.Ui.Controls.ControlAppearance.Danger, null, TimeSpan.FromSeconds(5));
+        }
+    }
+
+    [RelayCommand]
+    private void DiscardAll()
+    {
+        _pendingChanges.Clear();
     }
 }
 

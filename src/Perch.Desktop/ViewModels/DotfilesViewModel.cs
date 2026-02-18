@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -13,6 +14,7 @@ public sealed partial class DotfilesViewModel : ViewModelBase
 {
     private readonly IGalleryDetectionService _detectionService;
     private readonly IDotfileDetailService _detailService;
+    private readonly IPendingChangesService _pendingChanges;
 
     private ImmutableArray<DotfileGroupCardModel> _allDotfiles = [];
 
@@ -46,10 +48,14 @@ public sealed partial class DotfilesViewModel : ViewModelBase
     public bool HasNoModule => Detail is not null && Detail.OwningModule is null;
     public ObservableCollection<DotfileGroupCardModel> Dotfiles { get; } = [];
 
-    public DotfilesViewModel(IGalleryDetectionService detectionService, IDotfileDetailService detailService)
+    public DotfilesViewModel(
+        IGalleryDetectionService detectionService,
+        IDotfileDetailService detailService,
+        IPendingChangesService pendingChanges)
     {
         _detectionService = detectionService;
         _detailService = detailService;
+        _pendingChanges = pendingChanges;
     }
 
     partial void OnSearchTextChanged(string value) => ApplyFilter();
@@ -102,7 +108,14 @@ public sealed partial class DotfilesViewModel : ViewModelBase
 
         try
         {
+            foreach (var df in _allDotfiles)
+                df.PropertyChanged -= OnDotfilePropertyChanged;
+
             _allDotfiles = await _detectionService.DetectDotfilesAsync(cancellationToken);
+
+            foreach (var df in _allDotfiles)
+                df.PropertyChanged += OnDotfilePropertyChanged;
+
             ApplyFilter();
         }
         catch (OperationCanceledException)
@@ -130,5 +143,16 @@ public sealed partial class DotfilesViewModel : ViewModelBase
 
         LinkedCount = _allDotfiles.Count(d => d.Status == CardStatus.Linked);
         TotalCount = _allDotfiles.Length;
+    }
+
+    private void OnDotfilePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(DotfileGroupCardModel.IsSelected) || sender is not DotfileGroupCardModel df)
+            return;
+
+        if (df.IsSelected)
+            _pendingChanges.Add(new LinkDotfileChange(df));
+        else
+            _pendingChanges.Remove(df.Id, PendingChangeKind.LinkDotfile);
     }
 }

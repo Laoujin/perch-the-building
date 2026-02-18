@@ -5,22 +5,17 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 using Perch.Core.Config;
-using Perch.Core.Deploy;
-using Perch.Core.Symlinks;
 using Perch.Desktop.Models;
 using Perch.Desktop.Services;
-
-using Wpf.Ui;
 
 namespace Perch.Desktop.ViewModels;
 
 public sealed partial class AppsViewModel : ViewModelBase
 {
     private readonly IGalleryDetectionService _detectionService;
-    private readonly IAppLinkService _appLinkService;
     private readonly IAppDetailService _detailService;
     private readonly ISettingsProvider _settingsProvider;
-    private readonly ISnackbarService _snackbarService;
+    private readonly IPendingChangesService _pendingChanges;
 
     private ImmutableArray<AppCardModel> _allYourApps = [];
     private ImmutableArray<AppCardModel> _allSuggested = [];
@@ -51,16 +46,14 @@ public sealed partial class AppsViewModel : ViewModelBase
 
     public AppsViewModel(
         IGalleryDetectionService detectionService,
-        IAppLinkService appLinkService,
         IAppDetailService detailService,
         ISettingsProvider settingsProvider,
-        ISnackbarService snackbarService)
+        IPendingChangesService pendingChanges)
     {
         _detectionService = detectionService;
-        _appLinkService = appLinkService;
         _detailService = detailService;
         _settingsProvider = settingsProvider;
-        _snackbarService = snackbarService;
+        _pendingChanges = pendingChanges;
     }
 
     partial void OnSearchTextChanged(string value) => RebuildTiers();
@@ -154,48 +147,21 @@ public sealed partial class AppsViewModel : ViewModelBase
     };
 
     [RelayCommand]
-    private async Task ToggleAppAsync(AppCardModel app)
+    private void ToggleApp(AppCardModel app)
     {
         if (!app.CanToggle)
             return;
 
-        IReadOnlyList<DeployResult> results;
-        string action;
-
-        if (app.Status is CardStatus.Broken or CardStatus.Drift)
+        if (app.IsManaged)
         {
-            results = await _appLinkService.FixAppLinksAsync(app.CatalogEntry);
-            action = "Fixed";
-        }
-        else if (app.IsManaged)
-        {
-            results = await _appLinkService.UnlinkAppAsync(app.CatalogEntry);
-            action = "Unlinked";
+            _pendingChanges.Remove(app.Id, PendingChangeKind.LinkApp);
+            _pendingChanges.Add(new UnlinkAppChange(app));
         }
         else
         {
-            results = await _appLinkService.LinkAppAsync(app.CatalogEntry);
-            action = "Linked";
+            _pendingChanges.Remove(app.Id, PendingChangeKind.UnlinkApp);
+            _pendingChanges.Add(new LinkAppChange(app));
         }
-
-        var hasErrors = results.Any(r => r.Level == ResultLevel.Error);
-
-        if (!hasErrors)
-        {
-            app.Status = action == "Unlinked" ? CardStatus.Detected : CardStatus.Linked;
-            _snackbarService.Show("Success", $"{action} {app.DisplayLabel}",
-                Wpf.Ui.Controls.ControlAppearance.Success,
-                null, TimeSpan.FromSeconds(3));
-        }
-        else
-        {
-            var errorMsg = results.First(r => r.Level == ResultLevel.Error).Message;
-            _snackbarService.Show("Error", $"Failed to {action.ToLowerInvariant()} {app.DisplayLabel}: {errorMsg}",
-                Wpf.Ui.Controls.ControlAppearance.Danger,
-                null, TimeSpan.FromSeconds(5));
-        }
-
-        UpdateSummary();
     }
 
     [RelayCommand]
