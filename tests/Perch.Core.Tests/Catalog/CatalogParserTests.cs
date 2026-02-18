@@ -664,6 +664,114 @@ public sealed class CatalogParserTests
     }
 
     [Test]
+    public void ParseApp_WithReversibleTweak_ParsesReversibleFlag()
+    {
+        string yaml = """
+            name: Spotify
+            category: Media/Players
+            tags: [music]
+            tweaks:
+              - id: disable-autostart
+                name: Disable Auto-Start
+                reversible: true
+                registry:
+                  - key: HKCU\Software\Microsoft\Windows\CurrentVersion\Run
+                    name: Spotify
+                    value: null
+                    type: string
+            """;
+
+        var result = _parser.ParseApp(yaml, "spotify");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value!.Tweaks[0].Reversible, Is.True);
+    }
+
+    [Test]
+    public void ParseApp_TweakWithoutReversible_DefaultsToFalse()
+    {
+        string yaml = """
+            name: TestApp
+            category: Test
+            tweaks:
+              - id: test-tweak
+                name: Test Tweak
+                registry:
+                  - key: HKCU\Software\Test
+                    name: TestValue
+                    value: 1
+                    type: dword
+            """;
+
+        var result = _parser.ParseApp(yaml, "testapp");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value!.Tweaks[0].Reversible, Is.False);
+    }
+
+    [Test]
+    public void AppOwnedTweak_ToTweakCatalogEntry_MapsAllFields()
+    {
+        string yaml = """
+            name: Git
+            category: Development/Version Control
+            tags: [vcs, cli]
+            profiles: [developer]
+            license: GPL-2.0
+            tweaks:
+              - id: git-bash-here
+                name: Git Bash Here
+                description: Add context menu entry
+                reversible: true
+                registry:
+                  - key: HKCR\Directory\Background\shell\git_shell\command
+                    name: "(Default)"
+                    value: "git-bash.exe"
+                    type: string
+            """;
+
+        var result = _parser.ParseApp(yaml, "git");
+        var tweak = result.Value!.Tweaks[0].ToTweakCatalogEntry(result.Value!);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(tweak.Id, Is.EqualTo("git/git-bash-here"));
+            Assert.That(tweak.Name, Is.EqualTo("Git Bash Here"));
+            Assert.That(tweak.Category, Is.EqualTo("Development/Version Control"));
+            Assert.That(tweak.Tags, Is.Empty);
+            Assert.That(tweak.Description, Is.EqualTo("Add context menu entry"));
+            Assert.That(tweak.Reversible, Is.True);
+            Assert.That(tweak.Profiles, Is.EqualTo(new[] { "developer" }));
+            Assert.That(tweak.Registry, Has.Length.EqualTo(1));
+            Assert.That(tweak.Hidden, Is.False);
+            Assert.That(tweak.License, Is.EqualTo("GPL-2.0"));
+        });
+    }
+
+    [Test]
+    public void AppOwnedTweak_ToTweakCatalogEntry_InheritsHiddenFromOwner()
+    {
+        string yaml = """
+            name: HiddenApp
+            category: Test
+            hidden: true
+            tweaks:
+              - id: test-tweak
+                name: Test
+                registry:
+                  - key: HKCU\Software\Test
+                    name: Val
+                    value: 1
+                    type: dword
+            """;
+
+        var result = _parser.ParseApp(yaml, "hidden-app");
+        var tweak = result.Value!.Tweaks[0].ToTweakCatalogEntry(result.Value!);
+
+        Assert.That(tweak.Hidden, Is.True);
+    }
+
+    [Test]
     public void ParseApp_WithScriptTweak_ParsesScripts()
     {
         string yaml = """

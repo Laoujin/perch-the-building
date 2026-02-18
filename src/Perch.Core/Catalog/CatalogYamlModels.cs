@@ -75,6 +75,7 @@ internal sealed class AppOwnedTweakYamlModel
     public string? Id { get; set; }
     public string? Name { get; set; }
     public string? Description { get; set; }
+    public bool Reversible { get; set; }
     public List<TweakRegistryYamlModel>? Registry { get; set; }
     public string? Script { get; set; }
 

@@ -344,7 +344,8 @@ public sealed class CatalogParser
                 tweak.Description,
                 ParseTweakRegistry(tweak.Registry),
                 tweak.Script,
-                tweak.UndoScript));
+                tweak.UndoScript,
+                tweak.Reversible));
         }
 
         return result.ToImmutableArray();

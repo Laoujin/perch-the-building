@@ -68,4 +68,21 @@ public sealed record AppOwnedTweak(
     string? Description,
     ImmutableArray<RegistryEntryDefinition> Registry,
     string? Script = null,
-    string? UndoScript = null);
+    string? UndoScript = null,
+    bool Reversible = false)
+{
+    public TweakCatalogEntry ToTweakCatalogEntry(CatalogEntry owner) =>
+        new(
+            $"{owner.Id}/{Id}",
+            Name,
+            owner.Category,
+            ImmutableArray<string>.Empty,
+            Description,
+            Reversible,
+            owner.Profiles,
+            Registry,
+            Script,
+            UndoScript,
+            Hidden: owner.Hidden,
+            License: owner.License);
+}
