@@ -6,6 +6,7 @@ using Perch.Core.Config;
 using Perch.Core.Packages;
 using Perch.Core.Scanner;
 using Perch.Core.Symlinks;
+using Perch.Core.Tweaks;
 using Perch.Desktop.Models;
 
 namespace Perch.Desktop.Services;
@@ -18,6 +19,7 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
     private readonly ISymlinkProvider _symlinkProvider;
     private readonly ISettingsProvider _settingsProvider;
     private readonly IEnumerable<IPackageManagerProvider> _packageProviders;
+    private readonly ITweakService _tweakService;
 
     private readonly SemaphoreSlim _packageScanLock = new(1, 1);
     private HashSet<string>? _cachedInstalledIds;
@@ -43,7 +45,8 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
         IPlatformDetector platformDetector,
         ISymlinkProvider symlinkProvider,
         ISettingsProvider settingsProvider,
-        IEnumerable<IPackageManagerProvider> packageProviders)
+        IEnumerable<IPackageManagerProvider> packageProviders,
+        ITweakService tweakService)
     {
         _catalog = catalog;
         _fontScanner = fontScanner;
@@ -51,6 +54,7 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
         _symlinkProvider = symlinkProvider;
         _settingsProvider = settingsProvider;
         _packageProviders = packageProviders;
+        _tweakService = tweakService;
     }
 
     public async Task WarmUpAsync(CancellationToken cancellationToken = default)
@@ -186,7 +190,17 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
 
         foreach (var tweak in allTweaks)
         {
-            var model = new TweakCardModel(tweak, CardStatus.NotInstalled);
+            var detection = _tweakService.Detect(tweak);
+            CardStatus status = detection.Status switch
+            {
+                TweakStatus.Applied => CardStatus.Detected,
+                TweakStatus.Partial => CardStatus.Drift,
+                _ => CardStatus.NotInstalled,
+            };
+
+            var model = new TweakCardModel(tweak, status);
+            model.AppliedCount = detection.Entries.Count(e => e.IsApplied);
+
             if (model.MatchesProfile(selectedProfiles))
             {
                 builder.Add(model);

@@ -10,6 +10,7 @@ using Perch.Core.Config;
 using Perch.Core.Packages;
 using Perch.Core.Scanner;
 using Perch.Core.Symlinks;
+using Perch.Core.Tweaks;
 using Perch.Desktop.Models;
 using Perch.Desktop.Services;
 
@@ -53,7 +54,8 @@ public sealed class GalleryDetectionServiceAppTests
             _platformDetector,
             _symlinkProvider,
             _settingsProvider,
-            [_packageProvider]);
+            [_packageProvider],
+            Substitute.For<ITweakService>());
     }
 
     [TearDown]
