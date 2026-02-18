@@ -34,6 +34,8 @@ public partial class TweakCardModel : ObservableObject
     private bool _isSuggested;
 
     public int TotalCount => Registry.Length;
+    public bool RestartRequired => Tags.Any(t => string.Equals(t, "restart", StringComparison.OrdinalIgnoreCase));
+    public string RegistryKeyCountText => TotalCount == 1 ? "1 registry key" : $"{TotalCount} registry keys";
 
     public TweakCardModel(TweakCatalogEntry entry, CardStatus status)
     {

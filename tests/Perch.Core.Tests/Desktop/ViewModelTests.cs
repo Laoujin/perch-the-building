@@ -968,6 +968,46 @@ public sealed class SystemTweaksViewModelTests
         });
     }
 
+    [Test]
+    public void TweakCardModel_RestartRequired_TrueWhenTagged()
+    {
+        var entry = new TweakCatalogEntry("t1", "Tweak", "Explorer", ["restart"], null, true, [], []);
+        var card = new TweakCardModel(entry, CardStatus.Detected);
+
+        Assert.That(card.RestartRequired, Is.True);
+    }
+
+    [Test]
+    public void TweakCardModel_RestartRequired_FalseWhenNoTag()
+    {
+        var entry = new TweakCatalogEntry("t1", "Tweak", "Explorer", ["privacy"], null, true, [], []);
+        var card = new TweakCardModel(entry, CardStatus.Detected);
+
+        Assert.That(card.RestartRequired, Is.False);
+    }
+
+    [Test]
+    public void TweakCardModel_RegistryKeyCountText_Singular()
+    {
+        var reg = ImmutableArray.Create(new RegistryEntryDefinition("HKCU\\Test", "Val", 0, Perch.Core.Registry.RegistryValueType.DWord));
+        var entry = new TweakCatalogEntry("t1", "Tweak", "Explorer", [], null, true, [], reg);
+        var card = new TweakCardModel(entry, CardStatus.Detected);
+
+        Assert.That(card.RegistryKeyCountText, Is.EqualTo("1 registry key"));
+    }
+
+    [Test]
+    public void TweakCardModel_RegistryKeyCountText_Plural()
+    {
+        var reg = ImmutableArray.Create(
+            new RegistryEntryDefinition("HKCU\\Test", "Val1", 0, Perch.Core.Registry.RegistryValueType.DWord),
+            new RegistryEntryDefinition("HKCU\\Test", "Val2", 1, Perch.Core.Registry.RegistryValueType.DWord));
+        var entry = new TweakCatalogEntry("t1", "Tweak", "Explorer", [], null, true, [], reg);
+        var card = new TweakCardModel(entry, CardStatus.Detected);
+
+        Assert.That(card.RegistryKeyCountText, Is.EqualTo("2 registry keys"));
+    }
+
     private static TweakCardModel MakeTweak(string name, string category)
     {
         var entry = new TweakCatalogEntry(name, name, category, [], null, true, [], []);

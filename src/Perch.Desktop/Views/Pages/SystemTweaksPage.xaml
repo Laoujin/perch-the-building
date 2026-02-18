@@ -257,7 +257,7 @@
                                 BorderThickness="1"
                                 CornerRadius="8"
                                 Padding="12"
-                                Width="240"
+                                Width="280"
                                 Margin="0,0,12,12">
                                 <Grid>
                                     <Grid.RowDefinitions>
@@ -265,41 +265,55 @@
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
 
-                                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
-                                        <controls:StatusRibbon Status="{Binding Status}" />
-                                        <Border
-                                            Background="Transparent"
-                                            BorderBrush="#10B981"
-                                            BorderThickness="1"
-                                            CornerRadius="4"
-                                            Padding="6,1"
-                                            Margin="6,0,0,0"
-                                            Visibility="{Binding IsSuggested, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                            <TextBlock Text="Suggested" FontSize="10" Foreground="#10B981" />
-                                        </Border>
-                                    </StackPanel>
-
-                                    <Grid Grid.Row="1">
+                                    <!-- Row 0: Badges + Toggle top-right -->
+                                    <Grid Grid.Row="0" Margin="0,0,0,8">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
 
+                                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <controls:StatusRibbon Status="{Binding Status}" />
+                                            <Border
+                                                Background="Transparent"
+                                                BorderBrush="#10B981"
+                                                BorderThickness="1"
+                                                CornerRadius="4"
+                                                Padding="6,1"
+                                                Margin="6,0,0,0"
+                                                Visibility="{Binding IsSuggested, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                <TextBlock Text="Suggested" FontSize="10" Foreground="#10B981" />
+                                            </Border>
+                                        </StackPanel>
+
+                                        <ui:ToggleSwitch
+                                            Grid.Column="1"
+                                            IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                            VerticalAlignment="Center" />
+                                    </Grid>
+
+                                    <!-- Row 1: Name + restart icon -->
+                                    <StackPanel Grid.Row="1" Orientation="Horizontal">
                                         <TextBlock
-                                            Grid.Column="0"
                                             Text="{Binding Name}"
                                             FontSize="13"
                                             FontWeight="SemiBold"
                                             Foreground="White"
-                                            TextTrimming="CharacterEllipsis" />
+                                            TextTrimming="CharacterEllipsis"
+                                            MaxWidth="230" />
+                                        <ui:SymbolIcon
+                                            Symbol="ArrowSync24"
+                                            FontSize="14"
+                                            Foreground="#888888"
+                                            ToolTip="Requires restart"
+                                            Margin="6,0,0,0"
+                                            Visibility="{Binding RestartRequired, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                    </StackPanel>
 
-                                        <ui:ToggleSwitch
-                                            Grid.Column="1"
-                                            IsChecked="{Binding IsSelected, Mode=TwoWay}" />
-                                    </Grid>
-
+                                    <!-- Row 2: Description -->
                                     <TextBlock
                                         Grid.Row="2"
                                         Text="{Binding Description}"
@@ -309,14 +323,70 @@
                                         MaxHeight="32"
                                         Margin="0,4,0,0" />
 
-                                    <TextBlock
+                                    <!-- Row 3: Expandable registry keys button -->
+                                    <ui:Button
                                         Grid.Row="3"
-                                        FontSize="10"
-                                        Foreground="#666666"
-                                        Margin="0,4,0,0">
-                                        <Run Text="{Binding TotalCount, Mode=OneWay}" />
-                                        <Run Text=" registry entries" />
-                                    </TextBlock>
+                                        Padding="4,2"
+                                        Margin="0,6,0,0"
+                                        HorizontalAlignment="Left"
+                                        Click="OnTweakExpandClick">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock
+                                                Text="{Binding RegistryKeyCountText}"
+                                                FontSize="10"
+                                                Foreground="#666666" />
+                                            <TextBlock
+                                                Text="{Binding IsExpanded, Converter={StaticResource BooleanToChevronConverter}}"
+                                                FontSize="10"
+                                                Foreground="#666666"
+                                                Margin="4,0,0,0" />
+                                        </StackPanel>
+                                    </ui:Button>
+
+                                    <!-- Row 4: Expanded registry detail -->
+                                    <Border
+                                        Grid.Row="4"
+                                        Background="#12122A"
+                                        CornerRadius="6"
+                                        Padding="10"
+                                        Margin="0,8,0,0"
+                                        Visibility="{Binding IsExpanded, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <ItemsControl ItemsSource="{Binding Registry}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Margin="0,0,0,8">
+                                                        <TextBlock
+                                                            Text="{Binding Key}"
+                                                            FontSize="10"
+                                                            FontFamily="Cascadia Code,Consolas,Courier New"
+                                                            Foreground="#888888"
+                                                            TextTrimming="CharacterEllipsis"
+                                                            ToolTip="{Binding Key}" />
+                                                        <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                                            <TextBlock
+                                                                Text="{Binding Name}"
+                                                                FontSize="11"
+                                                                FontWeight="SemiBold"
+                                                                Foreground="White" />
+                                                            <TextBlock
+                                                                FontSize="11"
+                                                                Foreground="#666666"
+                                                                Margin="4,0,0,0">
+                                                                <Run Text="(" /><Run Text="{Binding Kind, Mode=OneWay}" /><Run Text=")" />
+                                                            </TextBlock>
+                                                        </StackPanel>
+                                                        <TextBlock
+                                                            FontSize="10"
+                                                            Foreground="#10B981"
+                                                            Margin="0,2,0,0">
+                                                            <Run Text="Will set: " Foreground="#888888" />
+                                                            <Run Text="{Binding Value, Mode=OneWay}" />
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Border>
                                 </Grid>
                             </Border>
                         </DataTemplate>

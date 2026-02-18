@@ -49,6 +49,12 @@ public partial class SystemTweaksPage : Page
             ViewModel.SetProfileFilterCommand.Execute(filter);
     }
 
+    private void OnTweakExpandClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: TweakCardModel tweak })
+            tweak.IsExpanded = !tweak.IsExpanded;
+    }
+
     private void OnGroupExpandClick(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: FontFamilyGroupModel group })
