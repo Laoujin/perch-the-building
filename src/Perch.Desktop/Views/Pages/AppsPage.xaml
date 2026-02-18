@@ -220,6 +220,7 @@
                                                             CanToggle="{Binding CanToggle}"
                                                             IsSuggested="{Binding IsSuggested}"
                                                             KindBadge="{Binding KindBadge}"
+                                                            GitHubStarsFormatted="{Binding GitHubStarsFormatted}"
                                                             Tags="{Binding Tags}"
                                                             ToggleChanged="OnToggleChanged"
                                                             TagClicked="OnTagClicked"

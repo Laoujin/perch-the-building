@@ -84,6 +84,9 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
 
         foreach (var app in allApps)
         {
+            if (IsPureConfigDotfile(app))
+                continue;
+
             var detected = IsAppDetected(app, platform, installedIds);
             var linked = detected && IsAppLinked(app, platform, settings.ConfigRepoPath);
 
@@ -128,6 +131,9 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
 
         foreach (var app in allApps)
         {
+            if (IsPureConfigDotfile(app))
+                continue;
+
             var status = ResolveStatus(app, platform, settings.ConfigRepoPath, installedIds);
             int? appStars = stars.TryGetValue(app.Id, out var starCount) ? starCount : null;
             builder.Add(new AppCardModel(app, CardTier.Other, status, $"{logoBaseUrl}{app.Id}.png") { GitHubStars = appStars });
@@ -490,6 +496,9 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
 
         return false;
     }
+
+    private static bool IsPureConfigDotfile(CatalogEntry app) =>
+        app.Kind == CatalogKind.Dotfile && app.Install is null;
 
     private static bool IsSuggestedForProfiles(CatalogEntry app, IReadOnlySet<UserProfile> profiles)
     {

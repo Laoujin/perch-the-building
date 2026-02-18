@@ -326,6 +326,33 @@ public sealed class GalleryDetectionServiceAppTests
     }
 
     [Test]
+    public async Task DetectAppsAsync_HidesPureConfigDotfiles()
+    {
+        var dotfileWithInstall = new CatalogEntry(
+            "powershell", "PowerShell", null, "Development/Languages",
+            [], null, null, null,
+            new InstallDefinition("Microsoft.PowerShell", null),
+            null, null, CatalogKind.Dotfile);
+
+        var dotfileWithoutInstall = new CatalogEntry(
+            "nuget-config", "NuGet Config", null, "Development/.NET",
+            [], null, null, null,
+            null, null, null, CatalogKind.Dotfile);
+
+        _catalog.GetAllAppsAsync(Arg.Any<CancellationToken>())
+            .Returns(ImmutableArray.Create(dotfileWithInstall, dotfileWithoutInstall));
+
+        var result = await _service.DetectAppsAsync(new HashSet<UserProfile> { UserProfile.Developer });
+
+        var allCards = result.YourApps.AsEnumerable().Concat(result.Suggested).Concat(result.OtherApps).ToList();
+        Assert.Multiple(() =>
+        {
+            Assert.That(allCards, Has.Count.EqualTo(1));
+            Assert.That(allCards[0].Id, Is.EqualTo("powershell"));
+        });
+    }
+
+    [Test]
     public async Task DetectAppsAsync_SetsGitHubStarsOnCards()
     {
         var app = MakeApp("vscode", "Visual Studio Code",
