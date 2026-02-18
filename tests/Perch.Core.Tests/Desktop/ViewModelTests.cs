@@ -260,9 +260,79 @@ public sealed class AppsViewModelTests
         Assert.That(card.IsExpanded, Is.False);
     }
 
+    [Test]
+    public async Task DependencyGraph_ChildHiddenFromTopLevel()
+    {
+        var parent = MakeCard("dotnet-sdk", "Development/Runtimes", CardStatus.Linked);
+        var child = MakeCardWithRequires("vscode", "Development/IDEs", ["dotnet-sdk"], CardStatus.Detected);
+
+        _detectionService.DetectAppsAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
+            .Returns(new GalleryDetectionResult(ImmutableArray.Create(parent, child), [], []));
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_vm.YourApps, Has.Count.EqualTo(1));
+            Assert.That(_vm.YourApps[0].Name, Is.EqualTo("dotnet-sdk"));
+            Assert.That(_vm.YourApps[0].HasDependents, Is.True);
+            Assert.That(_vm.YourApps[0].DependentApps, Has.Length.EqualTo(1));
+            Assert.That(_vm.YourApps[0].DependentApps[0].Name, Is.EqualTo("vscode"));
+        });
+    }
+
+    [Test]
+    public async Task DependencyGraph_CircularRequires_BothStayTopLevel()
+    {
+        var a = MakeCardWithRequires("app-a", "Dev/Tools", ["app-b"]);
+        var b = MakeCardWithRequires("app-b", "Dev/Tools", ["app-a"]);
+
+        _detectionService.DetectAppsAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
+            .Returns(new GalleryDetectionResult(ImmutableArray.Create(a, b), [], []));
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_vm.YourApps, Has.Count.EqualTo(2));
+            Assert.That(a.HasDependents, Is.False);
+            Assert.That(b.HasDependents, Is.False);
+        });
+    }
+
+    [Test]
+    public async Task Search_ParentShowsIfDependentMatches()
+    {
+        var parent = MakeCard("dotnet-sdk", "Development/Runtimes", CardStatus.Linked);
+        var child = MakeCardWithRequires("my-child-tool", "Development/Tools", ["dotnet-sdk"]);
+
+        _detectionService.DetectAppsAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
+            .Returns(new GalleryDetectionResult(ImmutableArray.Create(parent, child), [], []));
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        _vm.SearchText = "my-child";
+        Assert.That(_vm.YourApps, Has.Count.EqualTo(1));
+        Assert.That(_vm.YourApps[0].Name, Is.EqualTo("dotnet-sdk"));
+    }
+
+    [Test]
+    public void TagClick_SetsSearchText()
+    {
+        _vm.TagClickCommand.Execute("editor");
+        Assert.That(_vm.SearchText, Is.EqualTo("editor"));
+    }
+
     private static AppCardModel MakeCard(string name, string category, CardStatus status = CardStatus.Detected, CardTier tier = CardTier.YourApps)
     {
         var entry = new CatalogEntry(name, name, name, category, [], null, null, null, null, null, null);
+        return new AppCardModel(entry, tier, status);
+    }
+
+    private static AppCardModel MakeCardWithRequires(string name, string category, string[] requires, CardStatus status = CardStatus.Detected, CardTier tier = CardTier.YourApps)
+    {
+        var entry = new CatalogEntry(name, name, name, category, [], null, null, null, null, null, null,
+            Requires: [.. requires]);
         return new AppCardModel(entry, tier, status);
     }
 }
