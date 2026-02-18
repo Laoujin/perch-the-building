@@ -26,6 +26,32 @@ public sealed class CertificateScanner : ICertificateScanner
         return Task.FromResult(results.ToImmutableArray());
     }
 
+    public Task RemoveAsync(DetectedCertificate certificate, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var storeName = certificate.Store switch
+        {
+            CertificateStoreName.Personal => StoreName.My,
+            CertificateStoreName.TrustedRoot => StoreName.Root,
+            CertificateStoreName.Intermediate => StoreName.CertificateAuthority,
+            CertificateStoreName.TrustedPeople => StoreName.TrustedPeople,
+            _ => throw new ArgumentOutOfRangeException(nameof(certificate), $"Unknown store: {certificate.Store}"),
+        };
+
+        using var store = new X509Store(storeName, StoreLocation.CurrentUser);
+        store.Open(OpenFlags.ReadWrite);
+
+        var matches = store.Certificates.Find(X509FindType.FindByThumbprint, certificate.Thumbprint, false);
+        foreach (var match in matches)
+        {
+            store.Remove(match);
+            match.Dispose();
+        }
+
+        return Task.CompletedTask;
+    }
+
     private static void ScanStore(StoreName storeName, CertificateStoreName mapped, List<DetectedCertificate> results)
     {
         try

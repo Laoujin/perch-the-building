@@ -1114,6 +1114,59 @@ public sealed class SystemTweaksViewModelTests
         Assert.That(_vm.OpenCertificateManagerCommand, Is.Not.Null);
     }
 
+    [Test]
+    public async Task RemoveCertificate_CallsScannerRemoveAndRemovesFromCollections()
+    {
+        var cert = MakeCertificate("AABB", CertificateStoreName.Personal);
+        _certificateScanner.ScanAsync(Arg.Any<CancellationToken>())
+            .Returns(ImmutableArray.Create(cert));
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+        Assert.That(_vm.CertificateItems, Has.Count.EqualTo(1));
+
+        _vm.SelectCategoryCommand.Execute("Certificates");
+        var card = _vm.CertificateItems[0];
+        await _vm.RemoveCertificateCommand.ExecuteAsync(card);
+
+        await _certificateScanner.Received(1).RemoveAsync(cert, Arg.Any<CancellationToken>());
+        Assert.That(_vm.CertificateItems, Is.Empty);
+    }
+
+    [Test]
+    public async Task RemoveCertificate_RemovesFromFilteredGroups()
+    {
+        var cert1 = MakeCertificate("AABB", CertificateStoreName.Personal);
+        var cert2 = MakeCertificate("CCDD", CertificateStoreName.Personal);
+        _certificateScanner.ScanAsync(Arg.Any<CancellationToken>())
+            .Returns(ImmutableArray.Create(cert1, cert2));
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+        _vm.SelectCategoryCommand.Execute("Certificates");
+        Assert.That(_vm.FilteredCertificateGroups, Has.Count.EqualTo(1));
+        Assert.That(_vm.FilteredCertificateGroups[0].Certificates, Has.Count.EqualTo(2));
+
+        var card = _vm.CertificateItems[0];
+        await _vm.RemoveCertificateCommand.ExecuteAsync(card);
+
+        Assert.That(_vm.FilteredCertificateGroups[0].Certificates, Has.Count.EqualTo(1));
+    }
+
+    [Test]
+    public async Task RemoveCertificate_RemovesGroupWhenLastCertDeleted()
+    {
+        var cert = MakeCertificate("AABB", CertificateStoreName.Personal);
+        _certificateScanner.ScanAsync(Arg.Any<CancellationToken>())
+            .Returns(ImmutableArray.Create(cert));
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+        _vm.SelectCategoryCommand.Execute("Certificates");
+        Assert.That(_vm.FilteredCertificateGroups, Has.Count.EqualTo(1));
+
+        await _vm.RemoveCertificateCommand.ExecuteAsync(_vm.CertificateItems[0]);
+
+        Assert.That(_vm.FilteredCertificateGroups, Is.Empty);
+    }
+
     private static TweakCardModel MakeTweak(string name, string category)
     {
         var entry = new TweakCatalogEntry(name, name, category, [], null, true, [], []);
@@ -1123,6 +1176,19 @@ public sealed class SystemTweaksViewModelTests
     private static FontCardModel MakeFont(string name)
     {
         return new FontCardModel(name, name, name, null, null, null, FontCardSource.Detected, [], CardStatus.Detected);
+    }
+
+    private static DetectedCertificate MakeCertificate(string thumbprint, CertificateStoreName store)
+    {
+        return new DetectedCertificate(
+            thumbprint,
+            $"CN=Test-{thumbprint}",
+            "CN=TestIssuer",
+            null,
+            DateTime.Now.AddYears(-1),
+            DateTime.Now.AddYears(1),
+            false,
+            store);
     }
 }
 #endif

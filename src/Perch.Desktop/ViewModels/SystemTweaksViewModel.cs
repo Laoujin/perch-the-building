@@ -384,6 +384,19 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private async Task RemoveCertificateAsync(CertificateCardModel card, CancellationToken cancellationToken)
+    {
+        await _certificateScanner.RemoveAsync(card.Certificate, cancellationToken);
+        CertificateItems.Remove(card);
+
+        foreach (var group in _allCertificateGroups)
+            group.Certificates.Remove(card);
+
+        _allCertificateGroups.RemoveAll(g => g.Certificates.Count == 0);
+        ApplyCertificateFilter();
+    }
+
+    [RelayCommand]
     private static void OpenCertificateManager()
     {
         Process.Start(new ProcessStartInfo("certmgr.msc") { UseShellExecute = true });
