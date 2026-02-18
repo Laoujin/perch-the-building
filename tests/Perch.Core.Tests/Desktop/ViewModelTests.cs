@@ -1100,6 +1100,12 @@ public sealed class SystemTweaksViewModelTests
         Assert.That(card.RegistryKeyCountText, Is.EqualTo("2 registry keys"));
     }
 
+    [Test]
+    public void OpenCertificateManager_CommandExists()
+    {
+        Assert.That(_vm.OpenCertificateManagerCommand, Is.Not.Null);
+    }
+
     private static TweakCardModel MakeTweak(string name, string category)
     {
         var entry = new TweakCatalogEntry(name, name, category, [], null, true, [], []);

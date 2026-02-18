@@ -431,6 +431,12 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
         Process.Start("regedit", $"/m \"{key}\"");
     }
 
+    [RelayCommand]
+    private static void OpenCertificateManager()
+    {
+        Process.Start(new ProcessStartInfo("certmgr.msc") { UseShellExecute = true });
+    }
+
     private void RefreshTweakCard(TweakCardModel card)
     {
         var detection = _tweakService.Detect(card.CatalogEntry);

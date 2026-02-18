@@ -584,12 +584,19 @@
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <ui:TextBox
-                    Grid.Row="0"
-                    PlaceholderText="Filter certificates..."
-                    Text="{Binding CertificateSearchText, UpdateSourceTrigger=PropertyChanged}"
-                    Width="250"
-                    Margin="0,0,0,8" />
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+                    <ui:TextBox
+                        PlaceholderText="Filter certificates..."
+                        Text="{Binding CertificateSearchText, UpdateSourceTrigger=PropertyChanged}"
+                        Width="250" />
+                    <ui:Button
+                        Content="Open Certificate Manager"
+                        Padding="8,4"
+                        FontSize="11"
+                        Margin="8,0,0,0"
+                        VerticalAlignment="Center"
+                        Click="OnOpenCertificateManagerClick" />
+                </StackPanel>
 
                 <ItemsControl Grid.Row="1" ItemsSource="{Binding AvailableCertificateExpiryFilters}" Margin="0,0,0,12">
                     <ItemsControl.ItemsPanel>

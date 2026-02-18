@@ -79,6 +79,11 @@ public partial class SystemTweaksPage : Page
             group.IsExpanded = !group.IsExpanded;
     }
 
+    private void OnOpenCertificateManagerClick(object sender, RoutedEventArgs e)
+    {
+        ViewModel.OpenCertificateManagerCommand.Execute(null);
+    }
+
     private void OnCertificateGroupExpandClick(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: CertificateStoreGroupModel group })
