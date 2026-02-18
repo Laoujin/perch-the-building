@@ -65,36 +65,49 @@ public partial class App : Application
 
     protected override async void OnStartup(StartupEventArgs e)
     {
-        ShowSplash();
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
-        EventManager.RegisterClassHandler(typeof(ScrollViewer),
-            UIElement.PreviewMouseWheelEvent,
-            new MouseWheelEventHandler(OnScrollViewerPreviewMouseWheel));
-
-        ApplicationThemeManager.Apply(ApplicationTheme.Dark);
-        ApplicationAccentColorManager.Apply(
-            System.Windows.Media.Color.FromRgb(0x10, 0xB9, 0x81),
-            ApplicationTheme.Dark);
-
-        await _host.StartAsync();
-
-        _ = Services.GetRequiredService<IGalleryDetectionService>().WarmUpAsync();
-
-        var settings = await Services.GetRequiredService<ISettingsProvider>().LoadAsync();
-        var isFirstRun = string.IsNullOrWhiteSpace(settings.ConfigRepoPath);
-
-        CloseSplash();
-
-        if (isFirstRun)
+        try
         {
-            ShowWizard();
-        }
-        else
-        {
-            ShowMainWindow();
-        }
+            ShowSplash();
 
-        base.OnStartup(e);
+            EventManager.RegisterClassHandler(typeof(ScrollViewer),
+                UIElement.PreviewMouseWheelEvent,
+                new MouseWheelEventHandler(OnScrollViewerPreviewMouseWheel));
+
+            ApplicationThemeManager.Apply(ApplicationTheme.Dark);
+            ApplicationAccentColorManager.Apply(
+                System.Windows.Media.Color.FromRgb(0x10, 0xB9, 0x81),
+                ApplicationTheme.Dark);
+
+            await _host.StartAsync();
+
+            _ = Services.GetRequiredService<IGalleryDetectionService>().WarmUpAsync();
+
+            var settings = await Services.GetRequiredService<ISettingsProvider>().LoadAsync();
+            var isFirstRun = string.IsNullOrWhiteSpace(settings.ConfigRepoPath);
+
+            CloseSplash();
+            ShutdownMode = ShutdownMode.OnLastWindowClose;
+
+            if (isFirstRun)
+            {
+                ShowWizard();
+            }
+            else
+            {
+                ShowMainWindow();
+            }
+
+            base.OnStartup(e);
+        }
+        catch (Exception ex)
+        {
+            CloseSplash();
+            var crashWindow = new CrashWindow(ex);
+            crashWindow.ShowDialog();
+            Shutdown(1);
+        }
     }
 
     private void ShowSplash()
