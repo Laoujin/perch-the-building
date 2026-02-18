@@ -38,6 +38,9 @@ public partial class TweakCardModel : ObservableObject
     [ObservableProperty]
     private ImmutableArray<RegistryEntryStatus> _detectedEntries;
 
+    public string BroadCategory => Category.Split('/')[0];
+    public string SubCategory => Category.Contains('/') ? Category[(Category.IndexOf('/') + 1)..] : Category;
+
     public int TotalCount => Registry.Length;
     public bool RestartRequired => Tags.Any(t => string.Equals(t, "restart", StringComparison.OrdinalIgnoreCase));
     public string RegistryKeyCountText => TotalCount == 1 ? "1 registry key" : $"{TotalCount} registry keys";

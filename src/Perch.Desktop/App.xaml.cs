@@ -22,6 +22,8 @@ namespace Perch.Desktop;
 
 public partial class App : Application
 {
+    public static string? DevBranch { get; private set; }
+
     private static readonly IHost _host = Host
         .CreateDefaultBuilder()
         .ConfigureServices((_, services) =>
@@ -65,6 +67,10 @@ public partial class App : Application
 
     protected override async void OnStartup(StartupEventArgs e)
     {
+        var branchIdx = Array.IndexOf(e.Args, "--branch");
+        if (branchIdx >= 0 && branchIdx + 1 < e.Args.Length)
+            DevBranch = e.Args[branchIdx + 1];
+
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
         try

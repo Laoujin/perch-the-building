@@ -96,6 +96,7 @@ public static class ServiceCollectionExtensions
         });
         services.AddSingleton<ICatalogService, CatalogService>();
         services.AddSingleton<IGalleryOverlayService, GalleryOverlayService>();
+        services.AddSingleton<ICertificateScanner, CertificateScanner>();
         services.AddSingleton<IFontScanner, FontScanner>();
         services.AddSingleton<IFontOnboardingService, FontOnboardingService>();
         services.AddSingleton<FontManifestParser>();

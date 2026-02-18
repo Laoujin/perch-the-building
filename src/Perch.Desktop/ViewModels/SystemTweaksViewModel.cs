@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 
@@ -5,6 +6,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 using Perch.Core.Config;
+using Perch.Core.Scanner;
 using Perch.Core.Startup;
 using Perch.Core.Tweaks;
 using Perch.Desktop.Models;
@@ -18,9 +20,8 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
     private readonly ISettingsProvider _settingsProvider;
     private readonly IStartupService _startupService;
     private readonly ITweakService _tweakService;
+    private readonly ICertificateScanner _certificateScanner;
     private readonly IPendingChangesService _pendingChanges;
-
-    private const int MinSubCategorySize = 3;
 
     [ObservableProperty]
     private bool _isLoading;
@@ -38,10 +39,13 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
     private string _startupSearchText = string.Empty;
 
     [ObservableProperty]
-    private string? _selectedCategory;
+    private string _certificateSearchText = string.Empty;
 
     [ObservableProperty]
-    private string? _selectedSubCategory;
+    private string? _activeCertificateExpiryFilter;
+
+    [ObservableProperty]
+    private string? _selectedCategory;
 
     [ObservableProperty]
     private string? _activeProfileFilter;
@@ -49,7 +53,6 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
     private HashSet<UserProfile> _userProfiles = [UserProfile.Developer, UserProfile.PowerUser];
 
     public ObservableCollection<TweakCardModel> Tweaks { get; } = [];
-    public ObservableCollection<TweakCardModel> FilteredTweaks { get; } = [];
     public ObservableCollection<FontCardModel> InstalledFonts { get; } = [];
     public ObservableCollection<FontCardModel> NerdFonts { get; } = [];
     public ObservableCollection<FontFamilyGroupModel> FilteredInstalledFontGroups { get; } = [];
@@ -59,44 +62,43 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
     public ObservableCollection<StartupCardModel> StartupItems { get; } = [];
     public ObservableCollection<StartupCardModel> FilteredStartupItems { get; } = [];
     public ObservableCollection<string> AvailableProfileFilters { get; } = [];
+    public ObservableCollection<CertificateCardModel> CertificateItems { get; } = [];
+    public ObservableCollection<CertificateStoreGroupModel> FilteredCertificateGroups { get; } = [];
+    public ObservableCollection<string> AvailableCertificateExpiryFilters { get; } = [];
 
     private List<FontFamilyGroupModel> _allInstalledFontGroups = [];
+    private List<CertificateStoreGroupModel> _allCertificateGroups = [];
 
     public bool ShowCategories => SelectedCategory is null;
     public bool ShowDetail => SelectedCategory is not null;
-    public bool ShowSubCategories => SelectedCategory == "System Tweaks" && SelectedSubCategory is null;
-    public bool ShowTweakCards => SelectedCategory == "System Tweaks" && SelectedSubCategory is not null;
+    public bool ShowSubCategories => SelectedCategory == "System Tweaks";
 
     public SystemTweaksViewModel(
         IGalleryDetectionService detectionService,
         ISettingsProvider settingsProvider,
         IStartupService startupService,
         ITweakService tweakService,
+        ICertificateScanner certificateScanner,
         IPendingChangesService pendingChanges)
     {
         _detectionService = detectionService;
         _settingsProvider = settingsProvider;
         _startupService = startupService;
         _tweakService = tweakService;
+        _certificateScanner = certificateScanner;
         _pendingChanges = pendingChanges;
     }
 
-    partial void OnSearchTextChanged(string value) => ApplyFilter();
+    partial void OnSearchTextChanged(string value) => RebuildSubCategories();
     partial void OnFontSearchTextChanged(string value) => ApplyFontFilter();
     partial void OnStartupSearchTextChanged(string value) => ApplyStartupFilter();
+    partial void OnCertificateSearchTextChanged(string value) => ApplyCertificateFilter();
 
     partial void OnSelectedCategoryChanged(string? value)
     {
         OnPropertyChanged(nameof(ShowCategories));
         OnPropertyChanged(nameof(ShowDetail));
         OnPropertyChanged(nameof(ShowSubCategories));
-        OnPropertyChanged(nameof(ShowTweakCards));
-    }
-
-    partial void OnSelectedSubCategoryChanged(string? value)
-    {
-        OnPropertyChanged(nameof(ShowSubCategories));
-        OnPropertyChanged(nameof(ShowTweakCards));
     }
 
     [RelayCommand]
@@ -111,8 +113,9 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
             var tweaksTask = _detectionService.DetectTweaksAsync(_userProfiles, cancellationToken);
             var fontsTask = _detectionService.DetectFontsAsync(cancellationToken);
             var startupTask = _startupService.GetAllAsync(cancellationToken);
+            var certsTask = _certificateScanner.ScanAsync(cancellationToken);
 
-            await Task.WhenAll(tweaksTask, fontsTask, startupTask);
+            await Task.WhenAll(tweaksTask, fontsTask, startupTask, certsTask);
 
             var tweakResult = tweaksTask.Result;
             Tweaks.Clear();
@@ -159,10 +162,14 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
             foreach (var entry in startupTask.Result)
                 StartupItems.Add(new StartupCardModel(entry));
 
+            CertificateItems.Clear();
+            foreach (var cert in certsTask.Result)
+                CertificateItems.Add(new CertificateCardModel(cert));
+
             BuildProfileFilters();
             BuildFontGroups();
+            BuildCertificateGroups();
             RebuildCategories();
-            ApplyFilter();
             ApplyStartupFilter();
         }
         catch (OperationCanceledException)
@@ -229,42 +236,49 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
                 fontCount,
                 InstalledFonts.Count(f => f.IsSelected) + NerdFonts.Count(f => f.IsSelected)));
         }
+
+        if (CertificateItems.Count > 0)
+        {
+            Categories.Add(new TweakCategoryCardModel(
+                "Certificates",
+                "Certificates",
+                "CurrentUser certificate stores",
+                CertificateItems.Count,
+                0));
+        }
     }
 
     private void RebuildSubCategories()
     {
         SubCategories.Clear();
 
-        var tweaksForFilter = GetProfileFilteredTweaks();
-        var groups = tweaksForFilter
-            .GroupBy(t => t.Category, StringComparer.OrdinalIgnoreCase)
+        var filtered = GetProfileFilteredTweaks()
+            .Where(t => t.MatchesSearch(SearchText));
+
+        var groups = filtered
+            .GroupBy(t => t.BroadCategory, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var group in groups)
+        {
+            var items = group.ToList();
+            SubCategories.Add(new TweakCategoryCardModel(
+                group.Key,
+                group.Key,
+                description: null,
+                items.Count,
+                items.Count(t => t.IsSelected)));
+        }
+    }
+
+    public IEnumerable<TweakSubCategoryGroup> GetCategorySubGroups(string broadCategory)
+    {
+        return GetProfileFilteredTweaks()
+            .Where(t => t.MatchesSearch(SearchText))
+            .Where(t => string.Equals(t.BroadCategory, broadCategory, StringComparison.OrdinalIgnoreCase))
+            .GroupBy(t => t.SubCategory, StringComparer.OrdinalIgnoreCase)
             .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
-        var smallGroups = groups.Where(g => g.Count() < MinSubCategorySize).ToList();
-        var normalGroups = groups.Where(g => g.Count() >= MinSubCategorySize).ToList();
-
-        foreach (var group in normalGroups)
-        {
-            SubCategories.Add(new TweakCategoryCardModel(
-                group.Key,
-                group.Key,
-                description: null,
-                group.Count(),
-                group.Count(t => t.IsSelected)));
-        }
-
-        if (smallGroups.Count > 0)
-        {
-            var otherCount = smallGroups.Sum(g => g.Count());
-            var otherSelected = smallGroups.Sum(g => g.Count(t => t.IsSelected));
-            SubCategories.Add(new TweakCategoryCardModel(
-                "Other",
-                "Other",
-                description: null,
-                otherCount,
-                otherSelected));
-        }
+            .Select(g => new TweakSubCategoryGroup(g.Key, g.ToImmutableArray()));
     }
 
     private IEnumerable<TweakCardModel> GetProfileFilteredTweaks()
@@ -282,11 +296,14 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
     [RelayCommand]
     private void SelectCategory(string category)
     {
-        SelectedSubCategory = null;
-        FilteredTweaks.Clear();
-
         if (string.Equals(category, "Startup", StringComparison.OrdinalIgnoreCase))
             ApplyStartupFilter();
+
+        if (string.Equals(category, "Certificates", StringComparison.OrdinalIgnoreCase))
+        {
+            ActiveCertificateExpiryFilter = "All";
+            ApplyCertificateFilter();
+        }
 
         if (string.Equals(category, "System Tweaks", StringComparison.OrdinalIgnoreCase))
         {
@@ -298,54 +315,24 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void SelectSubCategory(string subCategory)
-    {
-        FilteredTweaks.Clear();
-
-        var tweaksForFilter = GetProfileFilteredTweaks();
-
-        if (string.Equals(subCategory, "Other", StringComparison.OrdinalIgnoreCase))
-        {
-            var normalCategoryNames = SubCategories
-                .Where(c => !string.Equals(c.Category, "Other", StringComparison.OrdinalIgnoreCase))
-                .Select(c => c.Category)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var tweak in tweaksForFilter.Where(t => !normalCategoryNames.Contains(t.Category)))
-                FilteredTweaks.Add(tweak);
-        }
-        else
-        {
-            foreach (var tweak in tweaksForFilter.Where(t => string.Equals(t.Category, subCategory, StringComparison.OrdinalIgnoreCase)))
-                FilteredTweaks.Add(tweak);
-        }
-
-        SelectedSubCategory = subCategory;
-    }
-
-    [RelayCommand]
     private void SetProfileFilter(string filter)
     {
         ActiveProfileFilter = filter;
         RebuildSubCategories();
+    }
 
-        if (SelectedSubCategory is not null)
-            SelectSubCategory(SelectedSubCategory);
+    [RelayCommand]
+    private void SetCertificateExpiryFilter(string filter)
+    {
+        ActiveCertificateExpiryFilter = filter;
+        ApplyCertificateFilter();
     }
 
     [RelayCommand]
     private void BackToCategories()
     {
         SelectedCategory = null;
-        SelectedSubCategory = null;
         RebuildCategories();
-    }
-
-    [RelayCommand]
-    private void BackToSubCategories()
-    {
-        SelectedSubCategory = null;
-        RebuildSubCategories();
     }
 
     [RelayCommand]
@@ -468,8 +455,58 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
         }
     }
 
-    private void ApplyFilter()
+    private void BuildCertificateGroups()
     {
+        _allCertificateGroups = CertificateItems
+            .GroupBy(c => c.Certificate.Store)
+            .OrderBy(g => g.Key)
+            .Select(g => new CertificateStoreGroupModel(g.Key,
+                g.OrderBy(c => c.SubjectDisplayName, StringComparer.OrdinalIgnoreCase)))
+            .ToList();
+
+        var statuses = CertificateItems.Select(c => c.ExpiryStatus).ToHashSet();
+        AvailableCertificateExpiryFilters.Clear();
+        AvailableCertificateExpiryFilters.Add("All");
+        if (statuses.Contains(CertificateExpiryStatus.Valid))
+            AvailableCertificateExpiryFilters.Add("Valid");
+        if (statuses.Contains(CertificateExpiryStatus.ExpiringSoon))
+            AvailableCertificateExpiryFilters.Add("Expiring Soon");
+        if (statuses.Contains(CertificateExpiryStatus.Expired))
+            AvailableCertificateExpiryFilters.Add("Expired");
+
+        ApplyCertificateFilter();
+    }
+
+    private void ApplyCertificateFilter()
+    {
+        var query = CertificateSearchText;
+        var expiryFilter = ActiveCertificateExpiryFilter;
+        FilteredCertificateGroups.Clear();
+
+        foreach (var group in _allCertificateGroups)
+        {
+            IEnumerable<CertificateCardModel> certs = group.Certificates;
+
+            if (!string.IsNullOrWhiteSpace(query))
+                certs = certs.Where(c => c.MatchesSearch(query));
+
+            if (expiryFilter is not null and not "All")
+            {
+                var status = expiryFilter switch
+                {
+                    "Valid" => CertificateExpiryStatus.Valid,
+                    "Expiring Soon" => CertificateExpiryStatus.ExpiringSoon,
+                    "Expired" => CertificateExpiryStatus.Expired,
+                    _ => (CertificateExpiryStatus?)null,
+                };
+                if (status is not null)
+                    certs = certs.Where(c => c.ExpiryStatus == status);
+            }
+
+            var filtered = new CertificateStoreGroupModel(group.Store, certs);
+            if (filtered.Certificates.Count > 0)
+                FilteredCertificateGroups.Add(filtered);
+        }
     }
 
     private void OnFontPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -510,3 +547,5 @@ public sealed partial class SystemTweaksViewModel : ViewModelBase
         return profiles;
     }
 }
+
+public sealed record TweakSubCategoryGroup(string SubCategory, ImmutableArray<TweakCardModel> Tweaks);

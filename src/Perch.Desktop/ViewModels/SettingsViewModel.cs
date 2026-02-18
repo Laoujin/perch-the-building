@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -27,6 +28,18 @@ public sealed partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private string _appVersion = string.Empty;
 
+    [ObservableProperty]
+    private bool _isDev;
+
+    [ObservableProperty]
+    private string _currentWorkBranch = string.Empty;
+
+    [ObservableProperty]
+    private string _currentWorkIssue = string.Empty;
+
+    [ObservableProperty]
+    private bool _showCurrentWork;
+
     public SettingsViewModel(ISettingsProvider settingsProvider, INavigationService navigationService)
     {
         _settingsProvider = settingsProvider;
@@ -42,7 +55,18 @@ public sealed partial class SettingsViewModel : ViewModelBase
     {
         var settings = await _settingsProvider.LoadAsync(cancellationToken);
         ConfigRepoPath = settings.ConfigRepoPath ?? string.Empty;
+        IsDev = settings.Dev;
 
+        if (IsDev && App.DevBranch is { } branch)
+        {
+            CurrentWorkBranch = branch;
+            var match = Regex.Match(branch, @"^issue-(\d+)-(.+)$");
+            CurrentWorkIssue = match.Success
+                ? $"#{match.Groups[1].Value} -- {match.Groups[2].Value}"
+                : branch;
+        }
+
+        UpdateShowCurrentWork();
     }
 
     [RelayCommand]
@@ -56,6 +80,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
             var settings = new PerchSettings
             {
                 ConfigRepoPath = string.IsNullOrWhiteSpace(ConfigRepoPath) ? null : ConfigRepoPath.Trim(),
+                Dev = IsDev,
             };
 
             await _settingsProvider.SaveAsync(settings, cancellationToken);
@@ -76,6 +101,11 @@ public sealed partial class SettingsViewModel : ViewModelBase
     {
         _navigationService.Navigate(typeof(DashboardPage));
     }
+
+    partial void OnIsDevChanged(bool value) => UpdateShowCurrentWork();
+
+    private void UpdateShowCurrentWork() =>
+        ShowCurrentWork = IsDev && !string.IsNullOrEmpty(CurrentWorkBranch);
 
     [RelayCommand]
     private void BrowseConfigRepo()

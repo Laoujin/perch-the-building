@@ -47,6 +47,12 @@ public partial class AppsPage : Page
         }
     }
 
+    private void OnConfigureClicked(object sender, RoutedEventArgs e)
+    {
+        if (GetAppModel(sender) is { } app)
+            ViewModel.ConfigureAppCommand.Execute(app);
+    }
+
     private void OnTagClicked(object sender, RoutedEventArgs e)
     {
         if (sender is AppCard card && card.DataContext is AppCardModel)

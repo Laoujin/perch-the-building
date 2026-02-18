@@ -9,4 +9,5 @@ public sealed record PerchSettings
     public string? GalleryLocalPath { get; init; }
     public List<string>? Profiles { get; init; }
     public bool DisableGalleryCache { get; init; }
+    public bool Dev { get; init; }
 }

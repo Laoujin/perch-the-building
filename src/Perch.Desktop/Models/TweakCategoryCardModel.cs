@@ -17,6 +17,9 @@ public partial class TweakCategoryCardModel : ObservableObject
     [ObservableProperty]
     private int _selectedCount;
 
+    [ObservableProperty]
+    private bool _isExpanded;
+
     public TweakCategoryCardModel(
         string category,
         string displayName,
@@ -42,6 +45,7 @@ public partial class TweakCategoryCardModel : ObservableObject
         "Performance" => SymbolRegular.TopSpeed24,
         "Input" => SymbolRegular.Keyboard24,
         "Appearance" => SymbolRegular.PaintBrush24,
+        "Certificates" => SymbolRegular.ShieldLock24,
         _ => SymbolRegular.Wrench24,
     };
 }

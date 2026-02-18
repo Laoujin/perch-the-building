@@ -65,6 +65,21 @@
                 Icon="{ui:SymbolIcon ArrowClockwise24}"
                 Command="{Binding ReloadConfigurationCommand}" />
 
+            <!-- Developer -->
+            <ui:TextBlock FontTypography="Subtitle" Text="Developer" Margin="0,32,0,8" />
+            <CheckBox Content="Enable developer mode" IsChecked="{Binding IsDev}" />
+
+            <!-- Current Work -->
+            <StackPanel Visibility="{Binding ShowCurrentWork, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <ui:TextBlock FontTypography="Subtitle" Text="Current Work" Margin="0,12,0,8" />
+                <Border Padding="16,12" CornerRadius="6" Background="#1A2E1A">
+                    <StackPanel>
+                        <ui:TextBlock FontTypography="BodyStrong" Text="{Binding CurrentWorkIssue}" />
+                        <ui:TextBlock FontTypography="Caption" Opacity="0.6" Text="{Binding CurrentWorkBranch}" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
             <!-- About -->
             <ui:TextBlock FontTypography="Subtitle" Text="About" Margin="0,32,0,8" />
             <Border

@@ -13,10 +13,12 @@ namespace Perch.Desktop.ViewModels;
 public sealed partial class AppsViewModel : ViewModelBase
 {
     private readonly IGalleryDetectionService _detectionService;
+    private readonly IAppDetailService _detailService;
     private readonly ISettingsProvider _settingsProvider;
     private readonly IPendingChangesService _pendingChanges;
 
     private ImmutableArray<AppCardModel> _allApps = [];
+    private Dictionary<string, AppCardModel> _allAppsByIdIncludingChildren = new(StringComparer.OrdinalIgnoreCase);
     private HashSet<UserProfile> _activeProfiles = [UserProfile.Developer, UserProfile.PowerUser];
 
     private static readonly Dictionary<string, UserProfile[]> _broadCategoryProfiles = new(StringComparer.OrdinalIgnoreCase)
@@ -60,7 +62,24 @@ public sealed partial class AppsViewModel : ViewModelBase
     [ObservableProperty]
     private int _detectedCount;
 
+    [ObservableProperty]
+    private AppCardModel? _selectedApp;
+
+    [ObservableProperty]
+    private AppDetail? _detail;
+
+    [ObservableProperty]
+    private bool _isLoadingDetail;
+
+    public bool ShowCardGrid => SelectedApp is null;
+    public bool ShowDetailView => SelectedApp is not null;
+    public bool HasModule => Detail?.OwningModule is not null;
+    public bool HasNoModule => Detail is not null && Detail.OwningModule is null;
+    public bool HasEcosystem => EcosystemGroups.Count > 0;
+    public bool HasAlternatives => Detail is not null && !Detail.Alternatives.IsDefaultOrEmpty;
+
     public ObservableCollection<AppCategoryCardModel> Categories { get; } = [];
+    public ObservableCollection<EcosystemGroup> EcosystemGroups { get; } = [];
 
     public AppsViewModel(
         IGalleryDetectionService detectionService,
@@ -69,9 +88,22 @@ public sealed partial class AppsViewModel : ViewModelBase
         IPendingChangesService pendingChanges)
     {
         _detectionService = detectionService;
-        _ = detailService; // kept for DI compatibility
+        _detailService = detailService;
         _settingsProvider = settingsProvider;
         _pendingChanges = pendingChanges;
+    }
+
+    partial void OnSelectedAppChanged(AppCardModel? value)
+    {
+        OnPropertyChanged(nameof(ShowCardGrid));
+        OnPropertyChanged(nameof(ShowDetailView));
+    }
+
+    partial void OnDetailChanged(AppDetail? value)
+    {
+        OnPropertyChanged(nameof(HasModule));
+        OnPropertyChanged(nameof(HasNoModule));
+        OnPropertyChanged(nameof(HasAlternatives));
     }
 
     partial void OnSearchTextChanged(string value) => RebuildCategories();
@@ -179,6 +211,88 @@ public sealed partial class AppsViewModel : ViewModelBase
     [RelayCommand]
     private void TagClick(string tag) => SearchText = tag;
 
+    [RelayCommand]
+    private async Task ConfigureAppAsync(AppCardModel card, CancellationToken cancellationToken)
+    {
+        SelectedApp = card;
+        Detail = null;
+        EcosystemGroups.Clear();
+        OnPropertyChanged(nameof(HasEcosystem));
+        IsLoadingDetail = true;
+
+        try
+        {
+            Detail = await _detailService.LoadDetailAsync(card, cancellationToken);
+            BuildEcosystemGroups(card);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        finally
+        {
+            IsLoadingDetail = false;
+        }
+    }
+
+    [RelayCommand]
+    private void BackToGrid()
+    {
+        SelectedApp = null;
+        Detail = null;
+        EcosystemGroups.Clear();
+        OnPropertyChanged(nameof(HasEcosystem));
+    }
+
+    private void BuildEcosystemGroups(AppCardModel card)
+    {
+        EcosystemGroups.Clear();
+
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { card.Id };
+        var ecosystemApps = new List<AppCardModel>();
+
+        if (!card.DependentApps.IsDefaultOrEmpty)
+        {
+            foreach (var dep in card.DependentApps)
+            {
+                if (seen.Add(dep.Id))
+                    ecosystemApps.Add(dep);
+            }
+        }
+
+        if (!card.CatalogEntry.Suggests.IsDefaultOrEmpty)
+        {
+            foreach (var suggestId in card.CatalogEntry.Suggests)
+            {
+                if (seen.Add(suggestId) && _allAppsByIdIncludingChildren.TryGetValue(suggestId, out var suggested))
+                    ecosystemApps.Add(suggested);
+            }
+        }
+
+        if (ecosystemApps.Count == 0)
+        {
+            OnPropertyChanged(nameof(HasEcosystem));
+            return;
+        }
+
+        var groups = ecosystemApps
+            .GroupBy(a => a.SubCategory, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(g => GetSubCategoryPriority(card.BroadCategory, g.Key))
+            .ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var group in groups)
+        {
+            var sorted = group
+                .OrderBy(a => TierSortOrder(a.Tier))
+                .ThenBy(a => a.DisplayLabel, StringComparer.OrdinalIgnoreCase)
+                .ToImmutableArray();
+
+            EcosystemGroups.Add(new EcosystemGroup(group.Key, sorted));
+        }
+
+        OnPropertyChanged(nameof(HasEcosystem));
+    }
+
     public IEnumerable<AppCategoryGroup> GetCategorySubGroups(string broadCategory)
     {
         return _allApps
@@ -202,7 +316,8 @@ public sealed partial class AppsViewModel : ViewModelBase
         ImmutableArray<AppCardModel> other)
     {
         var allApps = yourApps.AsEnumerable().Concat(suggested).Concat(other).ToList();
-        var byId = allApps.ToDictionary(a => a.Id, StringComparer.OrdinalIgnoreCase);
+        _allAppsByIdIncludingChildren = allApps.ToDictionary(a => a.Id, StringComparer.OrdinalIgnoreCase);
+        var byId = _allAppsByIdIncludingChildren;
 
         var reverseMap = new Dictionary<string, List<AppCardModel>>(StringComparer.OrdinalIgnoreCase);
         var childIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -320,3 +435,5 @@ public sealed partial class AppsViewModel : ViewModelBase
 }
 
 public sealed record AppCategoryGroup(string SubCategory, ObservableCollection<AppCardModel> Apps);
+
+public sealed record EcosystemGroup(string Name, ImmutableArray<AppCardModel> Apps);

@@ -31,13 +31,14 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- Row 0: Status ribbon + badges + toggle -->
+            <!-- Row 0: Status ribbon + badges + detail button + toggle -->
             <Grid Grid.Row="0" Margin="0,0,0,6">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
@@ -86,8 +87,18 @@
                     <TextBlock Text="Top Pick" FontSize="9" Foreground="#10B981" />
                 </Border>
 
-                <ui:ToggleSwitch
+                <ui:Button
                     Grid.Column="4"
+                    Icon="{ui:SymbolIcon ChevronRight24}"
+                    Appearance="Secondary"
+                    Padding="2"
+                    Margin="4,0"
+                    VerticalAlignment="Center"
+                    Click="OnConfigureClick"
+                    ToolTip="View details" />
+
+                <ui:ToggleSwitch
+                    Grid.Column="5"
                     IsChecked="{Binding IsManaged, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=OneWay}"
                     IsEnabled="{Binding CanToggle, RelativeSource={RelativeSource AncestorType=UserControl}}"
                     Checked="OnToggleChanged"

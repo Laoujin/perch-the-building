@@ -9,6 +9,7 @@ using Perch.Core.Catalog;
 using Perch.Core.Config;
 using Perch.Core.Modules;
 using Perch.Core.Registry;
+using Perch.Core.Scanner;
 using Perch.Core.Startup;
 using Perch.Core.Tweaks;
 using Perch.Desktop.Models;
@@ -288,6 +289,142 @@ public sealed class AppsViewModelTests
             Requires: [.. requires]);
         return new AppCardModel(entry, tier, status);
     }
+
+    private static AppCardModel MakeCardWithSuggests(string name, string category, string[] suggests, CardStatus status = CardStatus.Detected, CardTier tier = CardTier.YourApps)
+    {
+        var entry = new CatalogEntry(name, name, name, category, [], null, null, null, null, null, null,
+            Suggests: [.. suggests]);
+        return new AppCardModel(entry, tier, status);
+    }
+
+    [Test]
+    public void InitialState_ShowsCardGrid_HidesDetailView()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(_vm.ShowCardGrid, Is.True);
+            Assert.That(_vm.ShowDetailView, Is.False);
+            Assert.That(_vm.SelectedApp, Is.Null);
+            Assert.That(_vm.Detail, Is.Null);
+            Assert.That(_vm.HasEcosystem, Is.False);
+        });
+    }
+
+    [Test]
+    public async Task ConfigureAppAsync_SetsSelectedAppAndLoadsDetail()
+    {
+        var card = MakeCard("vscode", "Development/IDEs", CardStatus.Linked);
+        var detail = new AppDetail(card, null, null, null, null, []);
+        _detailService.LoadDetailAsync(card, Arg.Any<CancellationToken>())
+            .Returns(detail);
+
+        _detectionService.DetectAppsAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
+            .Returns(new GalleryDetectionResult(ImmutableArray.Create(card), [], []));
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        await _vm.ConfigureAppCommand.ExecuteAsync(card);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_vm.SelectedApp, Is.EqualTo(card));
+            Assert.That(_vm.Detail, Is.EqualTo(detail));
+            Assert.That(_vm.ShowDetailView, Is.True);
+            Assert.That(_vm.ShowCardGrid, Is.False);
+            Assert.That(_vm.IsLoadingDetail, Is.False);
+        });
+    }
+
+    [Test]
+    public async Task BackToGrid_ResetsSelection()
+    {
+        var card = MakeCard("vscode", "Development/IDEs", CardStatus.Linked);
+        var detail = new AppDetail(card, null, null, null, null, []);
+        _detailService.LoadDetailAsync(card, Arg.Any<CancellationToken>())
+            .Returns(detail);
+
+        _detectionService.DetectAppsAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
+            .Returns(new GalleryDetectionResult(ImmutableArray.Create(card), [], []));
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        await _vm.ConfigureAppCommand.ExecuteAsync(card);
+        Assert.That(_vm.ShowDetailView, Is.True);
+
+        _vm.BackToGridCommand.Execute(null);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_vm.ShowCardGrid, Is.True);
+            Assert.That(_vm.SelectedApp, Is.Null);
+            Assert.That(_vm.Detail, Is.Null);
+            Assert.That(_vm.HasEcosystem, Is.False);
+        });
+    }
+
+    [Test]
+    public async Task ConfigureAppAsync_BuildsEcosystemFromDependentsAndSuggests()
+    {
+        var child = MakeCardWithRequires("eslint", "Development/CLI Tools", ["nodejs"]);
+        var suggestedTool = MakeCard("yarn", "Development/CLI Tools");
+        var parent = MakeCardWithSuggests("nodejs", "Development/Languages", ["yarn"]);
+
+        var detail = new AppDetail(parent, null, null, null, null, []);
+        _detailService.LoadDetailAsync(parent, Arg.Any<CancellationToken>())
+            .Returns(detail);
+
+        _detectionService.DetectAppsAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
+            .Returns(new GalleryDetectionResult(ImmutableArray.Create(parent, child, suggestedTool), [], []));
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        await _vm.ConfigureAppCommand.ExecuteAsync(parent);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_vm.HasEcosystem, Is.True);
+            var allEcoApps = _vm.EcosystemGroups.SelectMany(g => g.Apps).ToList();
+            Assert.That(allEcoApps, Has.Count.EqualTo(2));
+            Assert.That(allEcoApps.Any(a => a.Id == "eslint"), Is.True);
+            Assert.That(allEcoApps.Any(a => a.Id == "yarn"), Is.True);
+        });
+    }
+
+    [Test]
+    public async Task ConfigureAppAsync_EcosystemExcludesSelfAndDeduplicates()
+    {
+        var child = MakeCardWithRequires("eslint", "Development/CLI Tools", ["nodejs"]);
+        var parent = MakeCardWithSuggests("nodejs", "Development/Languages", ["eslint", "nodejs"]);
+
+        var detail = new AppDetail(parent, null, null, null, null, []);
+        _detailService.LoadDetailAsync(parent, Arg.Any<CancellationToken>())
+            .Returns(detail);
+
+        _detectionService.DetectAppsAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
+            .Returns(new GalleryDetectionResult(ImmutableArray.Create(parent, child), [], []));
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        await _vm.ConfigureAppCommand.ExecuteAsync(parent);
+
+        var allEcoApps = _vm.EcosystemGroups.SelectMany(g => g.Apps).ToList();
+        Assert.That(allEcoApps, Has.Count.EqualTo(1));
+        Assert.That(allEcoApps[0].Id, Is.EqualTo("eslint"));
+    }
+
+    [Test]
+    public async Task ConfigureAppAsync_NoSuggests_NoDependents_NoEcosystem()
+    {
+        var card = MakeCard("vscode", "Development/IDEs", CardStatus.Linked);
+        var detail = new AppDetail(card, null, null, null, null, []);
+        _detailService.LoadDetailAsync(card, Arg.Any<CancellationToken>())
+            .Returns(detail);
+
+        _detectionService.DetectAppsAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
+            .Returns(new GalleryDetectionResult(ImmutableArray.Create(card), [], []));
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        await _vm.ConfigureAppCommand.ExecuteAsync(card);
+
+        Assert.That(_vm.HasEcosystem, Is.False);
+        Assert.That(_vm.EcosystemGroups, Is.Empty);
+    }
 }
 
 [TestFixture]
@@ -500,6 +637,7 @@ public sealed class SystemTweaksViewModelTests
     private ISettingsProvider _settingsProvider = null!;
     private IStartupService _startupService = null!;
     private ITweakService _tweakService = null!;
+    private ICertificateScanner _certificateScanner = null!;
     private IPendingChangesService _pendingChanges = null!;
     private SystemTweaksViewModel _vm = null!;
 
@@ -510,6 +648,7 @@ public sealed class SystemTweaksViewModelTests
         _settingsProvider = Substitute.For<ISettingsProvider>();
         _startupService = Substitute.For<IStartupService>();
         _tweakService = Substitute.For<ITweakService>();
+        _certificateScanner = Substitute.For<ICertificateScanner>();
         _pendingChanges = Substitute.For<IPendingChangesService>();
 
         _settingsProvider.LoadAsync(Arg.Any<CancellationToken>())
@@ -523,8 +662,10 @@ public sealed class SystemTweaksViewModelTests
                 ImmutableArray<FontCardModel>.Empty));
         _startupService.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(Array.Empty<StartupEntry>());
+        _certificateScanner.ScanAsync(Arg.Any<CancellationToken>())
+            .Returns(ImmutableArray<DetectedCertificate>.Empty);
 
-        _vm = new SystemTweaksViewModel(_detectionService, _settingsProvider, _startupService, _tweakService, _pendingChanges);
+        _vm = new SystemTweaksViewModel(_detectionService, _settingsProvider, _startupService, _tweakService, _certificateScanner, _pendingChanges);
     }
 
     [Test]
@@ -610,17 +751,27 @@ public sealed class SystemTweaksViewModelTests
     }
 
     [Test]
-    public void BackToSubCategories_ResetsSubCategory()
+    public async Task GetCategorySubGroups_ReturnsTweaksGroupedBySubCategory()
     {
-        _vm.SelectCategoryCommand.Execute("System Tweaks");
-        _vm.SelectSubCategoryCommand.Execute("Registry");
-        _vm.BackToSubCategoriesCommand.Execute(null);
+        var tweaks = ImmutableArray.Create(
+            MakeTweak("tweak1", "Explorer/Files"),
+            MakeTweak("tweak2", "Explorer/Files"),
+            MakeTweak("tweak3", "Explorer/Context Menu"));
 
+        _detectionService.DetectTweaksAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
+            .Returns(new TweakDetectionPageResult(tweaks, ImmutableArray<TweakDetectionError>.Empty));
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+        _vm.SelectCategoryCommand.Execute("System Tweaks");
+        _vm.SetProfileFilterCommand.Execute("All");
+
+        var subGroups = _vm.GetCategorySubGroups("Explorer").ToList();
         Assert.Multiple(() =>
         {
-            Assert.That(_vm.ShowSubCategories, Is.True);
-            Assert.That(_vm.ShowTweakCards, Is.False);
-            Assert.That(_vm.SelectedSubCategory, Is.Null);
+            Assert.That(subGroups, Has.Count.EqualTo(2));
+            Assert.That(subGroups[0].SubCategory, Is.EqualTo("Context Menu"));
+            Assert.That(subGroups[1].SubCategory, Is.EqualTo("Files"));
+            Assert.That(subGroups[1].Tweaks, Has.Length.EqualTo(2));
         });
     }
 
@@ -680,42 +831,44 @@ public sealed class SystemTweaksViewModelTests
     }
 
     [Test]
-    public async Task SelectSubCategory_FiltersTweaksForSubCategory()
+    public async Task RebuildSubCategories_GroupsByBroadCategory()
     {
         var tweaks = ImmutableArray.Create(
-            MakeTweak("tweak1", "Registry"),
-            MakeTweak("tweak2", "Registry"),
-            MakeTweak("tweak3", "Registry"),
-            MakeTweak("tweak4", "Explorer"),
-            MakeTweak("tweak5", "Explorer"),
-            MakeTweak("tweak6", "Explorer"));
+            MakeTweak("tweak1", "Explorer/Files"),
+            MakeTweak("tweak2", "Explorer/Context Menu"),
+            MakeTweak("tweak3", "Privacy/Telemetry"));
 
         _detectionService.DetectTweaksAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
             .Returns(new TweakDetectionPageResult(tweaks, ImmutableArray<TweakDetectionError>.Empty));
 
         await _vm.RefreshCommand.ExecuteAsync(null);
         _vm.SelectCategoryCommand.Execute("System Tweaks");
-        _vm.SelectSubCategoryCommand.Execute("Registry");
+        _vm.SetProfileFilterCommand.Execute("All");
 
-        Assert.That(_vm.FilteredTweaks, Has.Count.EqualTo(3));
+        Assert.Multiple(() =>
+        {
+            Assert.That(_vm.SubCategories, Has.Count.EqualTo(2));
+            Assert.That(_vm.SubCategories[0].Category, Is.EqualTo("Explorer"));
+            Assert.That(_vm.SubCategories[0].ItemCount, Is.EqualTo(2));
+            Assert.That(_vm.SubCategories[1].Category, Is.EqualTo("Privacy"));
+            Assert.That(_vm.SubCategories[1].ItemCount, Is.EqualTo(1));
+        });
     }
 
     [Test]
     public async Task SelectCategory_SystemTweaks_BuildsSubCategories()
     {
         var tweaks = ImmutableArray.Create(
-            MakeTweak("tweak1", "Registry"),
-            MakeTweak("tweak2", "Registry"),
-            MakeTweak("tweak3", "Registry"),
-            MakeTweak("tweak4", "Explorer"),
-            MakeTweak("tweak5", "Explorer"),
-            MakeTweak("tweak6", "Explorer"));
+            MakeTweak("tweak1", "Explorer/Files"),
+            MakeTweak("tweak2", "Explorer/Context Menu"),
+            MakeTweak("tweak3", "Privacy/Telemetry"));
 
         _detectionService.DetectTweaksAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
             .Returns(new TweakDetectionPageResult(tweaks, ImmutableArray<TweakDetectionError>.Empty));
 
         await _vm.RefreshCommand.ExecuteAsync(null);
         _vm.SelectCategoryCommand.Execute("System Tweaks");
+        _vm.SetProfileFilterCommand.Execute("All");
 
         Assert.Multiple(() =>
         {
@@ -725,16 +878,16 @@ public sealed class SystemTweaksViewModelTests
     }
 
     [Test]
-    public async Task SelectCategory_Fonts_LeavesFilteredTweaksEmpty()
+    public async Task SelectCategory_Fonts_ShowsSubCategoriesFalse()
     {
-        var tweaks = ImmutableArray.Create(MakeTweak("tweak1", "Registry"));
+        var tweaks = ImmutableArray.Create(MakeTweak("tweak1", "Explorer/Files"));
         _detectionService.DetectTweaksAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
             .Returns(new TweakDetectionPageResult(tweaks, ImmutableArray<TweakDetectionError>.Empty));
 
         await _vm.RefreshCommand.ExecuteAsync(null);
         _vm.SelectCategoryCommand.Execute("Fonts");
 
-        Assert.That(_vm.FilteredTweaks, Is.Empty);
+        Assert.That(_vm.ShowSubCategories, Is.False);
     }
 
     [Test]
@@ -772,25 +925,23 @@ public sealed class SystemTweaksViewModelTests
     }
 
     [Test]
-    public async Task SearchText_DoesNotFilterTweaks()
+    public async Task SearchText_FiltersSubCategories()
     {
         var tweaks = ImmutableArray.Create(
-            MakeTweak("tweak1", "Registry"),
-            MakeTweak("tweak2", "Registry"),
-            MakeTweak("tweak3", "Registry"),
-            MakeTweak("tweak4", "Explorer"),
-            MakeTweak("tweak5", "Explorer"),
-            MakeTweak("tweak6", "Explorer"));
+            MakeTweak("tweak1", "Explorer/Files"),
+            MakeTweak("tweak2", "Explorer/Files"),
+            MakeTweak("tweak3", "Privacy/Telemetry"));
         _detectionService.DetectTweaksAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
             .Returns(new TweakDetectionPageResult(tweaks, ImmutableArray<TweakDetectionError>.Empty));
 
         await _vm.RefreshCommand.ExecuteAsync(null);
         _vm.SelectCategoryCommand.Execute("System Tweaks");
-        _vm.SelectSubCategoryCommand.Execute("Registry");
-        Assert.That(_vm.FilteredTweaks, Has.Count.EqualTo(3));
+        _vm.SetProfileFilterCommand.Execute("All");
+        Assert.That(_vm.SubCategories, Has.Count.EqualTo(2));
 
-        _vm.SearchText = "nonexistent";
-        Assert.That(_vm.FilteredTweaks, Has.Count.EqualTo(3));
+        _vm.SearchText = "tweak3";
+        Assert.That(_vm.SubCategories, Has.Count.EqualTo(1));
+        Assert.That(_vm.SubCategories[0].Category, Is.EqualTo("Privacy"));
     }
 
     [Test]
@@ -818,12 +969,12 @@ public sealed class SystemTweaksViewModelTests
     [Test]
     public async Task SetProfileFilter_FiltersSubCategories()
     {
-        var entry1 = new TweakCatalogEntry("tweak1", "tweak1", "Explorer", [], null, true, ["developer"], []);
-        var entry2 = new TweakCatalogEntry("tweak2", "tweak2", "Explorer", [], null, true, ["developer"], []);
-        var entry3 = new TweakCatalogEntry("tweak3", "tweak3", "Explorer", [], null, true, ["developer"], []);
-        var entry4 = new TweakCatalogEntry("tweak4", "tweak4", "Privacy", [], null, true, ["gamer"], []);
-        var entry5 = new TweakCatalogEntry("tweak5", "tweak5", "Privacy", [], null, true, ["gamer"], []);
-        var entry6 = new TweakCatalogEntry("tweak6", "tweak6", "Privacy", [], null, true, ["gamer"], []);
+        var entry1 = new TweakCatalogEntry("tweak1", "tweak1", "Explorer/Files", [], null, true, ["developer"], []);
+        var entry2 = new TweakCatalogEntry("tweak2", "tweak2", "Explorer/Context Menu", [], null, true, ["developer"], []);
+        var entry3 = new TweakCatalogEntry("tweak3", "tweak3", "Explorer/Context Menu", [], null, true, ["developer"], []);
+        var entry4 = new TweakCatalogEntry("tweak4", "tweak4", "Privacy/Telemetry", [], null, true, ["gamer"], []);
+        var entry5 = new TweakCatalogEntry("tweak5", "tweak5", "Privacy/Tracking", [], null, true, ["gamer"], []);
+        var entry6 = new TweakCatalogEntry("tweak6", "tweak6", "Privacy/Tracking", [], null, true, ["gamer"], []);
         var tweaks = ImmutableArray.Create(
             new TweakCardModel(entry1, CardStatus.Detected),
             new TweakCardModel(entry2, CardStatus.Detected),
@@ -846,29 +997,27 @@ public sealed class SystemTweaksViewModelTests
     }
 
     [Test]
-    public async Task SmallSubCategories_MergedIntoOther()
+    public async Task ProfileFilter_FiltersSubGroupsCorrectly()
     {
+        var entry1 = new TweakCatalogEntry("tweak1", "tweak1", "Explorer/Files", [], null, true, ["developer"], []);
+        var entry2 = new TweakCatalogEntry("tweak2", "tweak2", "Privacy/Telemetry", [], null, true, ["gamer"], []);
         var tweaks = ImmutableArray.Create(
-            MakeTweak("tweak1", "Explorer"),
-            MakeTweak("tweak2", "Explorer"),
-            MakeTweak("tweak3", "Explorer"),
-            MakeTweak("tweak4", "Privacy"),
-            MakeTweak("tweak5", "Tiny"));
+            new TweakCardModel(entry1, CardStatus.Detected),
+            new TweakCardModel(entry2, CardStatus.Detected));
 
         _detectionService.DetectTweaksAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
             .Returns(new TweakDetectionPageResult(tweaks, ImmutableArray<TweakDetectionError>.Empty));
 
         await _vm.RefreshCommand.ExecuteAsync(null);
         _vm.SelectCategoryCommand.Execute("System Tweaks");
-        _vm.SetProfileFilterCommand.Execute("All");
+        _vm.SetProfileFilterCommand.Execute("developer");
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(_vm.SubCategories.Any(c => c.Category == "Explorer"), Is.True);
-            Assert.That(_vm.SubCategories.Any(c => c.Category == "Other"), Is.True);
-            Assert.That(_vm.SubCategories.Any(c => c.Category == "Tiny"), Is.False);
-            Assert.That(_vm.SubCategories.Any(c => c.Category == "Privacy"), Is.False);
-        });
+        Assert.That(_vm.SubCategories, Has.Count.EqualTo(1));
+        Assert.That(_vm.SubCategories[0].Category, Is.EqualTo("Explorer"));
+
+        var subGroups = _vm.GetCategorySubGroups("Explorer").ToList();
+        Assert.That(subGroups, Has.Count.EqualTo(1));
+        Assert.That(subGroups[0].Tweaks, Has.Length.EqualTo(1));
     }
 
     [Test]
