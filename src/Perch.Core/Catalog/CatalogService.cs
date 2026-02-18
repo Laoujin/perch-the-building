@@ -134,6 +134,15 @@ public sealed class CatalogService : ICatalogService
             .ToImmutableArray();
     }
 
+    public async Task<ImmutableArray<TweakCatalogEntry>> GetAllAppOwnedTweaksAsync(CancellationToken cancellationToken = default)
+    {
+        var allApps = await GetAllAppsAsync(cancellationToken).ConfigureAwait(false);
+        return allApps
+            .Where(a => !a.Tweaks.IsDefaultOrEmpty)
+            .SelectMany(app => app.Tweaks.Select(t => t.ToTweakCatalogEntry(app)))
+            .ToImmutableArray();
+    }
+
     private async Task<string> ResolvePathAsync(string type, string id, CancellationToken cancellationToken)
     {
         var index = await GetIndexAsync(cancellationToken).ConfigureAwait(false);

@@ -185,4 +185,91 @@ public sealed class CatalogServiceTests
         Assert.That(apps, Has.Length.EqualTo(1));
         Assert.That(apps[0].Name, Is.EqualTo("Visual Studio Code"));
     }
+
+    [Test]
+    public async Task GetAllAppOwnedTweaksAsync_CollectsTweaksFromAllApps()
+    {
+        string indexYaml = """
+            apps:
+              - id: git
+                name: Git
+                category: Dev
+              - id: spotify
+                name: Spotify
+                category: Media
+            fonts: []
+            tweaks: []
+            """;
+
+        string gitYaml = """
+            name: Git
+            category: Development/Version Control
+            profiles: [developer]
+            tweaks:
+              - id: git-bash-here
+                name: Git Bash Here
+                reversible: true
+                registry:
+                  - key: HKCR\Directory\Background\shell\git_shell\command
+                    name: "(Default)"
+                    value: "git-bash.exe"
+                    type: string
+            """;
+
+        string spotifyYaml = """
+            name: Spotify
+            category: Media/Players
+            """;
+
+        _cache.GetAsync("index.yaml", Arg.Any<CancellationToken>()).Returns(indexYaml);
+        _cache.GetAsync("apps/git.yaml", Arg.Any<CancellationToken>()).Returns(gitYaml);
+        _cache.GetAsync("apps/spotify.yaml", Arg.Any<CancellationToken>()).Returns(spotifyYaml);
+
+        var tweaks = await _service.GetAllAppOwnedTweaksAsync();
+
+        Assert.That(tweaks, Has.Length.EqualTo(1));
+        Assert.That(tweaks[0].Id, Is.EqualTo("git/git-bash-here"));
+        Assert.That(tweaks[0].Category, Is.EqualTo("Development/Version Control"));
+        Assert.That(tweaks[0].Reversible, Is.True);
+    }
+
+    [Test]
+    public async Task GetAllAppOwnedTweaksAsync_MultipleTweaksFromOneApp()
+    {
+        string indexYaml = """
+            apps:
+              - id: myapp
+                name: MyApp
+                category: Test
+            fonts: []
+            tweaks: []
+            """;
+
+        string appYaml = """
+            name: MyApp
+            category: Test/Cat
+            profiles: [developer]
+            tweaks:
+              - id: tweak-a
+                name: Tweak A
+                reversible: true
+                registry:
+                  - key: HKCU\Software\Test
+                    name: A
+                    value: 1
+                    type: dword
+              - id: tweak-b
+                name: Tweak B
+                script: "echo hello"
+            """;
+
+        _cache.GetAsync("index.yaml", Arg.Any<CancellationToken>()).Returns(indexYaml);
+        _cache.GetAsync("apps/myapp.yaml", Arg.Any<CancellationToken>()).Returns(appYaml);
+
+        var tweaks = await _service.GetAllAppOwnedTweaksAsync();
+
+        Assert.That(tweaks, Has.Length.EqualTo(2));
+        Assert.That(tweaks[0].Id, Is.EqualTo("myapp/tweak-a"));
+        Assert.That(tweaks[1].Id, Is.EqualTo("myapp/tweak-b"));
+    }
 }

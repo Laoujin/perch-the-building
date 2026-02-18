@@ -30,4 +30,7 @@ public sealed class NoOpCatalogService : ICatalogService
 
     public Task<ImmutableArray<CatalogEntry>> GetAllDotfileAppsAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult(ImmutableArray<CatalogEntry>.Empty);
+
+    public Task<ImmutableArray<TweakCatalogEntry>> GetAllAppOwnedTweaksAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(ImmutableArray<TweakCatalogEntry>.Empty);
 }
