@@ -27,7 +27,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="..\..\images\**\*.png" Link="Assets\%(Filename)%(Extension)" />
+    <Resource Include="..\..\images\**\*.png" Exclude="..\..\images\startpage.png" Link="Assets\%(Filename)%(Extension)" />
+    <SplashScreen Include="..\..\images\startpage.png" Link="Assets\startpage.png" />
   </ItemGroup>
 
 </Project>
