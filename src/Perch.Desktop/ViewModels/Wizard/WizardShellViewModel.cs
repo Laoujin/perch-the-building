@@ -188,7 +188,7 @@ public sealed partial class WizardShellViewModel : ViewModelBase
         _stepKeys.Add("Config");
         if (ShowDotfilesStep) _stepKeys.Add("Dotfiles");
         _stepKeys.Add("Apps");
-        _stepKeys.Add("System Tweaks");
+        _stepKeys.Add("Windows Tweaks");
         _stepKeys.Add("Review");
         _stepKeys.Add("Deploy");
 

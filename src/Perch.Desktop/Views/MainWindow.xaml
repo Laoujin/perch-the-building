@@ -74,7 +74,7 @@
                 </ui:NavigationViewItem>
 
                 <ui:NavigationViewItem
-                    Content="System Tweaks"
+                    Content="Windows Tweaks"
                     TargetPageType="{x:Type pages:SystemTweaksPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Wrench24" />

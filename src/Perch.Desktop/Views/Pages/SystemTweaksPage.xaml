@@ -26,7 +26,7 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <ui:TextBlock Grid.Column="0" FontTypography="Title" Text="System Tweaks" />
+            <ui:TextBlock Grid.Column="0" FontTypography="Title" Text="Windows Tweaks" />
 
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <ui:TextBox

@@ -63,7 +63,7 @@ public partial class WizardWindow : FluentWindow
         ConfigStep.Visibility = stepName == "Config" ? Visibility.Visible : Visibility.Collapsed;
         DotfilesStep.Visibility = stepName == "Dotfiles" ? Visibility.Visible : Visibility.Collapsed;
         AppsStep.Visibility = stepName == "Apps" ? Visibility.Visible : Visibility.Collapsed;
-        TweaksStep.Visibility = stepName == "System Tweaks" ? Visibility.Visible : Visibility.Collapsed;
+        TweaksStep.Visibility = stepName == "Windows Tweaks" ? Visibility.Visible : Visibility.Collapsed;
         ReviewStep.Visibility = stepName == "Review" ? Visibility.Visible : Visibility.Collapsed;
         DeployStep.Visibility = stepName == "Deploy" ? Visibility.Visible : Visibility.Collapsed;
     }

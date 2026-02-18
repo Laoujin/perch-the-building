@@ -34,13 +34,13 @@ public partial class StatusRibbon : UserControl
     {
         var (text, bg) = status switch
         {
-            CardStatus.Linked => ("Linked", "#059669"),
+            CardStatus.Linked => ("Adjusted", "#34D399"),
             CardStatus.Detected => ("Detected", "#B45309"),
             CardStatus.Selected => ("Selected", "#047857"),
-            CardStatus.Drift => ("Drift", "#D97706"),
+            CardStatus.Drift => ("Drifted", "#F59E0B"),
             CardStatus.Broken => ("Broken", "#DC2626"),
             CardStatus.Error => ("Error", "#DC2626"),
-            _ => ("Not installed", "#2563EB"),
+            _ => ("System Default", "#3B82F6"),
         };
 
         RibbonText.Text = text;
