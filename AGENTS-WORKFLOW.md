@@ -77,52 +77,61 @@ Screenshots are saved to `tests/Perch.SmokeTests/screenshots/`.
 
 If something looks wrong, fix it and re-screenshot.
 
-### 5. Create the PR
+### 5. Embed Screenshots in the Branch
+
+To make screenshots visible in the PR on GitHub:
+
+```bash
+# Force-add screenshots to the branch (they're .gitignored)
+git add -f tests/Perch.SmokeTests/screenshots/*.png
+git commit -m "Add smoke test screenshots for PR"
+```
+
+Build the image URLs using the branch name:
+```
+https://raw.githubusercontent.com/Laoujin/Perch/<branch>/tests/Perch.SmokeTests/screenshots/<name>.png
+```
+
+### 6. Create the PR
 
 ```bash
 # Push the branch
 git push -u origin issue-<NUMBER>-<short-slug>
+```
 
-# Create PR with screenshot
+Create the PR with embedded screenshot images. Use `![alt](url)` markdown with raw.githubusercontent.com URLs so they render inline:
+
+```bash
+BRANCH="issue-<NUMBER>-<short-slug>"
+BASE="https://raw.githubusercontent.com/Laoujin/Perch/$BRANCH/tests/Perch.SmokeTests/screenshots"
+
 gh pr create \
   --title "<imperative summary, max 72 chars>" \
-  --body "$(cat <<'EOF'
+  --body "$(cat <<EOF
 ## Summary
 - <what changed and why>
 - Closes #<NUMBER>
 
 ## Screenshots
-<paste screenshot descriptions -- attach PNGs via gh pr edit or reference paths>
+![relevant-page]($BASE/<screenshot-name>.png)
 
 ## Test Plan
-- [ ] Smoke test screenshots reviewed
-- [ ] `dotnet build` -- zero warnings
-- [ ] `dotnet test` -- all pass
+- [x] Smoke test screenshots reviewed
+- [x] \`dotnet build\` -- zero warnings
+- [x] \`dotnet test\` -- all pass
 EOF
 )"
 ```
 
-To attach screenshots to the PR, upload them:
-
-```bash
-# Upload screenshot and get URL for PR body
-gh pr edit <PR_NUMBER> --add-label "<area:label>"
-```
-
-Note: GitHub CLI doesn't support direct image upload in PR bodies. Instead:
-1. Reference the screenshot path in the PR description
-2. Show the screenshots to the user via the Read tool for approval
-3. The user can view them locally at `tests/Perch.SmokeTests/screenshots/`
-
-### 6. Show Results to the User
+### 7. Show Results to the User
 
 After creating the PR:
 1. Show the PR URL
 2. Display the relevant screenshots using the Read tool
 3. Summarize what was changed
-4. Wait for approval before moving on
+4. Open the PR in the browser: `start <PR_URL>` (Windows)
 
-### 7. Clean Up and Repeat
+### 8. Clean Up and Repeat
 
 After the PR is approved/merged:
 

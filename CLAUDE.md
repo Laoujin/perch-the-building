@@ -54,9 +54,18 @@ See global `~/.claude/AGENTS-DOTNET-STYLE.md` and `~/.claude/AGENTS-DOTNET-TESTI
 - **No comments restating what code does** — code should be self-documenting
 - **Warnings as errors** — zero tolerance for analyzer warnings
 
-## Agent Workflow
+## Agent Workflow (MANDATORY)
 
-See `AGENTS-WORKFLOW.md` for the full issue-to-PR pipeline: worktree, fix, smoke test, screenshot, PR, repeat.
+**Every task that touches code MUST follow `AGENTS-WORKFLOW.md`.** This is the default operating mode:
+
+1. **Worktree** -- branch from master, work in a git worktree
+2. **Fix** -- implement, build (zero warnings), test (all pass)
+3. **Screenshot** -- run smoke tests, review screenshots with Read tool
+4. **PR** -- create PR linking the issue, embed screenshots in the PR body
+5. **Show** -- display PR URL + screenshots to user, open in browser
+6. **Repeat** -- after merge, pull master, clean up, pick next issue
+
+Do NOT commit directly to master. Do NOT skip screenshots for Desktop changes.
 
 ## Project Docs
 
