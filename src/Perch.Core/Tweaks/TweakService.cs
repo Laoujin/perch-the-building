@@ -28,7 +28,17 @@ public sealed class TweakService : ITweakService
 
         foreach (RegistryEntryDefinition entry in tweak.Registry)
         {
-            object? currentValue = _registryProvider.GetValue(entry.Key, entry.Name);
+            object? currentValue;
+            try
+            {
+                currentValue = _registryProvider.GetValue(entry.Key, entry.Name);
+            }
+            catch (Exception)
+            {
+                entries.Add(new RegistryEntryStatus(entry, null, false));
+                continue;
+            }
+
             bool isApplied = Equals(currentValue, entry.Value);
             entries.Add(new RegistryEntryStatus(entry, currentValue, isApplied));
             if (isApplied) appliedCount++;
