@@ -93,6 +93,12 @@ public partial class WizardWindow : FluentWindow
         }
     }
 
+    private void OnWizardTweakExpandClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: TweakCardModel tweak })
+            tweak.IsExpanded = !tweak.IsExpanded;
+    }
+
     private void OnOpenDashboard(object sender, RoutedEventArgs e)
     {
         WizardCompleted?.Invoke();
