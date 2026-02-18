@@ -89,19 +89,32 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <Grid Grid.Column="0" Width="20" Height="20" VerticalAlignment="Center" Margin="0,0,6,0">
-                    <ui:SymbolIcon
+                <Grid Grid.Column="0" Width="24" Height="24" VerticalAlignment="Center" Margin="0,0,8,0">
+                    <Border
                         x:Name="FallbackIcon"
-                        Symbol="Apps24"
-                        FontSize="16"
-                        Foreground="#888888" />
-                    <Image
-                        x:Name="LogoImage"
-                        Width="20"
-                        Height="20"
-                        RenderOptions.BitmapScalingMode="HighQuality"
-                        Source="{Binding LogoUrl, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                        ImageFailed="OnLogoImageFailed" />
+                        Width="24"
+                        Height="24"
+                        CornerRadius="12"
+                        Background="#2A2A3E">
+                        <TextBlock
+                            x:Name="FallbackInitial"
+                            FontSize="12"
+                            FontWeight="SemiBold"
+                            Foreground="#9CA3AF"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+                    </Border>
+                    <Border CornerRadius="12" Width="24" Height="24">
+                        <Border.Clip>
+                            <EllipseGeometry Center="12,12" RadiusX="12" RadiusY="12" />
+                        </Border.Clip>
+                        <Image
+                            x:Name="LogoImage"
+                            Width="24"
+                            Height="24"
+                            Stretch="UniformToFill"
+                            RenderOptions.BitmapScalingMode="HighQuality" />
+                    </Border>
                 </Grid>
 
                 <TextBlock

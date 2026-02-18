@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media.Imaging;
 
 using Perch.Desktop.Models;
 
@@ -12,7 +13,7 @@ public partial class AppCard : UserControl
 {
     public static readonly DependencyProperty DisplayLabelProperty =
         DependencyProperty.Register(nameof(DisplayLabel), typeof(string), typeof(AppCard),
-            new PropertyMetadata(string.Empty));
+            new PropertyMetadata(string.Empty, OnDisplayLabelChanged));
 
     public static readonly DependencyProperty DescriptionProperty =
         DependencyProperty.Register(nameof(Description), typeof(string), typeof(AppCard),
@@ -52,7 +53,7 @@ public partial class AppCard : UserControl
 
     public static readonly DependencyProperty LogoUrlProperty =
         DependencyProperty.Register(nameof(LogoUrl), typeof(string), typeof(AppCard),
-            new PropertyMetadata(null));
+            new PropertyMetadata(null, OnLogoUrlChanged));
 
     public static readonly DependencyProperty IsSelectedProperty =
         DependencyProperty.Register(nameof(IsSelected), typeof(bool), typeof(AppCard),
@@ -188,10 +189,53 @@ public partial class AppCard : UserControl
     private void OnToggleChanged(object sender, RoutedEventArgs e) =>
         RaiseEvent(new RoutedEventArgs(ToggleChangedEvent, this));
 
-    private void OnLogoImageFailed(object sender, ExceptionRoutedEventArgs e)
+    private static void OnDisplayLabelChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        LogoImage.Visibility = Visibility.Collapsed;
-        FallbackIcon.Visibility = Visibility.Visible;
+        if (d is AppCard card && e.NewValue is string label && label.Length > 0)
+            card.FallbackInitial.Text = label[..1].ToUpperInvariant();
+    }
+
+    private static void OnLogoUrlChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is not AppCard card)
+            return;
+
+        if (e.NewValue is not string url || string.IsNullOrEmpty(url))
+        {
+            card.LogoImage.Source = null;
+            card.FallbackIcon.Visibility = Visibility.Visible;
+            return;
+        }
+
+        try
+        {
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.UriSource = new Uri(url, UriKind.Absolute);
+            bitmap.DecodePixelWidth = 48;
+            bitmap.EndInit();
+
+            if (bitmap.IsDownloading)
+            {
+                bitmap.DownloadCompleted += (_, _) => card.FallbackIcon.Visibility = Visibility.Collapsed;
+                bitmap.DownloadFailed += (_, _) =>
+                {
+                    card.LogoImage.Source = null;
+                    card.FallbackIcon.Visibility = Visibility.Visible;
+                };
+            }
+            else
+            {
+                card.FallbackIcon.Visibility = Visibility.Collapsed;
+            }
+
+            card.LogoImage.Source = bitmap;
+        }
+        catch
+        {
+            card.LogoImage.Source = null;
+            card.FallbackIcon.Visibility = Visibility.Visible;
+        }
     }
 
     private void OnLinkClick(object sender, RoutedEventArgs e)
