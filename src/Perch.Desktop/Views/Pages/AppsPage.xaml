@@ -32,20 +32,26 @@
 
             <!-- Status summary -->
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
-                <TextBlock FontSize="11" Foreground="#888888">
-                    <Run Text="{Binding LinkedCount, Mode=OneWay}" Foreground="#34D399" FontWeight="SemiBold" />
-                    <Run Text=" linked" />
-                </TextBlock>
-                <TextBlock FontSize="11" Foreground="#888888" Margin="12,0,0,0"
-                           Visibility="{Binding DriftedCount, Converter={StaticResource CountToVisibilityConverter}}">
-                    <Run Text="{Binding DriftedCount, Mode=OneWay}" Foreground="#F59E0B" FontWeight="SemiBold" />
-                    <Run Text=" drifted" />
-                </TextBlock>
-                <TextBlock FontSize="11" Foreground="#888888" Margin="12,0,0,0"
-                           Visibility="{Binding DetectedCount, Converter={StaticResource CountToVisibilityConverter}}">
-                    <Run Text="{Binding DetectedCount, Mode=OneWay}" Foreground="#3B82F6" FontWeight="SemiBold" />
-                    <Run Text=" detected" />
-                </TextBlock>
+                <Border Background="#1A34D399" CornerRadius="10" Padding="8,3" Margin="0,0,8,0">
+                    <TextBlock FontSize="11">
+                        <Run Text="{Binding LinkedCount, Mode=OneWay}" Foreground="#34D399" FontWeight="SemiBold" />
+                        <Run Text=" linked" Foreground="#34D399" />
+                    </TextBlock>
+                </Border>
+                <Border Background="#1AF59E0B" CornerRadius="10" Padding="8,3" Margin="0,0,8,0"
+                        Visibility="{Binding DriftedCount, Converter={StaticResource CountToVisibilityConverter}}">
+                    <TextBlock FontSize="11">
+                        <Run Text="{Binding DriftedCount, Mode=OneWay}" Foreground="#F59E0B" FontWeight="SemiBold" />
+                        <Run Text=" drifted" Foreground="#F59E0B" />
+                    </TextBlock>
+                </Border>
+                <Border Background="#1A3B82F6" CornerRadius="10" Padding="8,3"
+                        Visibility="{Binding DetectedCount, Converter={StaticResource CountToVisibilityConverter}}">
+                    <TextBlock FontSize="11">
+                        <Run Text="{Binding DetectedCount, Mode=OneWay}" Foreground="#3B82F6" FontWeight="SemiBold" />
+                        <Run Text=" detected" Foreground="#3B82F6" />
+                    </TextBlock>
+                </Border>
             </StackPanel>
 
             <StackPanel Grid.Column="3" Orientation="Horizontal">
@@ -139,15 +145,38 @@
                                         Foreground="White"
                                         VerticalAlignment="Center" />
 
-                                    <TextBlock
+                                    <StackPanel
                                         Grid.Column="2"
-                                        FontSize="11"
-                                        Foreground="#888888"
+                                        Orientation="Horizontal"
                                         VerticalAlignment="Center"
                                         Margin="0,0,12,0">
-                                        <Run Text="{Binding ItemCount, Mode=OneWay}" />
-                                        <Run Text=" apps" />
-                                    </TextBlock>
+                                        <Border
+                                            Background="#1A3B82F6"
+                                            CornerRadius="8"
+                                            Padding="6,2"
+                                            Margin="0,0,6,0"
+                                            Visibility="{Binding DetectedCount, Converter={StaticResource CountToVisibilityConverter}}">
+                                            <TextBlock FontSize="10">
+                                                <Run Text="{Binding DetectedCount, Mode=OneWay}" Foreground="#3B82F6" FontWeight="SemiBold" />
+                                                <Run Text=" detected" Foreground="#3B82F6" />
+                                            </TextBlock>
+                                        </Border>
+                                        <Border
+                                            Background="#1A93C5FD"
+                                            CornerRadius="8"
+                                            Padding="6,2"
+                                            Margin="0,0,6,0"
+                                            Visibility="{Binding SuggestedCount, Converter={StaticResource CountToVisibilityConverter}}">
+                                            <TextBlock FontSize="10">
+                                                <Run Text="{Binding SuggestedCount, Mode=OneWay}" Foreground="#93C5FD" FontWeight="SemiBold" />
+                                                <Run Text=" suggested" Foreground="#93C5FD" />
+                                            </TextBlock>
+                                        </Border>
+                                        <TextBlock FontSize="11" Foreground="#888888">
+                                            <Run Text="{Binding ItemCount, Mode=OneWay}" />
+                                            <Run Text=" apps" />
+                                        </TextBlock>
+                                    </StackPanel>
 
                                     <ui:SymbolIcon
                                         Grid.Column="3"
@@ -214,6 +243,8 @@
                                                             CanToggle="{Binding CanToggle}"
                                                             IsSuggested="{Binding IsSuggested}"
                                                             KindBadge="{Binding KindBadge}"
+                                                            GitHubStarsFormatted="{Binding GitHubStarsFormatted}"
+                                                            IsTopPick="{Binding IsTopPick}"
                                                             Tags="{Binding Tags}"
                                                             ToggleChanged="OnToggleChanged"
                                                             TagClicked="OnTagClicked"

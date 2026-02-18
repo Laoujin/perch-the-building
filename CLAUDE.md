@@ -18,11 +18,14 @@ dotnet run --project src/Perch.Cli        # Run the CLI
 dotnet run --project src/Perch.Cli -- deploy   # Run with arguments
 ```
 
-After making changes to Perch.Desktop, launch the app to verify:
+After making changes to Perch.Desktop, take smoke test screenshots to verify:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File launch-dev.ps1
+```bash
+dotnet test tests/Perch.SmokeTests --filter PageScreenshotTests  # Screenshot all pages
+dotnet test tests/Perch.SmokeTests --filter <TestName>            # Targeted test
 ```
+
+Screenshots saved to `tests/Perch.SmokeTests/screenshots/`. Review them with the Read tool (supports images).
 
 ## Coding Conventions
 
@@ -50,6 +53,21 @@ See global `~/.claude/AGENTS-DOTNET-STYLE.md` and `~/.claude/AGENTS-DOTNET-TESTI
 - **Prefer editing existing files** over creating new ones
 - **No comments restating what code does** — code should be self-documenting
 - **Warnings as errors** — zero tolerance for analyzer warnings
+
+## Agent Workflow (MANDATORY)
+
+**Use `/fix-issue` or `/fix-issue <number>` to work on issues.** This is the default operating mode.
+
+The full pipeline is documented in `AGENTS-WORKFLOW.md`:
+
+1. **Worktree** -- branch from master, work in a git worktree
+2. **Fix** -- implement, build (zero warnings), test (all pass)
+3. **Screenshot** -- run smoke tests, show screenshots to user via Read tool
+4. **PR** -- create PR linking the issue with `Closes #N`
+5. **Browser** -- open PR in browser, report to user
+6. **Repeat** -- after merge, pull master, clean up, pick next issue
+
+Do NOT commit directly to master. Do NOT skip screenshots for Desktop changes. Do NOT commit screenshots -- they are local-only.
 
 ## Project Docs
 

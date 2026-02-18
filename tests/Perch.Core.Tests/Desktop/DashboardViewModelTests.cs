@@ -4,11 +4,13 @@ using System.Runtime.Versioning;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
+using Perch.Core.Catalog;
 using Perch.Core.Config;
 using Perch.Core.Startup;
 using Perch.Core.Status;
 using Perch.Core.Symlinks;
 using Perch.Core.Tweaks;
+using Perch.Desktop.Models;
 using Perch.Desktop.Services;
 using Perch.Desktop.ViewModels;
 
@@ -23,7 +25,7 @@ public sealed class DashboardViewModelTests
 {
     private IStatusService _statusService = null!;
     private ISettingsProvider _settingsProvider = null!;
-    private IPendingChangesService _pendingChanges = null!;
+    private PendingChangesService _pendingChanges = null!;
     private IAppLinkService _appLinkService = null!;
     private ITweakService _tweakService = null!;
     private IStartupService _startupService = null!;
@@ -93,8 +95,8 @@ public sealed class DashboardViewModelTests
             .Returns(callInfo =>
             {
                 var progress = callInfo.ArgAt<IProgress<StatusResult>>(1);
-                progress.Report(new StatusResult("mod1", "s1", "t1", DriftLevel.Ok, "ok"));
-                progress.Report(new StatusResult("mod2", "s2", "t2", DriftLevel.Ok, "ok"));
+                progress.Report(new StatusResult("mod1", "s1", "t1", DriftLevel.Ok, "ok", StatusCategory.Link));
+                progress.Report(new StatusResult("mod2", "s2", "t2", DriftLevel.Ok, "ok", StatusCategory.GlobalPackage));
                 return 2;
             });
 
@@ -105,6 +107,35 @@ public sealed class DashboardViewModelTests
             Assert.That(_vm.HealthPercent, Is.EqualTo(100));
             Assert.That(_vm.StatusMessage, Is.EqualTo("Everything looks good"));
             Assert.That(_vm.AttentionItems, Is.Empty);
+            Assert.That(_vm.LinkedDotfilesCount, Is.EqualTo(1));
+            Assert.That(_vm.LinkedAppsCount, Is.EqualTo(1));
+        });
+    }
+
+    [Test]
+    public async Task RefreshAsync_MixedCategories_SplitsBadges()
+    {
+        _statusService.CheckAsync(Arg.Any<string>(), Arg.Any<IProgress<StatusResult>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                var progress = callInfo.ArgAt<IProgress<StatusResult>>(1);
+                progress.Report(new StatusResult("dotfile1", "s", "t", DriftLevel.Ok, "ok", StatusCategory.Link));
+                progress.Report(new StatusResult("dotfile2", "s", "t", DriftLevel.Ok, "ok", StatusCategory.Link));
+                progress.Report(new StatusResult("app1", "s", "t", DriftLevel.Ok, "ok", StatusCategory.GlobalPackage));
+                progress.Report(new StatusResult("app2", "s", "t", DriftLevel.Ok, "ok", StatusCategory.VscodeExtension));
+                progress.Report(new StatusResult("app3", "s", "t", DriftLevel.Ok, "ok", StatusCategory.PsModule));
+                progress.Report(new StatusResult("tweak1", "s", "t", DriftLevel.Ok, "ok", StatusCategory.Registry));
+                return 6;
+            });
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_vm.LinkedCount, Is.EqualTo(6));
+            Assert.That(_vm.LinkedDotfilesCount, Is.EqualTo(2));
+            Assert.That(_vm.LinkedAppsCount, Is.EqualTo(3));
+            Assert.That(_vm.LinkedTweaksCount, Is.EqualTo(1));
         });
     }
 
@@ -199,6 +230,65 @@ public sealed class DashboardViewModelTests
         await _vm.RefreshCommand.ExecuteAsync(null);
 
         Assert.That(_vm.HasConfigRepo, Is.True);
+    }
+
+    [Test]
+    public void DiscardChange_RemovesSingleChange()
+    {
+        var app = CreateAppCard("app1");
+        var change = new LinkAppChange(app);
+        _pendingChanges.Add(change);
+        _pendingChanges.Add(new LinkAppChange(CreateAppCard("app2")));
+
+        _vm.DiscardChangeCommand.Execute(change);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_pendingChanges.Count, Is.EqualTo(1));
+            Assert.That(_pendingChanges.Changes[0].Id, Is.EqualTo("app2"));
+        });
+    }
+
+    [Test]
+    public void TogglePendingChange_LinkToUnlink()
+    {
+        var app = CreateAppCard("app1");
+        _pendingChanges.Add(new LinkAppChange(app));
+
+        _vm.TogglePendingChangeCommand.Execute(_pendingChanges.Changes[0]);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_pendingChanges.Count, Is.EqualTo(1));
+            Assert.That(_pendingChanges.Changes[0].Kind, Is.EqualTo(PendingChangeKind.UnlinkApp));
+        });
+    }
+
+    [Test]
+    public void TogglePendingChange_ApplyToRevert()
+    {
+        var tweak = CreateTweakCard("tweak1");
+        _pendingChanges.Add(new ApplyTweakChange(tweak));
+
+        _vm.TogglePendingChangeCommand.Execute(_pendingChanges.Changes[0]);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_pendingChanges.Count, Is.EqualTo(1));
+            Assert.That(_pendingChanges.Changes[0].Kind, Is.EqualTo(PendingChangeKind.RevertTweak));
+        });
+    }
+
+    private static AppCardModel CreateAppCard(string id)
+    {
+        var entry = new CatalogEntry(id, id, null, "test", [], null, null, null, null, null, null);
+        return new AppCardModel(entry, CardTier.YourApps, CardStatus.Detected);
+    }
+
+    private static TweakCardModel CreateTweakCard(string id)
+    {
+        var entry = new TweakCatalogEntry(id, id, "test", [], null, true, [], []);
+        return new TweakCardModel(entry, CardStatus.NotInstalled);
     }
 
     private sealed class ImmediateSyncContext : SynchronizationContext

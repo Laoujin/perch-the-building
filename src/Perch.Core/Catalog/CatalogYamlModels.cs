@@ -156,6 +156,12 @@ internal sealed class TweakRegistryYamlModel
     public bool HasDefaultValue { get; private set; }
 }
 
+internal sealed class GitHubStarYamlModel
+{
+    public string? Repo { get; set; }
+    public int Stars { get; set; }
+}
+
 internal sealed class CatalogIndexYamlModel
 {
     public List<CatalogIndexEntryYamlModel>? Apps { get; set; }

@@ -148,6 +148,33 @@ public sealed class CatalogParser
         return CatalogParseResult<TweakCatalogEntry>.Ok(entry);
     }
 
+    public IReadOnlyDictionary<string, int> ParseGitHubStars(string yaml)
+    {
+        if (string.IsNullOrWhiteSpace(yaml))
+            return new Dictionary<string, int>();
+
+        Dictionary<string, GitHubStarYamlModel> model;
+        try
+        {
+            model = Deserializer.Deserialize<Dictionary<string, GitHubStarYamlModel>>(yaml);
+        }
+        catch (YamlException)
+        {
+            return new Dictionary<string, int>();
+        }
+
+        var result = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (key, value) in model)
+        {
+            var appId = key.StartsWith("app/", StringComparison.OrdinalIgnoreCase)
+                ? key[4..]
+                : key;
+            result[appId] = value.Stars;
+        }
+
+        return result;
+    }
+
     public CatalogParseResult<CatalogIndex> ParseIndex(string json)
     {
         if (string.IsNullOrWhiteSpace(json))

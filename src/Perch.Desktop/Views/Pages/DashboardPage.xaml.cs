@@ -1,5 +1,6 @@
 using System.Windows.Controls;
 
+using Perch.Desktop.Services;
 using Perch.Desktop.ViewModels;
 
 namespace Perch.Desktop.Views.Pages;
@@ -24,5 +25,17 @@ public partial class DashboardPage : Page
     private void OnLaunchWizard(object sender, RoutedEventArgs e)
     {
         App.ShowWizard();
+    }
+
+    private void OnDiscardChange(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: PendingChange change })
+            ViewModel.DiscardChangeCommand.Execute(change);
+    }
+
+    private void OnPendingToggle(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: PendingChange change })
+            ViewModel.TogglePendingChangeCommand.Execute(change);
     }
 }

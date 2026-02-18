@@ -30,6 +30,15 @@ public sealed partial class DashboardViewModel : ViewModelBase
     private int _linkedCount;
 
     [ObservableProperty]
+    private int _linkedAppsCount;
+
+    [ObservableProperty]
+    private int _linkedDotfilesCount;
+
+    [ObservableProperty]
+    private int _linkedTweaksCount;
+
+    [ObservableProperty]
     private int _attentionCount;
 
     [ObservableProperty]
@@ -96,6 +105,9 @@ public sealed partial class DashboardViewModel : ViewModelBase
         IsLoading = true;
         AttentionItems.Clear();
         LinkedCount = 0;
+        LinkedAppsCount = 0;
+        LinkedDotfilesCount = 0;
+        LinkedTweaksCount = 0;
         AttentionCount = 0;
         BrokenCount = 0;
 
@@ -105,6 +117,18 @@ public sealed partial class DashboardViewModel : ViewModelBase
             {
                 case DriftLevel.Ok:
                     LinkedCount++;
+                    switch (result.Category)
+                    {
+                        case StatusCategory.Link:
+                            LinkedDotfilesCount++;
+                            break;
+                        case StatusCategory.Registry:
+                            LinkedTweaksCount++;
+                            break;
+                        default:
+                            LinkedAppsCount++;
+                            break;
+                    }
                     break;
                 case DriftLevel.Missing:
                 case DriftLevel.Drift:
@@ -236,6 +260,31 @@ public sealed partial class DashboardViewModel : ViewModelBase
     private void DiscardAll()
     {
         _pendingChanges.Clear();
+    }
+
+    [RelayCommand]
+    private void DiscardChange(PendingChange change)
+    {
+        _pendingChanges.Remove(change.Id, change.Kind);
+    }
+
+    [RelayCommand]
+    private void TogglePendingChange(PendingChange change)
+    {
+        _pendingChanges.Remove(change.Id, change.Kind);
+
+        PendingChange toggled = change switch
+        {
+            LinkAppChange c => new UnlinkAppChange(c.App),
+            UnlinkAppChange c => new LinkAppChange(c.App),
+            ApplyTweakChange c => new RevertTweakChange(c.Tweak),
+            RevertTweakChange c => new ApplyTweakChange(c.Tweak),
+            ToggleStartupChange c => new ToggleStartupChange(c.Startup, !c.Enable),
+            _ => change,
+        };
+
+        if (toggled != change)
+            _pendingChanges.Add(toggled);
     }
 }
 

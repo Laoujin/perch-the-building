@@ -17,6 +17,30 @@ public sealed partial class AppsViewModel : ViewModelBase
     private readonly IPendingChangesService _pendingChanges;
 
     private ImmutableArray<AppCardModel> _allApps = [];
+    private HashSet<UserProfile> _activeProfiles = [UserProfile.Developer, UserProfile.PowerUser];
+
+    private static readonly Dictionary<string, UserProfile[]> _broadCategoryProfiles = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Development"] = [UserProfile.Developer],
+        ["System"] = [UserProfile.PowerUser],
+        ["Utilities"] = [UserProfile.PowerUser],
+        ["Media"] = [UserProfile.Gamer, UserProfile.Casual],
+        ["Gaming"] = [UserProfile.Gamer],
+        ["Communication"] = [UserProfile.Casual],
+        ["Browsers"] = [UserProfile.Casual],
+        ["Appearance"] = [],
+    };
+
+    private static readonly Dictionary<string, string[]> _subcategoryOrder = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Development"] = ["IDEs", "Editors", "Languages", "Version Control", "Terminals", "CLI Tools", "Containers", "Shells", "Tools", "API Tools", "Databases", "Build Tools", "Diff Tools", ".NET", "Node"],
+        ["Gaming"] = ["Stores", "Launchers", "Streaming", "Controllers", "Performance", "Saves", "Modding", "Emulators"],
+        ["Utilities"] = ["Productivity", "System", "Compression", "Screenshots", "Clipboard", "PDF", "Storage", "Downloads", "Uninstallers", "System Monitors"],
+        ["Media"] = ["Players", "Video", "Audio", "Graphics", "3D"],
+        ["Communication"] = ["Chat", "Video", "Email"],
+        ["Security"] = ["Passwords", "Encryption", "Downloads", "Sandboxing"],
+        ["Networking"] = ["Remote Access", "FTP", "Protocol", "Security"],
+    };
 
     [ObservableProperty]
     private bool _isLoading;
@@ -61,6 +85,7 @@ public sealed partial class AppsViewModel : ViewModelBase
         try
         {
             var profiles = await LoadProfilesAsync(cancellationToken);
+            _activeProfiles = profiles;
             var result = await _detectionService.DetectAppsAsync(profiles, cancellationToken);
 
             BuildDependencyGraph(result.YourApps, result.Suggested, result.OtherApps);
@@ -89,7 +114,8 @@ public sealed partial class AppsViewModel : ViewModelBase
         var filtered = _allApps.Where(a => a.MatchesSearch(query));
         var groups = filtered
             .GroupBy(a => a.BroadCategory, StringComparer.OrdinalIgnoreCase)
-            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
+            .OrderBy(g => GetBroadCategoryPriority(g.Key))
+            .ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
 
         foreach (var group in groups)
         {
@@ -98,7 +124,9 @@ public sealed partial class AppsViewModel : ViewModelBase
                 group.Key,
                 group.Key,
                 items.Count,
-                items.Count(a => a.IsManaged)));
+                items.Count(a => a.IsManaged),
+                items.Count(a => a.Status is CardStatus.Detected or CardStatus.Linked or CardStatus.Drift or CardStatus.Broken),
+                items.Count(a => a.IsSuggested)));
         }
 
         UpdateSummary();
@@ -120,11 +148,8 @@ public sealed partial class AppsViewModel : ViewModelBase
 
     private static int StatusSortOrder(CardStatus status) => status switch
     {
-        CardStatus.Drift => 0,
-        CardStatus.Broken => 0,
-        CardStatus.Detected => 1,
-        CardStatus.Linked => 2,
-        _ => 3,
+        CardStatus.Drift or CardStatus.Broken => 0,
+        _ => 1,
     };
 
     [RelayCommand]
@@ -160,12 +185,14 @@ public sealed partial class AppsViewModel : ViewModelBase
             .Where(a => string.Equals(a.BroadCategory, broadCategory, StringComparison.OrdinalIgnoreCase))
             .Where(a => a.MatchesSearch(SearchText))
             .GroupBy(a => a.SubCategory, StringComparer.OrdinalIgnoreCase)
-            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(g => GetSubCategoryPriority(broadCategory, g.Key))
+            .ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
             .Select(g => new AppCategoryGroup(
                 g.Key,
                 new ObservableCollection<AppCardModel>(
                     g.OrderBy(a => TierSortOrder(a.Tier))
                      .ThenBy(a => StatusSortOrder(a.Status))
+                     .ThenByDescending(a => a.GitHubStars ?? 0)
                      .ThenBy(a => a.DisplayLabel, StringComparer.OrdinalIgnoreCase))));
     }
 
@@ -212,6 +239,64 @@ public sealed partial class AppsViewModel : ViewModelBase
         }
 
         _allApps = allApps.Where(a => !childIds.Contains(a.Id)).ToImmutableArray();
+        ComputeTopPicks(_allApps);
+    }
+
+    private static void ComputeTopPicks(ImmutableArray<AppCardModel> allApps)
+    {
+        var alternativeGroups = new Dictionary<string, List<AppCardModel>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var app in allApps)
+        {
+            if (app.CatalogEntry.Alternatives.IsDefaultOrEmpty)
+                continue;
+
+            var groupKey = string.Join(",", app.CatalogEntry.Alternatives
+                .Append(app.Id)
+                .OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
+
+            if (!alternativeGroups.TryGetValue(groupKey, out var list))
+            {
+                list = [];
+                alternativeGroups[groupKey] = list;
+            }
+            list.Add(app);
+        }
+
+        foreach (var group in alternativeGroups.Values)
+        {
+            var candidates = group.Where(a => a.Status == CardStatus.NotInstalled).ToList();
+            if (candidates.Count < 2)
+                continue;
+
+            var sorted = candidates
+                .Where(a => a.GitHubStars is > 0)
+                .OrderByDescending(a => a.GitHubStars!.Value)
+                .ToList();
+
+            if (sorted.Count < 2)
+                continue;
+
+            if (sorted[0].GitHubStars!.Value >= sorted[1].GitHubStars!.Value * 2)
+                sorted[0].IsTopPick = true;
+        }
+    }
+
+    private int GetBroadCategoryPriority(string broadCategory)
+    {
+        if (_broadCategoryProfiles.TryGetValue(broadCategory, out var profiles) &&
+            profiles.Any(p => _activeProfiles.Contains(p)))
+            return 0;
+
+        return 1;
+    }
+
+    private static int GetSubCategoryPriority(string broadCategory, string subCategory)
+    {
+        if (!_subcategoryOrder.TryGetValue(broadCategory, out var order))
+            return int.MaxValue;
+
+        var index = Array.FindIndex(order, s => string.Equals(s, subCategory, StringComparison.OrdinalIgnoreCase));
+        return index >= 0 ? index : int.MaxValue;
     }
 
     private async Task<HashSet<UserProfile>> LoadProfilesAsync(CancellationToken cancellationToken)

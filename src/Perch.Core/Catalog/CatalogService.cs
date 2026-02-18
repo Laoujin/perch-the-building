@@ -11,6 +11,7 @@ public sealed class CatalogService : ICatalogService
     private ImmutableArray<CatalogEntry>? _allApps;
     private ImmutableArray<FontCatalogEntry>? _allFonts;
     private ImmutableArray<TweakCatalogEntry>? _allTweaks;
+    private IReadOnlyDictionary<string, int>? _gitHubStars;
 
     public CatalogService(ICatalogFetcher fetcher, ICatalogCache cache, CatalogParser parser)
     {
@@ -123,6 +124,17 @@ public sealed class CatalogService : ICatalogService
 
         var result = tweaks.ToImmutableArray();
         _allTweaks = result;
+        return result;
+    }
+
+    public async Task<IReadOnlyDictionary<string, int>> GetGitHubStarsAsync(CancellationToken cancellationToken = default)
+    {
+        if (_gitHubStars is not null)
+            return _gitHubStars;
+
+        string content = await FetchWithCacheAsync("metadata/github-stars.yaml", cancellationToken).ConfigureAwait(false);
+        var result = _parser.ParseGitHubStars(content);
+        _gitHubStars = result;
         return result;
     }
 

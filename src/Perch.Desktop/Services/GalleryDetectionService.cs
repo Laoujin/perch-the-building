@@ -63,6 +63,7 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
             _catalog.GetAllAppsAsync(cancellationToken),
             _catalog.GetAllTweaksAsync(cancellationToken),
             _catalog.GetAllFontsAsync(cancellationToken),
+            _catalog.GetGitHubStarsAsync(cancellationToken),
             ScanInstalledPackageIdsAsync(cancellationToken));
     }
 
@@ -74,6 +75,7 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
         var settings = await _settingsProvider.LoadAsync(cancellationToken);
         var platform = _platformDetector.CurrentPlatform;
         var installedIds = await ScanInstalledPackageIdsAsync(cancellationToken);
+        var stars = await _catalog.GetGitHubStarsAsync(cancellationToken);
         var logoBaseUrl = GetLogoBaseUrl(settings);
 
         var yourApps = ImmutableArray.CreateBuilder<AppCardModel>();
@@ -82,6 +84,9 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
 
         foreach (var app in allApps)
         {
+            if (IsPureConfigDotfile(app))
+                continue;
+
             var detected = IsAppDetected(app, platform, installedIds);
             var linked = detected && IsAppLinked(app, platform, settings.ConfigRepoPath);
 
@@ -91,18 +96,19 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
             else status = CardStatus.NotInstalled;
 
             var logoUrl = $"{logoBaseUrl}{app.Id}.png";
+            int? appStars = stars.TryGetValue(app.Id, out var starCount) ? starCount : null;
 
             if (detected)
             {
-                yourApps.Add(new AppCardModel(app, CardTier.YourApps, status, logoUrl));
+                yourApps.Add(new AppCardModel(app, CardTier.YourApps, status, logoUrl) { GitHubStars = appStars });
             }
             else if (IsSuggestedForProfiles(app, selectedProfiles))
             {
-                suggested.Add(new AppCardModel(app, CardTier.Suggested, status, logoUrl));
+                suggested.Add(new AppCardModel(app, CardTier.Suggested, status, logoUrl) { GitHubStars = appStars });
             }
             else
             {
-                other.Add(new AppCardModel(app, CardTier.Other, status, logoUrl));
+                other.Add(new AppCardModel(app, CardTier.Other, status, logoUrl) { GitHubStars = appStars });
             }
         }
 
@@ -119,13 +125,18 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
         var settings = await _settingsProvider.LoadAsync(cancellationToken);
         var platform = _platformDetector.CurrentPlatform;
         var installedIds = await ScanInstalledPackageIdsAsync(cancellationToken);
+        var stars = await _catalog.GetGitHubStarsAsync(cancellationToken);
         var logoBaseUrl = GetLogoBaseUrl(settings);
         var builder = ImmutableArray.CreateBuilder<AppCardModel>();
 
         foreach (var app in allApps)
         {
+            if (IsPureConfigDotfile(app))
+                continue;
+
             var status = ResolveStatus(app, platform, settings.ConfigRepoPath, installedIds);
-            builder.Add(new AppCardModel(app, CardTier.Other, status, $"{logoBaseUrl}{app.Id}.png"));
+            int? appStars = stars.TryGetValue(app.Id, out var starCount) ? starCount : null;
+            builder.Add(new AppCardModel(app, CardTier.Other, status, $"{logoBaseUrl}{app.Id}.png") { GitHubStars = appStars });
         }
 
         return builder.ToImmutable();
@@ -485,6 +496,9 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
 
         return false;
     }
+
+    private static bool IsPureConfigDotfile(CatalogEntry app) =>
+        app.Kind == CatalogKind.Dotfile && app.Install is null;
 
     private static bool IsSuggestedForProfiles(CatalogEntry app, IReadOnlySet<UserProfile> profiles)
     {

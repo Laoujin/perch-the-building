@@ -45,6 +45,9 @@ public sealed class GalleryDetectionServiceAppTests
         _packageProvider.ScanInstalledAsync(Arg.Any<CancellationToken>())
             .Returns(new PackageManagerScanResult(true, [], null));
 
+        _catalog.GetGitHubStarsAsync(Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<string, int>() as IReadOnlyDictionary<string, int>);
+
         _tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
         Directory.CreateDirectory(_tempDir);
 
@@ -320,6 +323,69 @@ public sealed class GalleryDetectionServiceAppTests
 
         // Detected but not Linked because configRepoPath is null
         Assert.That(result.YourApps[0].Status, Is.EqualTo(CardStatus.Detected));
+    }
+
+    [Test]
+    public async Task DetectAppsAsync_HidesPureConfigDotfiles()
+    {
+        var dotfileWithInstall = new CatalogEntry(
+            "powershell", "PowerShell", null, "Development/Languages",
+            [], null, null, null,
+            new InstallDefinition("Microsoft.PowerShell", null),
+            null, null, CatalogKind.Dotfile);
+
+        var dotfileWithoutInstall = new CatalogEntry(
+            "nuget-config", "NuGet Config", null, "Development/.NET",
+            [], null, null, null,
+            null, null, null, CatalogKind.Dotfile);
+
+        _catalog.GetAllAppsAsync(Arg.Any<CancellationToken>())
+            .Returns(ImmutableArray.Create(dotfileWithInstall, dotfileWithoutInstall));
+
+        var result = await _service.DetectAppsAsync(new HashSet<UserProfile> { UserProfile.Developer });
+
+        var allCards = result.YourApps.AsEnumerable().Concat(result.Suggested).Concat(result.OtherApps).ToList();
+        Assert.Multiple(() =>
+        {
+            Assert.That(allCards, Has.Count.EqualTo(1));
+            Assert.That(allCards[0].Id, Is.EqualTo("powershell"));
+        });
+    }
+
+    [Test]
+    public async Task DetectAppsAsync_SetsGitHubStarsOnCards()
+    {
+        var app = MakeApp("vscode", "Visual Studio Code",
+            install: new InstallDefinition("Microsoft.VisualStudioCode", null));
+
+        _catalog.GetAllAppsAsync(Arg.Any<CancellationToken>())
+            .Returns(ImmutableArray.Create(app));
+
+        _catalog.GetGitHubStarsAsync(Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<string, int> { ["vscode"] = 181800 } as IReadOnlyDictionary<string, int>);
+
+        var result = await _service.DetectAppsAsync(new HashSet<UserProfile> { UserProfile.Developer });
+
+        var allCards = result.YourApps.AsEnumerable().Concat(result.Suggested).Concat(result.OtherApps);
+        var card = allCards.First(c => c.Id == "vscode");
+        Assert.That(card.GitHubStars, Is.EqualTo(181800));
+    }
+
+    [Test]
+    public async Task DetectAllAppsAsync_SetsGitHubStarsOnCards()
+    {
+        var app = MakeApp("vscode", "VS Code",
+            install: new InstallDefinition("Microsoft.VisualStudioCode", null));
+
+        _catalog.GetAllAppsAsync(Arg.Any<CancellationToken>())
+            .Returns(ImmutableArray.Create(app));
+
+        _catalog.GetGitHubStarsAsync(Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<string, int> { ["vscode"] = 181800 } as IReadOnlyDictionary<string, int>);
+
+        var result = await _service.DetectAllAppsAsync();
+
+        Assert.That(result[0].GitHubStars, Is.EqualTo(181800));
     }
 
     private static CatalogConfigLink MakeLink(string source, string target) =>

@@ -36,6 +36,16 @@ public partial class AppCardModel : ObservableObject
     [ObservableProperty]
     private AppDetail? _detail;
 
+    public int? GitHubStars { get; set; }
+    public bool IsTopPick { get; set; }
+
+    public string? GitHubStarsFormatted => GitHubStars switch
+    {
+        null or 0 => null,
+        >= 1000 => $"{GitHubStars.Value / 1000.0:0.#}k",
+        _ => $"{GitHubStars.Value}",
+    };
+
     public ImmutableArray<AppCardModel> DependentApps { get; set; } = [];
     public bool HasDependents => !DependentApps.IsDefaultOrEmpty;
     public int DependentAppCount => DependentApps.IsDefaultOrEmpty ? 0 : DependentApps.Length;

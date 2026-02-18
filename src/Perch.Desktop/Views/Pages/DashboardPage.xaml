@@ -25,40 +25,30 @@
         <controls:DriftHeroBanner
             Grid.Row="0"
             LinkedCount="{Binding LinkedCount}"
+            LinkedAppsCount="{Binding LinkedAppsCount}"
+            LinkedDotfilesCount="{Binding LinkedDotfilesCount}"
+            LinkedTweaksCount="{Binding LinkedTweaksCount}"
             AttentionCount="{Binding AttentionCount}"
             BrokenCount="{Binding BrokenCount}"
             HealthPercent="{Binding HealthPercent}"
-            StatusMessage="{Binding StatusMessage}" />
+            StatusMessage="{Binding StatusMessage}"
+            controls:DriftHeroBanner.LaunchWizardRequested="OnLaunchWizard" />
 
-        <!-- Refresh + Loading + Wizard -->
-        <Grid Grid.Row="1" Margin="0,0,0,12">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-
-            <ui:Button
-                Grid.Column="0"
-                Content="Refresh"
-                Icon="{ui:SymbolIcon ArrowClockwise24}"
-                Command="{Binding RefreshCommand}"
-                IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBooleanConverter}}" />
+        <!-- Loading indicator -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,12"
+                    Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}">
             <ui:ProgressRing
-                Grid.Column="1"
                 IsIndeterminate="True"
                 Width="20"
                 Height="20"
-                Margin="12,0,0,0"
+                VerticalAlignment="Center" />
+            <TextBlock
+                Text="Checking status..."
+                Foreground="#888888"
+                FontSize="12"
                 VerticalAlignment="Center"
-                Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}" />
-            <ui:Button
-                Grid.Column="3"
-                Content="Setup Wizard"
-                Icon="{ui:SymbolIcon Wand24}"
-                Click="OnLaunchWizard" />
-        </Grid>
+                Margin="8,0,0,0" />
+        </StackPanel>
 
         <!-- Pending Changes -->
         <Border
@@ -111,11 +101,19 @@
                                 Margin="0,0,0,4">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
 
-                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <ToggleButton
+                                        Grid.Column="0"
+                                        IsChecked="{Binding IsAdditive, Mode=OneWay}"
+                                        VerticalAlignment="Center"
+                                        Margin="0,0,10,0"
+                                        Click="OnPendingToggle" />
+
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                         <TextBlock
                                             Text="{Binding DisplayName}"
                                             FontSize="12"
@@ -127,17 +125,14 @@
                                             Foreground="#888888" />
                                     </StackPanel>
 
-                                    <Border
-                                        Grid.Column="1"
-                                        CornerRadius="4"
-                                        Padding="8,2"
-                                        Background="#1A10B981"
-                                        VerticalAlignment="Center">
-                                        <TextBlock
-                                            Text="{Binding Kind}"
-                                            FontSize="10"
-                                            Foreground="#10B981" />
-                                    </Border>
+                                    <ui:Button
+                                        Grid.Column="2"
+                                        Icon="{ui:SymbolIcon Dismiss24}"
+                                        Appearance="Secondary"
+                                        VerticalAlignment="Center"
+                                        Padding="4"
+                                        Click="OnDiscardChange"
+                                        ToolTip="Discard this change" />
                                 </Grid>
                             </Border>
                         </DataTemplate>

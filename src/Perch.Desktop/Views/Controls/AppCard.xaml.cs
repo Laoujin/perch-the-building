@@ -67,6 +67,14 @@ public partial class AppCard : UserControl
         DependencyProperty.Register(nameof(KindBadge), typeof(string), typeof(AppCard),
             new PropertyMetadata(null));
 
+    public static readonly DependencyProperty GitHubStarsFormattedProperty =
+        DependencyProperty.Register(nameof(GitHubStarsFormatted), typeof(string), typeof(AppCard),
+            new PropertyMetadata(null));
+
+    public static readonly DependencyProperty IsTopPickProperty =
+        DependencyProperty.Register(nameof(IsTopPick), typeof(bool), typeof(AppCard),
+            new PropertyMetadata(false));
+
     public static readonly DependencyProperty TagsProperty =
         DependencyProperty.Register(nameof(Tags), typeof(ImmutableArray<string>), typeof(AppCard),
             new PropertyMetadata(ImmutableArray<string>.Empty));
@@ -161,6 +169,18 @@ public partial class AppCard : UserControl
     {
         get => (string?)GetValue(KindBadgeProperty);
         set => SetValue(KindBadgeProperty, value);
+    }
+
+    public string? GitHubStarsFormatted
+    {
+        get => (string?)GetValue(GitHubStarsFormattedProperty);
+        set => SetValue(GitHubStarsFormattedProperty, value);
+    }
+
+    public bool IsTopPick
+    {
+        get => (bool)GetValue(IsTopPickProperty);
+        set => SetValue(IsTopPickProperty, value);
     }
 
     public ImmutableArray<string> Tags

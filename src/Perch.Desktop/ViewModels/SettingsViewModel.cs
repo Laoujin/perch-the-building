@@ -4,12 +4,16 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 using Perch.Core.Config;
+using Perch.Desktop.Views.Pages;
+
+using Wpf.Ui;
 
 namespace Perch.Desktop.ViewModels;
 
 public sealed partial class SettingsViewModel : ViewModelBase
 {
     private readonly ISettingsProvider _settingsProvider;
+    private readonly INavigationService _navigationService;
 
     [ObservableProperty]
     private string _configRepoPath = string.Empty;
@@ -23,9 +27,10 @@ public sealed partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private string _appVersion = string.Empty;
 
-    public SettingsViewModel(ISettingsProvider settingsProvider)
+    public SettingsViewModel(ISettingsProvider settingsProvider, INavigationService navigationService)
     {
         _settingsProvider = settingsProvider;
+        _navigationService = navigationService;
 
         var assembly = typeof(SettingsViewModel).Assembly;
         var infoVersion = assembly.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()?.InformationalVersion;
@@ -64,6 +69,12 @@ public sealed partial class SettingsViewModel : ViewModelBase
         {
             IsSaving = false;
         }
+    }
+
+    [RelayCommand]
+    private void ReloadConfiguration()
+    {
+        _navigationService.Navigate(typeof(DashboardPage));
     }
 
     [RelayCommand]

@@ -73,6 +73,19 @@
                         Foreground="#888888" />
                 </Border>
 
+                <!-- Top Pick badge -->
+                <Border
+                    Grid.Column="3"
+                    Background="#1A10B981"
+                    CornerRadius="4"
+                    Padding="4,1"
+                    Margin="4,0,0,0"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Left"
+                    Visibility="{Binding IsTopPick, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <TextBlock Text="Top Pick" FontSize="9" Foreground="#10B981" />
+                </Border>
+
                 <ui:ToggleSwitch
                     Grid.Column="4"
                     IsChecked="{Binding IsManaged, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=OneWay}"
@@ -183,6 +196,13 @@
                     <StackPanel Orientation="Horizontal">
                         <ui:SymbolIcon Symbol="Code24" FontSize="12" Foreground="#6B7280" />
                         <TextBlock Text="GitHub" FontSize="10" Foreground="#6B7280" Margin="4,0,0,0" VerticalAlignment="Center" />
+                        <TextBlock
+                            Text="{Binding GitHubStarsFormatted, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            FontSize="9"
+                            Foreground="#F59E0B"
+                            Margin="2,0,0,0"
+                            VerticalAlignment="Center"
+                            Visibility="{Binding GitHubStarsFormatted, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource CountToVisibilityConverter}}" />
                     </StackPanel>
                 </Button>
             </StackPanel>

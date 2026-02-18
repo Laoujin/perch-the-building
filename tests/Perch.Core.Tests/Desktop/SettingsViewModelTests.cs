@@ -7,6 +7,8 @@ using NSubstitute.ExceptionExtensions;
 using Perch.Core.Config;
 using Perch.Desktop.ViewModels;
 
+using Wpf.Ui;
+
 namespace Perch.Core.Tests.Desktop;
 
 [TestFixture]
@@ -24,7 +26,7 @@ public sealed class SettingsViewModelTests
         _settingsProvider.LoadAsync(Arg.Any<CancellationToken>())
             .Returns(new PerchSettings());
 
-        _vm = new SettingsViewModel(_settingsProvider);
+        _vm = new SettingsViewModel(_settingsProvider, Substitute.For<INavigationService>());
     }
 
     [Test]

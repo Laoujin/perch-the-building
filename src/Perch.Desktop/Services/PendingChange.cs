@@ -13,7 +13,12 @@ public enum PendingChangeKind
     ToggleStartup,
 }
 
-public abstract record PendingChange(string Id, string DisplayName, string Description, PendingChangeKind Kind);
+public abstract record PendingChange(string Id, string DisplayName, string Description, PendingChangeKind Kind)
+{
+    public bool IsAdditive => Kind is PendingChangeKind.LinkApp or PendingChangeKind.ApplyTweak
+        or PendingChangeKind.LinkDotfile or PendingChangeKind.OnboardFont
+        || (this is ToggleStartupChange { Enable: true });
+}
 
 public sealed record LinkAppChange(AppCardModel App)
     : PendingChange(App.Id, App.DisplayLabel, "Link app config", PendingChangeKind.LinkApp);

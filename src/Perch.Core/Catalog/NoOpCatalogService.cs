@@ -33,4 +33,7 @@ public sealed class NoOpCatalogService : ICatalogService
 
     public Task<ImmutableArray<TweakCatalogEntry>> GetAllAppOwnedTweaksAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult(ImmutableArray<TweakCatalogEntry>.Empty);
+
+    public Task<IReadOnlyDictionary<string, int>> GetGitHubStarsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyDictionary<string, int>>(new Dictionary<string, int>());
 }
