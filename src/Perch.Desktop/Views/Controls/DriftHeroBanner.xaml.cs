@@ -189,4 +189,9 @@ public partial class DriftHeroBanner : UserControl
     {
         RaiseEvent(new RoutedEventArgs(LaunchWizardRequestedEvent, this));
     }
+
+    private void OnEmptyPanelClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        RaiseEvent(new RoutedEventArgs(LaunchWizardRequestedEvent, this));
+    }
 }

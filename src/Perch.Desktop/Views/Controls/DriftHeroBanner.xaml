@@ -10,26 +10,42 @@
         Margin="0,0,0,20"
         ClipToBounds="True">
         <Grid>
-            <!-- Empty state: wizard CTA -->
-            <StackPanel
+            <!-- Empty state: wizard CTA with hero background -->
+            <Border
                 x:Name="EmptyPanel"
-                VerticalAlignment="Center"
-                HorizontalAlignment="Center">
-                <TextBlock
-                    Text="Configure your dotfiles and apps"
-                    FontSize="16"
-                    Foreground="#AAAAAA"
-                    HorizontalAlignment="Center"
-                    Margin="0,0,0,16" />
-                <ui:Button
-                    Content="Setup Wizard"
-                    Appearance="Primary"
-                    Icon="{ui:SymbolIcon Wand24}"
-                    HorizontalAlignment="Center"
-                    FontSize="16"
-                    Padding="24,12"
-                    Click="OnWizardButtonClick" />
-            </StackPanel>
+                CornerRadius="12"
+                MinHeight="180"
+                Cursor="Hand"
+                MouseLeftButtonUp="OnEmptyPanelClick">
+                <Border.Background>
+                    <ImageBrush
+                        ImageSource="/Assets/hero.png"
+                        Stretch="UniformToFill"
+                        Opacity="0.35" />
+                </Border.Background>
+                <StackPanel
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
+                    <ui:SymbolIcon
+                        Symbol="Wand24"
+                        FontSize="36"
+                        Foreground="White"
+                        HorizontalAlignment="Center"
+                        Margin="0,0,0,12" />
+                    <TextBlock
+                        Text="Setup Wizard"
+                        FontSize="22"
+                        FontWeight="SemiBold"
+                        Foreground="White"
+                        HorizontalAlignment="Center"
+                        Margin="0,0,0,6" />
+                    <TextBlock
+                        Text="Configure your dotfiles and apps"
+                        FontSize="13"
+                        Foreground="#BBBBBB"
+                        HorizontalAlignment="Center" />
+                </StackPanel>
+            </Border>
 
             <!-- Healthy/Attention state: status + badges + health circle -->
             <Grid x:Name="StatusPanel" Visibility="Collapsed">
