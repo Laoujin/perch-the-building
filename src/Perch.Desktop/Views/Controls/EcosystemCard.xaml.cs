@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -139,8 +141,9 @@ public partial class EcosystemCard : UserControl
 
             card.LogoImage.Source = bitmap;
         }
-        catch
+        catch (Exception ex) when (ex is UriFormatException or IOException or NotSupportedException or InvalidOperationException)
         {
+            Debug.WriteLine($"Logo load failed for {url}: {ex.Message}");
             card.LogoImage.Source = null;
             card.FallbackIcon.Visibility = Visibility.Visible;
         }
