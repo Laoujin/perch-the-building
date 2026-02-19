@@ -184,7 +184,18 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
         }
     }
 
-    public void InvalidatePackageCache() => _cachedInstalledIds = null;
+    public void InvalidatePackageCache()
+    {
+        _packageScanLock.Wait();
+        try
+        {
+            _cachedInstalledIds = null;
+        }
+        finally
+        {
+            _packageScanLock.Release();
+        }
+    }
 
     public void InvalidateCache()
     {
