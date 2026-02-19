@@ -1,8 +1,6 @@
 using System.Collections.Immutable;
 using System.Runtime.Versioning;
 
-using NSubstitute;
-
 using Perch.Core;
 using Perch.Core.Catalog;
 using Perch.Core.Config;

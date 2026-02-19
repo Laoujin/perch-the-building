@@ -1,7 +1,6 @@
 using System.Collections.Immutable;
 using System.Runtime.Versioning;
 
-using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
 using Perch.Core.Catalog;
