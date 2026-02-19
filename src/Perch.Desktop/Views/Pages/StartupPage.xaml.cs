@@ -16,14 +16,14 @@ public partial class StartupPage : Page
         ViewModel = viewModel;
         DataContext = viewModel;
         InitializeComponent();
-
-        viewModel.FilteredItems.CollectionChanged += (_, _) => UpdateEmptyState();
     }
 
     private bool _isLoaded;
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
+        ViewModel.FilteredItems.CollectionChanged += OnFilteredItemsChanged;
+
         if (_isLoaded)
             return;
         _isLoaded = true;
@@ -31,6 +31,14 @@ public partial class StartupPage : Page
         if (ViewModel.RefreshCommand.CanExecute(null))
             ViewModel.RefreshCommand.Execute(null);
     }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        ViewModel.FilteredItems.CollectionChanged -= OnFilteredItemsChanged;
+    }
+
+    private void OnFilteredItemsChanged(object? sender, NotifyCollectionChangedEventArgs e) =>
+        UpdateEmptyState();
 
     private void OnToggleChecked(object sender, RoutedEventArgs e)
     {

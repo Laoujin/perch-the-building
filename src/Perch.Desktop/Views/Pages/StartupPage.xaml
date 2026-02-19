@@ -10,7 +10,8 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     Foreground="White"
-    Loaded="OnLoaded">
+    Loaded="OnLoaded"
+    Unloaded="OnUnloaded">
 
     <Grid Margin="24,16">
         <Grid.RowDefinitions>
