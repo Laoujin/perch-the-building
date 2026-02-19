@@ -253,6 +253,7 @@ Wouter's colleague uses chezmoi and wants to try Perch. He runs `perch import ch
 - **Wizard:** Profile selection (Developer/Power User/Gamer/Casual multi-select) drives dynamic step sequence. Steps show detection-first card grids with three-tier layout. Deploy step with per-card progress feedback
 - **Dashboard:** Drift hero banner (health summary), attention cards grouped by severity, one-click fix actions. Sidebar navigation into card gallery views (same components as wizard). Grid/list density toggle
 - **Detection:** Filesystem-based detection of installed apps and existing config files, cross-referenced against gallery. No AI — filesystem scan against known paths
+- **Detailed phasing:** See "Desktop App Scope (Phase D)" section below for current state, phased roadmap (D1-D6), open issues, and acceptance criteria
 
 ### Backup & Restore
 
@@ -352,6 +353,173 @@ Wouter's colleague uses chezmoi and wants to try Perch. He runs `perch import ch
 - Competitor migration tool (chezmoi -> Perch, other popular formats)
 - Community config path database
 - Git identity bootstrap automation
+
+### Desktop App Scope (Phase D)
+
+This section defines the concrete scope for Perch.Desktop (WPF), broken into phases. Each phase has clear acceptance criteria. Agents working on Desktop issues should reference this section to understand priorities and what "done" looks like.
+
+#### Current State (what's built)
+
+The Desktop app is fully functional with real data from Perch.Core. No stubs, no mock data.
+
+| Page | Status | What it does |
+|------|--------|-------------|
+| **Dashboard** | Working | Drift hero banner (health %, linked/attention/broken counts), pending changes queue with toggle/discard/apply, attention items list with severity levels |
+| **Apps** | Working | Real gallery from catalog, three-tier layout (Your Apps / Suggested / Other), category grouping, search, profile-based suggestions, toggle to stage pending changes, detail panel with ecosystem/alternatives |
+| **Dotfiles** | Working | Real dotfile detection, per-file symlink status (Linked/Detected/Drift/NotInstalled), toggle to stage pending changes |
+| **System Tweaks** | Working | Four sub-sections: (1) Registry tweaks with detection and apply/revert, (2) Fonts with system scan and gallery matching, (3) Startup items with enable/disable/remove, (4) Certificates with store browsing and expiry filters |
+| **Startup** | Working | Standalone page duplicating System Tweaks startup sub-section. Add/remove/toggle startup items |
+| **Settings** | Working | Config repo path with browse, save, reload, developer mode toggle, about info |
+| **Wizard** | Working | 7 dynamic steps: Profile selection, Config repo, Dotfiles, Apps, Tweaks, Review, Deploy. Profile selection drives which steps appear. Full deploy at end |
+| **Deploy** | Working | Pending changes applied via Dashboard "Apply All" or Wizard deploy step. Handles: LinkApp, UnlinkApp, ApplyTweak, RevertTweak, ToggleStartup |
+
+**Known gaps in current build:**
+- `LinkDotfileChange` and `OnboardFontChange` are staged in the pending queue but silently skipped by `ApplyChangesService` — they have no apply handler
+- Startup page exists both as standalone page AND as System Tweaks sub-section — redundant
+- AppsPage, DotfilesPage, and SystemTweaksPage share the same UI pattern (search header + loading spinner + error banner + card grid + detail view) but each page implements it independently (~1,200 lines of duplicated scaffolding)
+
+#### Phase D1: Structural Fixes
+
+Fix the foundation before adding features. These issues affect reliability and developer velocity.
+
+**D1.1 Fix pending change handlers**
+- `ApplyChangesService` must handle `LinkDotfileChange` (create symlinks for dotfile entries)
+- `ApplyChangesService` must handle `OnboardFontChange` (install fonts via the font mechanism from #88)
+- Acceptance: every change type that can be staged can also be applied
+
+**D1.2 Resolve Startup page duplication**
+- Remove standalone StartupPage; System Tweaks startup sub-section is the canonical location
+- Remove StartupPage from sidebar navigation
+- Acceptance: one place to manage startup items, not two
+
+**D1.3 Extract shared page scaffolding**
+- Create a reusable `CardGalleryHost` control that provides: search box + refresh button header, loading overlay, error banner, scrollable card grid (ItemsControl + WrapPanel), detail view with back button
+- AppsPage, DotfilesPage, and SystemTweaksPage consume this control instead of duplicating the pattern
+- Acceptance: fixing a loading spinner bug is a one-file change, not three
+
+**D1.4 Add FlaUI assertion tests** (relates to #87)
+- Extend existing smoke tests beyond screenshots to include targeted assertions:
+  - Dashboard loads and shows health banner
+  - Apps page loads and displays at least 1 app card
+  - Clicking an app card opens the detail view
+  - System Tweaks page shows all four sub-sections
+  - Pending change count updates when toggling an item
+- Acceptance: `dotnet test tests/Perch.SmokeTests` catches UI regressions, not just crashes
+
+#### Phase D2: Complete Core Experience
+
+High-priority features that close functional gaps in the current experience. These are features users expect to work.
+
+**D2.1 Font installation mechanism** (#88, priority:high)
+- Gallery has font entries but no install logic
+- Download font files (Nerd Fonts GitHub releases)
+- Install to Windows Fonts folder + register in registry
+- Support drift detection (font installed vs not)
+- Wire into `OnboardFontChange` handler from D1.1
+- Acceptance: user can toggle a Nerd Font in the UI, deploy, and the font is installed
+
+**D2.2 Settings symlink from config repo** (#78, priority:high)
+- Perch's own `settings.yaml` should be a symlink from perch-config
+- Transfers settings between machines automatically
+- Acceptance: `settings.yaml` is managed by Perch like any other config file
+
+**D2.3 App detail page** (#69, priority:medium, epic)
+- Each app card gets a "Configure" button opening a detail page
+- Detail page shows: card info, additional symlinks (with add/remove), related entries (suggests, alternatives, tweaks), submodule linking
+- Acceptance: user can view and manage per-app configuration from the Desktop UI
+
+**D2.4 Git onboarding wizard paths** (#59, priority:medium)
+- Git config needs special handling in the wizard
+- Four paths: clone git setup repo, clone barebones repo, use existing ~/.gitconfig, clone full-fledged repo
+- Detect existing git config files and pre-select appropriate path
+- Acceptance: wizard handles git config setup without manual steps
+
+#### Phase D3: Tweak Expansion
+
+New tweak management cards. Each card follows the existing tweak card pattern (detect current state, show desired vs actual, toggle to stage changes). These can be worked in parallel.
+
+| Issue | Card | Priority |
+|-------|------|----------|
+| #48 | File Explorer settings (hidden files, extensions, full path, default view) | medium |
+| #47 | Taskbar and Start Menu (alignment, search, widgets, system tray) | medium |
+| #49 | Notifications manager (per-app toggles, focus assist, global settings) | low |
+| #50 | Audio devices manager (default playback/recording, per-app routing) | low |
+| #51 | Display and scaling (DPI, night light, ClearType) | low |
+| #52 | Mouse and keyboard (pointer speed, scroll, key repeat, caps lock remap) | low |
+| #53 | Windows Update settings (active hours, pause, defer) | low |
+| #54 | Shell extensions manager (list, toggle, highlight problematic) | low |
+
+**Pattern for each card:**
+- Detect current state from registry/WMI/PowerShell
+- Show current vs desired values
+- Toggle stages a pending change
+- Deploy applies the change
+- Drift detection catches external modifications
+
+Acceptance per card: card appears in System Tweaks, detects current values, can apply desired values, drift detection works.
+
+#### Phase D4: Gallery Completion
+
+Complete the gallery catalog so the Desktop app's card views are comprehensive.
+
+| Issue | Task | Priority |
+|-------|------|----------|
+| #79 | Add gallery entries for remaining ~44 packages.yaml apps | medium |
+| #81 | Retire packages.yaml in favor of install.yaml (blocked by #79) | medium |
+| #76 | Clean-filter rules for Beyond Compare | medium |
+| #75 | Clean-filter rules for ConEmu/Cmder | medium |
+| #74 | Clean-filter rules for FileZilla | medium |
+| #73 | Clean-filter rules for Greenshot | medium |
+| #72 | Clean-filter rules for Notepad++ | medium |
+| #85 | WinUtil JSON -> gallery YAML converter | low |
+| #96 | Certificate backup/restore via perch-config | — |
+
+#### Phase D5: Ecosystem Onboarding
+
+Dedicated onboarding screens for language ecosystems. Each screen guides the user through SDK version, tools, IDE, and config file decisions for that ecosystem. These are epics — each one is a multi-issue effort.
+
+| Issue | Ecosystem | Priority |
+|-------|-----------|----------|
+| #59 | Git (special wizard paths — also in D2) | medium |
+| #60 | Python (runtime, package manager, global tools) | low |
+| #62 | Java (JDK, IDE, build tool, version manager) | low |
+| #63 | Ruby (runtime, version manager, global gems) | low |
+| #66 | Rust (rustup, cargo tools, IDE) | low |
+| #67 | Go (SDK, global tools, IDE) | low |
+
+#### Phase D6: Deferred
+
+These are in the PRD but explicitly deferred until D1-D5 are substantially complete.
+
+- **Gallery tree browser** (FR75) — unified drillable category navigation. Current flat card grid works for now
+- **Tweak detail panel with inline values** (FR74) — current card + detail view is adequate
+- **Grid/list density toggle** (FR53) — nice-to-have, not blocking
+- **AI config path lookup** (Journey 4b) — future
+- **Windows Sandbox integration** (Journey 4b) — future
+- **Desktop interactive filesystem explorer** (FR36) — future
+- **Visual manifest editor** (FR37) — future
+- **Manifest.yaml raw editor toggle** (#65) — low priority, deferred
+- **Shared wizard/dashboard card views** (FR51) — the architecture doc calls for shared UserControls between wizard and dashboard pages. Current duplication is tolerable until D1.3 reduces it
+- **Competitor migration tools** (FR46-47) — chezmoi/Dotbot import
+
+#### Desktop Testing Strategy
+
+| Layer | What | Tool |
+|-------|------|------|
+| **Unit tests** | ViewModel logic, service behavior | NUnit + NSubstitute (Perch.Desktop.Tests) |
+| **Integration tests** | Real gallery YAML parsing, manifest discovery (#86) | NUnit against real files |
+| **Smoke tests** | App launches, pages load, screenshots | FlaUI + NUnit (Perch.SmokeTests) |
+| **FlaUI assertions** | Cards render, toggles work, pending counts update (D1.4) | FlaUI + NUnit (Perch.SmokeTests) |
+| **Wizard flow tests** | Full wizard ViewModel simulation (#87) | NUnit + NSubstitute |
+
+#### Desktop Issue Specification Requirements
+
+Every Desktop issue must include:
+- **What exactly changes** — specific UI element, specific behavior, specific page
+- **Which files** are likely involved (page, viewmodel, service, control)
+- **Acceptance criteria** — what does "done" look like, testable
+- **Screenshot reference** — if it's a visual change, describe or mock what it should look like
+- **Dependencies** — other issues that must be done first
 
 ### Phase 5: Scoop Integration
 
