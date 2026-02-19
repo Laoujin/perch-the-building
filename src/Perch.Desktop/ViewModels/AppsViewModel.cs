@@ -8,7 +8,6 @@ using Perch.Core.Config;
 using Perch.Desktop.Models;
 using Perch.Desktop.Services;
 
-
 namespace Perch.Desktop.ViewModels;
 
 public sealed partial class AppsViewModel : GalleryViewModelBase
@@ -21,18 +20,6 @@ public sealed partial class AppsViewModel : GalleryViewModelBase
     private ImmutableArray<AppCardModel> _allApps = [];
     private Dictionary<string, AppCardModel> _allAppsByIdIncludingChildren = new(StringComparer.OrdinalIgnoreCase);
     private HashSet<UserProfile> _activeProfiles = [UserProfile.Developer, UserProfile.PowerUser];
-
-    private static readonly Dictionary<string, UserProfile[]> _broadCategoryProfiles = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["Development"] = [UserProfile.Developer],
-        ["System"] = [UserProfile.PowerUser],
-        ["Utilities"] = [UserProfile.PowerUser],
-        ["Media"] = [UserProfile.Gamer, UserProfile.Casual],
-        ["Gaming"] = [UserProfile.Gamer],
-        ["Communication"] = [UserProfile.Casual],
-        ["Browsers"] = [UserProfile.Casual],
-        ["Appearance"] = [],
-    };
 
     private static readonly Dictionary<string, string[]> _subcategoryOrder = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -135,7 +122,7 @@ public sealed partial class AppsViewModel : GalleryViewModelBase
         var categories = _allApps
             .Where(a => a.MatchesSearch(query))
             .GroupBy(a => a.BroadCategory, StringComparer.OrdinalIgnoreCase)
-            .OrderBy(g => GetBroadCategoryPriority(g.Key))
+            .OrderBy(g => GetBroadCategoryPriority(g))
             .ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
             .Select(g =>
             {
@@ -398,13 +385,11 @@ public sealed partial class AppsViewModel : GalleryViewModelBase
         }
     }
 
-    private int GetBroadCategoryPriority(string broadCategory)
+    private int GetBroadCategoryPriority(IEnumerable<AppCardModel> appsInCategory)
     {
-        if (_broadCategoryProfiles.TryGetValue(broadCategory, out var profiles) &&
-            profiles.Any(p => _activeProfiles.Contains(p)))
-            return 0;
-
-        return 1;
+        return appsInCategory.Any(a =>
+            !a.CatalogEntry.Profiles.IsDefaultOrEmpty
+            && ProfileMatcher.Matches(a.CatalogEntry.Profiles, _activeProfiles)) ? 0 : 1;
     }
 
     private static int GetSubCategoryPriority(string broadCategory, string subCategory)

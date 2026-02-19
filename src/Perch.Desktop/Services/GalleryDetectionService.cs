@@ -27,21 +27,6 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
     private readonly SemaphoreSlim _packageScanLock = new(1, 1);
     private HashSet<string>? _cachedInstalledIds;
 
-    // Category-to-profile mapping for "Suggested" tier
-    private static readonly Dictionary<string, UserProfile[]> _profileCategoryMap = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["Development/IDEs"] = [UserProfile.Developer],
-        ["Development/Version Control"] = [UserProfile.Developer],
-        ["Development/Terminals"] = [UserProfile.Developer, UserProfile.PowerUser],
-        ["Development/Tools"] = [UserProfile.Developer],
-        ["Development/Languages"] = [UserProfile.Developer],
-        ["System/Utilities"] = [UserProfile.PowerUser],
-        ["System/Productivity"] = [UserProfile.PowerUser],
-        ["Media/Players"] = [UserProfile.Gamer, UserProfile.Casual],
-        ["Gaming"] = [UserProfile.Gamer],
-        ["Communication"] = [UserProfile.Casual],
-    };
-
     public GalleryDetectionService(
         ICatalogService catalog,
         IFontScanner fontScanner,
@@ -483,15 +468,6 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
 
     private static bool IsSuggestedForProfiles(CatalogEntry app, IReadOnlySet<UserProfile> profiles)
     {
-        foreach (var (categoryPrefix, matchingProfiles) in _profileCategoryMap)
-        {
-            if (app.Category.StartsWith(categoryPrefix, StringComparison.OrdinalIgnoreCase))
-            {
-                if (matchingProfiles.Any(profiles.Contains))
-                    return true;
-            }
-        }
-
-        return false;
+        return !app.Profiles.IsDefaultOrEmpty && ProfileMatcher.Matches(app.Profiles, profiles);
     }
 }

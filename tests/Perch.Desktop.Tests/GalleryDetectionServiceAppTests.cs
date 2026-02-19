@@ -180,7 +180,8 @@ public sealed class GalleryDetectionServiceAppTests
     public async Task DetectAppsAsync_NotDetectedButMatchesProfile_InSuggested()
     {
         var app = MakeApp("rider", "JetBrains Rider", category: "Development/IDEs",
-            install: new InstallDefinition("JetBrains.Rider", null));
+            install: new InstallDefinition("JetBrains.Rider", null),
+            profiles: ImmutableArray.Create("developer"));
 
         _catalog.GetAllAppsAsync(Arg.Any<CancellationToken>())
             .Returns(ImmutableArray.Create(app));
@@ -217,9 +218,11 @@ public sealed class GalleryDetectionServiceAppTests
     public async Task DetectAppsAsync_ProfileMatchesMultipleCategories()
     {
         var ide = MakeApp("rider", "Rider", category: "Development/IDEs",
-            install: new InstallDefinition("JetBrains.Rider", null));
+            install: new InstallDefinition("JetBrains.Rider", null),
+            profiles: ImmutableArray.Create("developer"));
         var terminal = MakeApp("wt", "Windows Terminal", category: "Development/Terminals",
-            install: new InstallDefinition("Microsoft.WindowsTerminal", null));
+            install: new InstallDefinition("Microsoft.WindowsTerminal", null),
+            profiles: ImmutableArray.Create("developer"));
 
         _catalog.GetAllAppsAsync(Arg.Any<CancellationToken>())
             .Returns(ImmutableArray.Create(ide, terminal));
@@ -233,7 +236,8 @@ public sealed class GalleryDetectionServiceAppTests
     public async Task DetectAppsAsync_DetectedAppNotInSuggested_EvenWhenProfileMatches()
     {
         var app = MakeApp("rider", "JetBrains Rider", category: "Development/IDEs",
-            install: new InstallDefinition("JetBrains.Rider", null));
+            install: new InstallDefinition("JetBrains.Rider", null),
+            profiles: ImmutableArray.Create("developer"));
 
         _catalog.GetAllAppsAsync(Arg.Any<CancellationToken>())
             .Returns(ImmutableArray.Create(app));
@@ -398,6 +402,7 @@ public sealed class GalleryDetectionServiceAppTests
         string name,
         string category = "Development/Tools",
         InstallDefinition? install = null,
+        ImmutableArray<string> profiles = default,
         params CatalogConfigLink[] links)
     {
         var config = links.Length > 0
@@ -406,6 +411,6 @@ public sealed class GalleryDetectionServiceAppTests
         return new CatalogEntry(
             id, name, null, category,
             [], null, null, null, install, config, null,
-            CatalogKind.App);
+            CatalogKind.App, Profiles: profiles);
     }
 }

@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Perch.Core.Catalog;
 using Perch.Core.Modules;
 using Perch.Core.Tweaks;
+using Perch.Desktop.Services;
 
 namespace Perch.Desktop.Models;
 
@@ -67,7 +68,7 @@ public partial class TweakCardModel : ObservableObject
         if (Profiles.IsDefaultOrEmpty)
             return true;
 
-        return profiles.Any(p => Profiles.Contains(p.ToString().ToLowerInvariant().Replace("poweruser", "power-user")));
+        return ProfileMatcher.Matches(Profiles, profiles);
     }
 
     public bool MatchesSearch(string query)
