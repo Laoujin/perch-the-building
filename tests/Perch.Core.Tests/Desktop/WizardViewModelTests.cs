@@ -869,6 +869,32 @@ public sealed class WizardShellViewModelTests
         Assert.That(_vm.GetCurrentStepName(), Is.Empty);
     }
 
+    // --- Initialization ---
+
+    [Test]
+    public async Task Initialization_LoadsConfigRepoPath()
+    {
+        _settingsProvider.LoadAsync(Arg.Any<CancellationToken>())
+            .Returns(new PerchSettings { ConfigRepoPath = @"C:\my\repo" });
+
+        var vm = new WizardShellViewModel(_deployService, _settingsProvider, _detectionService, _fontOnboardingService);
+        await vm.Initialization;
+
+        Assert.That(vm.ConfigRepoPath, Is.EqualTo(@"C:\my\repo"));
+    }
+
+    [Test]
+    public async Task Initialization_SettingsLoadFailure_DoesNotThrow()
+    {
+        _settingsProvider.LoadAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("settings corrupted"));
+
+        var vm = new WizardShellViewModel(_deployService, _settingsProvider, _detectionService, _fontOnboardingService);
+        await vm.Initialization;
+
+        Assert.That(vm.ConfigRepoPath, Is.EqualTo(string.Empty));
+    }
+
     // --- Helpers ---
 
     private static AppCardModel MakeApp(string name, string category, CardStatus status = CardStatus.Detected)

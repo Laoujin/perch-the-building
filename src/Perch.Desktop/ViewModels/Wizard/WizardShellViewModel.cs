@@ -137,8 +137,10 @@ public sealed partial class WizardShellViewModel : ViewModelBase
         _fontOnboardingService = fontOnboardingService;
 
         RebuildSteps();
-        _ = InitializeAsync();
+        Initialization = InitializeAsync();
     }
+
+    internal Task Initialization { get; }
 
     public bool CanGoBack => CurrentStepIndex > 0 && !IsDeploying && !IsComplete && !HasCrashed;
     public bool CanGoNext => CurrentStepIndex < StepNames.Count - 2 && !IsDeploying && !IsComplete && !HasCrashed;
@@ -197,9 +199,9 @@ public sealed partial class WizardShellViewModel : ViewModelBase
             ConfigRepoPath = settings.ConfigRepoPath ?? string.Empty;
             ValidateConfigPath();
         }
-        catch
+        catch (Exception ex)
         {
-            // Settings load failure is non-fatal
+            Debug.WriteLine($"Settings load failed: {ex.Message}");
         }
     }
 
