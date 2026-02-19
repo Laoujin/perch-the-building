@@ -9,9 +9,45 @@ inputDocuments:
 
 # Perch - Epic Breakdown
 
-## Overview
+## Pivot Note (2026-02-19)
 
-This document provides the complete epic and story breakdown for Perch, decomposing the requirements from the PRD and Architecture into implementable stories.
+**Project pivoted from CLI-first to WPF Desktop-first.** Epics 1-8, 10-11, and 14 are implemented and working. The sprint-status.yaml is the operational source of truth for current priorities.
+
+### Completed Epics
+
+| Epic | Status | What was built |
+|------|--------|---------------|
+| 1: Deploy Managed Configs | **Done** | 14 CLI commands, symlink engine, manifest parsing, Spectre.Console output |
+| 2: Cross-Platform Deploy | **Done** | Windows/Linux/macOS providers, platform filtering, glob resolution |
+| 3: Deploy Safety & Observability | **Done** | Dry-run, drift detection, snapshots, JSON output, CI pipeline |
+| 4: Package & App Awareness | **Done** | Choco/winget/brew/apt/npm/VS Code detection |
+| 5: Git Integration & Hooks | **Done** | Clean filters, before/after diffing, lifecycle hooks |
+| 6: Multi-Machine & System Tweaks | **Done** | Registry three-value model, machine profiles, tweak apply/revert |
+| 7: Secrets Management | **Done** | 1Password integration, template resolution |
+| 8: Advanced Usability | **Done** | Backup restore, cross-platform packages |
+| 10: Desktop Wizard & Onboarding | **Done** | WPF wizard, profile selection, card views, deploy |
+| 11: Desktop Dashboard & Drift | **Done** | Drift banner, status cards, gallery, settings, 6 pages |
+| 14: Gallery Schema Evolution | **Done** | Type system, OS filtering, dependency graph, auto-index |
+
+### New Epics (Desktop-First)
+
+| Epic | Priority | Focus |
+|------|----------|-------|
+| 20: Languages Page + Gallery | **P1** | New WPF page for language ecosystems + gallery YAML per language (.NET, Node, Python, Java, Ruby, Rust, Go) |
+| 21: Dotfiles Page + Gallery | **P2** | Dotfiles page improvements + gallery entries per dotfile (git, PowerShell, node/npm, bash) |
+| 22: Apps Page + Gallery | **P2** | Apps page: sorting, categories, alternatives, top choices, suggestions |
+| 23: Dashboard & Wizard | **P3** | Dashboard refinements, wizard validation, persist UI changes to config |
+| 24: Desktop Structural Fixes | As needed | Fix pending change handlers, startup dedup, font bugs |
+| 25: Tweaks Expansion | Deferred | Needs brainstorm before planning |
+| 26: CLI Scope Evaluation | Deferred | Full-featured vs minimal CLI |
+
+See `sprint-status.yaml` for story-level tracking.
+
+---
+
+## Overview (Original — Epics 1-15)
+
+The content below is the original epic breakdown from the CLI-first era. Epics 1-8, 10-11, 14 are done. Retained as reference for what was built and for story-level detail.
 
 ## Requirements Inventory
 

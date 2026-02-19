@@ -50,9 +50,9 @@ Scope 2-3 FRs add surface area (cross-platform, system tweaks, gallery schema, i
 
 **Scale & Complexity:**
 
-- Primary domain: CLI tool / system utility (filesystem operations, platform APIs) + WPF desktop app (wizard, dashboard, card-based UI)
-- Complexity level: Low (Core + CLI), Medium (Desktop)
-- Estimated architectural components: ~5-7 for Core/CLI Scope 1 (manifest parser, module discovery, symlink engine, platform abstraction, CLI layer, configuration, backup handler), ~8-10 additional for Desktop (shell/navigation, wizard flow, dashboard, card views, custom components, ViewModels, DI host)
+- Primary domain: WPF Desktop app (wizard, dashboard, card-based gallery UI) + CLI tool (automation, cross-platform). Desktop is the primary interface
+- Complexity level: Medium (Desktop), Low (Core + CLI)
+- Architectural components: ~16 feature folders in Core, ~10 ViewModels + 6 pages + 7 controls in Desktop, 14 CLI commands. All implemented and working
 
 ### Technical Constraints & Dependencies
 
@@ -79,7 +79,7 @@ Scope 2-3 FRs add surface area (cross-platform, system tweaks, gallery schema, i
 
 ### Primary Technology Domain
 
-CLI tool / system utility — C# / .NET 10. No competing starter ecosystem; `dotnet new` provides all scaffolding.
+WPF Desktop app + CLI tool — C# / .NET 10. Desktop is the primary interface; CLI for automation and cross-platform. No competing starter ecosystem; `dotnet new` provides all scaffolding.
 
 ### Verified Versions (Feb 2026)
 
@@ -147,7 +147,7 @@ dotnet add src/Perch.Desktop package Microsoft.Extensions.Hosting --version 10.0
 dotnet add tests/Perch.Desktop.Tests package NSubstitute --version 5.3.0
 ```
 
-**Note:** CLI project initialization should be the first implementation story. Desktop project initialization is a separate story when that epic begins.
+**Note:** All projects (Core, CLI, Desktop, tests) are initialized and working. The commands above are retained for reference only.
 
 ## Core Architectural Decisions
 
@@ -713,4 +713,4 @@ WizardShellViewModel manages step navigation (StepBar binding)
 - ITweakProvider interface abstracts mechanism types — new mechanisms (services, scheduled tasks) slot in without changing consumers
 - Three-value model (default/captured/desired) is the foundation for drift detection, revert, and status display across all mechanism types
 
-**Status:** READY FOR IMPLEMENTATION
+**Status:** IMPLEMENTED — Core, CLI, and Desktop all built and working. Desktop-first pivot acknowledged (2026-02-19).

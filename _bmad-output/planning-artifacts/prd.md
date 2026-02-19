@@ -9,15 +9,16 @@ documentCounts:
   projectDocs: 0
   projectContext: 0
 classification:
-  projectType: cli_tool
+  projectType: desktop_app_with_cli
   domain: developer_tooling
-  complexity: low
+  complexity: medium
   projectContext: brownfield
   scopes:
-    scope1: "Switch machines - core symlink/junction engine, PowerShell profile, git config, program settings via symlinks"
-    scope2: "Rock solid + cross-platform - idempotency, drift detection, WhatIf, package management, git clean filters, discovery, automated testing, Linux/macOS support"
-    scope3: "Accessible & complete - multi-mechanism system tweaks (registry+PowerShell+fonts, three-value model, app-owned tweaks, detect-first), unified tree taxonomy, gallery as source of truth, WinUtil/Sophia import, machine-specific overrides, WPF Desktop app (wizard + drift dashboard with smart status), secrets/1Password, competitor migration"
-    scope5: "Scoop integration - Scoop as primary dev-tool package manager, bucket management, app install/export/import, predictable path integration"
+    scope1: "Foundation (done) - core engine, CLI, Desktop shell, gallery schema, multi-mechanism tweaks, secrets, cross-platform"
+    scope2: "Desktop polish - Languages ecosystem page + gallery, Dotfiles page + gallery, Apps page + gallery (sorting, categories, alternatives, suggestions)"
+    scope3: "Experience completion - Dashboard refinements, Wizard end-to-end validation, persist UI changes to config repo"
+    scope4: "Analysis needed - Tweaks expansion, CLI scope evaluation"
+    scope5: "Ecosystem - Scoop integration, migration tools, gallery importers"
 ---
 
 # Product Requirements Document - Perch
@@ -27,15 +28,15 @@ classification:
 
 ## Executive Summary
 
-**Perch** is a cross-platform dotfiles and application settings manager built in C# / .NET 10. It uses symlinks to link config files from a git-tracked repository into their expected locations on the filesystem, enabling zero-friction config sync across multiple machines running Windows, Linux, and macOS.
+**Perch** is a Windows-first dotfiles and application settings manager built in C# / .NET 10. The primary interface is a WPF Desktop app that guides users through managing their configs, apps, and system tweaks via a visual gallery. Under the hood, Perch uses symlinks to link config files from a git-tracked repository into their expected locations on the filesystem, enabling zero-friction config sync across multiple machines. A CLI is available for automation and cross-platform use (Linux, macOS).
 
-**Core differentiator:** Symlink-first philosophy. Change a setting in any app, and it's immediately visible in git — no re-add step, no re-run. Perch thinks in *applications* (manifests, modules, conventions), not just files.
+**Core differentiator:** Symlink-first philosophy with a visual Desktop experience. Change a setting in any app, and it's immediately visible in git — no re-add step, no re-run. Perch thinks in *applications* (manifests, modules, conventions), not just files. The Desktop app makes this accessible to users who don't live in the terminal.
 
-**Target user:** Developer managing personal dotfiles and program settings across multiple machines (Windows, Linux, macOS). Future: any user via WPF Desktop app with guided onboarding wizard.
+**Target user:** Developer or power user managing personal dotfiles, program settings, and system tweaks across machines. Primary experience: WPF Desktop app with guided wizard and gallery-driven configuration. Secondary: CLI for automation, scripting, and cross-platform (Linux, macOS).
 
-**Technology:** C# / .NET 10, Spectre.Console for CLI output, WPF Desktop app (WPF UI + HandyControl + CommunityToolkit.Mvvm), NUnit + NSubstitute for testing, GitHub Actions CI. Distributed as .NET tool (`dotnet tool install perch -g`). Engine library shared between CLI and Desktop app.
+**Technology:** C# / .NET 10, WPF Desktop app (WPF UI + HandyControl + CommunityToolkit.Mvvm) as primary interface, Spectre.Console CLI as secondary interface, NUnit + NSubstitute for testing, GitHub Actions CI. Engine library (Perch.Core) shared between Desktop and CLI. Distributed as .NET tool (`dotnet tool install perch -g`).
 
-**Competitive context:** Existing tools (chezmoi, PSDotFiles, Dotter, Dotbot) are Linux/macOS-first or use copy-on-apply models. None combine symlink-first + app-level awareness + cross-platform with Windows-native features (registry, WPF Desktop UI). See `competitive-research.md` and `chezmoi-comparison.md` for detailed analysis.
+**Competitive context:** Existing tools (chezmoi, PSDotFiles, Dotter, Dotbot) are Linux/macOS-first, CLI-only, or use copy-on-apply models. None combine symlink-first + app-level awareness + a visual Desktop UI with Windows-native features (registry, system tweaks, gallery). See `competitive-research.md` and `chezmoi-comparison.md` for detailed analysis.
 
 ## Success Criteria
 
@@ -49,10 +50,11 @@ classification:
 
 ### Business Success
 
-- **Scope 1:** Switch to new Windows PC (already here, apps installed) using Perch. Immediate priority
-- **Scope 2:** Engine robust, tested, CI-green. Cross-platform support for Linux/macOS. Confidence to run on any machine without fear
-- **Scope 3:** New users onboard via UI with minimal friction. Registry management (Windows), secrets integration, and machine-specific overrides work across all machines
-- **Scope 5:** Dev tools managed via Scoop — install, update, export app lists, manage buckets. New machines provisioned with one command
+- **Scope 1 (done):** Core engine, CLI, Desktop shell, gallery schema, multi-mechanism tweaks, secrets, cross-platform — all implemented and working
+- **Scope 2:** Desktop app polished with Languages ecosystem page (gallery-configured), Dotfiles page with gallery entries, Apps page with sorting/categories/alternatives/suggestions. Gallery is rich and useful
+- **Scope 3:** Dashboard shows real drift data, wizard runs end-to-end reliably, UI changes persist to perch-config manifests
+- **Scope 4:** Tweaks expansion brainstormed and planned, CLI scope evaluated (full-featured vs minimal drift/sync)
+- **Scope 5:** Dev tools managed via Scoop, migration tools for chezmoi/Dotbot users, gallery importers for WinUtil/Sophia
 
 ### Technical Success
 
@@ -64,14 +66,18 @@ classification:
 
 ### Measurable Outcomes
 
-- Scope 1: new Windows PC fully configured via Perch in a single session
-- Scope 2: `perch deploy` idempotent — running twice produces zero changes
-- Scope 2: CI pipeline green on every push (Windows + Linux)
-- Scope 2: same config repo deploys correctly on both Windows and Linux
-- Scope 3: machine-specific overrides work across 2-4 machines with shared base config
+- Scope 1 (done): new Windows PC fully configured via Perch in a single session
+- Scope 1 (done): `perch deploy` idempotent — running twice produces zero changes
+- Scope 1 (done): CI pipeline green on every push (Windows + Linux)
+- Scope 1 (done): same config repo deploys correctly on both Windows and Linux
+- Scope 1 (done): machine-specific overrides work across 2-4 machines with shared base config
+- Scope 2: Languages page shows detected SDKs/tools per ecosystem with gallery-driven content for 5+ languages
+- Scope 2: Dotfiles page shows all managed dotfiles with per-entry gallery metadata (git, PowerShell, node, bash)
+- Scope 2: Apps page displays sorted categories, alternatives, suggestions, and top-choice badges from gallery data
 - Scope 3: non-author user can onboard via Desktop wizard without reading source code
+- Scope 3: toggling an app/dotfile in the UI and deploying results in a manifest change visible in `git diff`
+- Scope 4: Tweaks expansion brainstormed — which tweaks to include, mechanisms, UX, gallery structure decided
 - Scope 5: `perch scoop install` provisions all dev tools from config on a fresh machine
-- Scope 5: Scoop app list stays in sync with config repo — add/remove in config, deploy picks it up
 
 ## User Journeys
 
@@ -270,325 +276,245 @@ Wouter's colleague uses chezmoi and wants to try Perch. He runs `perch import ch
 
 ## Project Scoping & Phased Development
 
-### MVP Strategy
+### Development History
 
-**Approach:** Problem-solving MVP — the minimum to get Wouter off the old machine and onto the new one. Every feature must serve the "clone, deploy, switch" story.
+Perch was originally planned as a CLI-first tool. The CLI and core engine were built first (Epics 1-8), covering symlink deployment, cross-platform support, drift detection, package management, git integration, multi-machine profiles, registry tweaks, and secrets management. Then the WPF Desktop app was built (Epics 10-11), providing wizard onboarding, dashboard, and gallery-driven card views.
+
+During Desktop development, it became clear that the Desktop app is the better primary experience. The project pivoted to Desktop-first (February 2026). The CLI remains available for automation and cross-platform use.
 
 **Resource:** Solo developer + AI assistance. C# / .NET 10.
 
-### Phase 1: Switch Machines (MVP) — Windows Only
-
-**Journeys supported:** J1 (Fresh Machine Setup), J2 (Onboarding New Program), J3 (Day-to-Day Sync)
-
-**Must-have:**
-- Assess existing codebase from previous AI session before building
-- Symlink/junction creation engine reading co-located manifests
-- Convention-over-config discovery (folder name = package name)
-- `perch deploy` command — creates all symlinks, re-runnable (additive)
-- Symlink conflict: move existing file to `.backup`, create symlink
-- Engine/config repo split
-- Config repo location via CLI argument, persisted for future runs (settings file alongside engine)
-- Spectre.Console colored text streaming (action-by-action output)
-- Basic error reporting (what failed and why)
-- Clean exit codes
-- Run from source (`dotnet run`)
-- perch-config README documenting the folder convention and getting started
-- Architecture: no hard-coded Windows assumptions in core engine — platform-specific logic isolated
-
-**Explicitly NOT in MVP:**
-- Linux/macOS support
-- `dotnet tool install` distribution
-- Live-updating tables / rich progress UI
-- Porcelain/JSON output
-- Interactive mode
-- Dry-run / WhatIf
-- Full backup/restore (conflict `.backup` IS in MVP)
-- Git clean filters
-- App discovery tooling
-- Shell completion
-
 **Config Schema note:** PRD originally specified JSON manifests; Architecture Decision #1 changed to YAML (YamlDotNet). All manifest references in this PRD should be read as YAML format.
 
-### Phase 2: Rock Solid + Cross-Platform
+### Scope 1: Foundation (Done)
 
-- Linux/macOS support — platform-aware path resolution, cross-platform modules
-- Platform-specific module filtering (Windows-only modules skip on Linux, etc.)
-- `dotnet tool install perch -g` distribution (works on all platforms)
-- Multiple package manager support (chocolatey, winget, apt, brew, etc.)
-- Rich Spectre.Console UI (live tables, progress tracking)
-- Porcelain/JSON output mode
-- Idempotent deploy with drift reporting
-- Dry-run / WhatIf mode (`--dry-run`)
-- Pre-deploy backup snapshots
-- File locking detection + reporting
-- Dynamic config path resolution (glob/pattern matching)
-- Git clean filters for noisy configs
-- Before/after diffing for settings discovery
-- Installed app detection + missing config detection
-- NUnit + NSubstitute test suite
-- GitHub Actions CI on Windows + Linux runners
-- Lifecycle hooks per plugin
+Everything below is implemented, tested, and working.
 
-### Phase 3: Accessible & Complete
+**Core Engine (Epics 1-8):**
+- Symlink/junction creation engine with co-located YAML manifests
+- Convention-over-config discovery (folder name = package name)
+- `perch deploy` command — re-runnable, additive, graceful Ctrl+C
+- Cross-platform: Windows, Linux, macOS path resolution and module filtering
+- Drift detection, dry-run mode, pre-deploy backup snapshots
+- Package management: chocolatey, winget, apt, brew, npm, VS Code extensions
+- Git clean filters, before/after filesystem diffing, lifecycle hooks
+- Multi-machine profiles with per-machine overrides
+- Registry management with three-value model (default/captured/desired)
+- Secrets management via 1Password integration with template placeholders
+- Backup/restore from snapshots
+- 14 CLI commands, Spectre.Console output, JSON porcelain mode
+- GitHub Actions CI on Windows + Linux
 
-- Interactive mode (step-level and command-level confirmation)
-- Machine-specific overrides (layered config system), active machine tracking
-- Multi-mechanism system tweaks — Windows only: registry YAML, PowerShell script + undo_script, font installation. Legacy .reg files retired
-- Three-value model for registry: default_value (Windows default) / captured machine state / desired value. Enables drift detection, revert-to-default, revert-to-previous
-- App-owned tweaks — app entries include their bad behavior (context menus, startup items, telemetry) as toggleable sub-items
-- Detect-first flow — scan current machine state before configuring, show what's already in place
-- Gallery as source of truth — manifests store only deviations from gallery defaults + captured old values
-- Unified tree taxonomy — deep category paths (`Apps/Languages/.NET/...`, `Windows Tweaks/Explorer`), shared across wizard and dashboard
-- Gallery schema evolution: `suggests:`/`requires:` dependency links (replaces `priority:`), `restart_required:`, `windows_versions:`, category `sort:`, unified `type:` field, auto-generated `index.yaml`
-- WinUtil import tooling (~65 tweaks), then Sophia Script import (~270 functions) with deduplication. License checks per source repo
-- CI registry validation — GitHub Actions matrix on multiple Windows versions validates every registry path exists
-- Secrets/password manager integration (1Password CLI) — template + inject model for files containing secrets (NuGet credentials, npm tokens, SSH config for Synology/GitHub, API keys). Non-symlinked generated files
-- Manifest templates from external repo (GitHub Pages gallery)
-- Version-range-aware manifest paths
-- Restore from backup (full restore capability)
-- Shell completion
-- WPF Desktop wizard — profile-driven onboarding, detection-first card grids, three-tier layout, per-card deploy progress. Built on WPF UI (Fluent 2), HandyControl (StepBar), CommunityToolkit.Mvvm. Shares Perch.Core engine library
-- WPF Desktop dashboard — drift hero banner, mechanism-aware smart status cards (Applied/Drifted/Linked/Broken/Installed/etc.), inline current/desired/default values, universal "Open Location" button, one-click fix actions. Sidebar navigation into shared card gallery views
-- WPF is the primary gallery browser. Astro website is marketing only
-- Competitor migration tool (chezmoi -> Perch, other popular formats)
-- Community config path database
-- Git identity bootstrap automation
+**Desktop App (Epics 10-11):**
+- WPF shell with NavigationView sidebar
+- Dashboard: drift hero banner, pending changes queue, attention items
+- Apps page: gallery from catalog, three-tier layout, search, profile suggestions
+- Dotfiles page: detection, per-file symlink status, toggle to stage
+- System Tweaks: registry tweaks, fonts, startup items, certificates
+- Settings: config repo path, developer mode, about
+- Wizard: 7 dynamic steps with profile-driven content, full deploy
+- Deploy: pending changes applied via Dashboard or Wizard
 
-### Desktop App Scope (Phase D)
-
-This section defines the concrete scope for Perch.Desktop (WPF), broken into phases. Each phase has clear acceptance criteria. Agents working on Desktop issues should reference this section to understand priorities and what "done" looks like.
-
-#### Current State (what's built)
-
-The Desktop app is fully functional with real data from Perch.Core. No stubs, no mock data.
-
-| Page | Status | What it does |
-|------|--------|-------------|
-| **Dashboard** | Working | Drift hero banner (health %, linked/attention/broken counts), pending changes queue with toggle/discard/apply, attention items list with severity levels |
-| **Apps** | Working | Real gallery from catalog, three-tier layout (Your Apps / Suggested / Other), category grouping, search, profile-based suggestions, toggle to stage pending changes, detail panel with ecosystem/alternatives |
-| **Dotfiles** | Working | Real dotfile detection, per-file symlink status (Linked/Detected/Drift/NotInstalled), toggle to stage pending changes |
-| **System Tweaks** | Working | Four sub-sections: (1) Registry tweaks with detection and apply/revert, (2) Fonts with system scan and gallery matching, (3) Startup items with enable/disable/remove, (4) Certificates with store browsing and expiry filters |
-| **Startup** | Working | Standalone page duplicating System Tweaks startup sub-section. Add/remove/toggle startup items |
-| **Settings** | Working | Config repo path with browse, save, reload, developer mode toggle, about info |
-| **Wizard** | Working | 7 dynamic steps: Profile selection, Config repo, Dotfiles, Apps, Tweaks, Review, Deploy. Profile selection drives which steps appear. Full deploy at end |
-| **Deploy** | Working | Pending changes applied via Dashboard "Apply All" or Wizard deploy step. Handles: LinkApp, UnlinkApp, ApplyTweak, RevertTweak, ToggleStartup |
+**Gallery Schema (Epic 14):**
+- Type system (app/tweak/font), OS-version filtering
+- Dependency graph (suggests/requires), auto-generated index.yaml
+- Gallery as source of truth, manifests store deviations only
 
 **Known gaps in current build:**
-- `LinkDotfileChange` and `OnboardFontChange` are staged in the pending queue but silently skipped by `ApplyChangesService` — they have no apply handler
-- Startup page exists both as standalone page AND as System Tweaks sub-section — redundant
-- AppsPage, DotfilesPage, and SystemTweaksPage share the same UI pattern (search header + loading spinner + error banner + card grid + detail view) but each page implements it independently (~1,200 lines of duplicated scaffolding)
+- `LinkDotfileChange` and `OnboardFontChange` staged but silently skipped by `ApplyChangesService`
+- Startup page exists as both standalone page AND System Tweaks sub-section
+- ~1,200 lines duplicated scaffolding across AppsPage, DotfilesPage, SystemTweaksPage
 - Fonts "open location" button does not work (#29)
 - Fonts vertical alignment of font group toggler is off (#30)
-- UI changes are not persisted to perch-config manifests — "Apply All" acts in-memory only, config repo is not updated (#33)
+- UI changes not persisted to perch-config manifests (#33)
 
-#### Phase D1: Structural Fixes
+### Scope 2: Desktop Polish (P1 + P2)
 
-Fix the foundation before adding features. These issues affect reliability and developer velocity.
+#### P1: Languages Ecosystem Page + Gallery
 
-**D1.1 Fix pending change handlers**
-- `ApplyChangesService` must handle `LinkDotfileChange` (create symlinks for dotfile entries)
-- `ApplyChangesService` must handle `OnboardFontChange` (install fonts via the font mechanism from #88)
+New WPF page for language ecosystem onboarding. Each language gets gallery entries covering SDK, tools, IDE, and config files. Detection logic identifies what's installed.
+
+**Languages page scaffold:**
+- New page in sidebar navigation between Apps and System Tweaks
+- Card-based layout per language ecosystem
+- Detection: scan for installed SDKs, tools, version managers
+- Per-language detail panel: SDK version, tools, IDE, config files managed by Perch
+
+**Gallery content per language (one story each):**
+
+| Language | SDK/Runtime | Tools | IDE/Editor | Config Files |
+|----------|------------|-------|------------|-------------|
+| .NET | dotnet SDK | dotnet-tools, NuGet | Visual Studio, Rider | nuget.config, dotnet-tools.json |
+| Node | node/nvm | npm/yarn/pnpm/bun | — | .npmrc, .nvmrc |
+| Python | python/pyenv | pip, virtualenv | PyCharm | pip.conf, pyproject.toml |
+| Java | JDK/sdkman | Maven, Gradle | IntelliJ | settings.xml, gradle.properties |
+| Ruby | ruby/rbenv | bundler, gems | RubyMine | .gemrc, .irbrc |
+| Rust | rustup | cargo, clippy | — | cargo/config.toml |
+| Go | go SDK | go tools | GoLand | go/env |
+
+**Acceptance per language:** gallery YAML entry exists, language card appears on Languages page, installed SDK detected, config files linkable.
+
+#### P2: Dotfiles Page + Gallery
+
+Improve the Dotfiles WPF page and configure gallery entries for each managed dotfile.
+
+**Dotfiles page improvements:**
+- Gallery-driven metadata on each card (description, platform paths, what it controls)
+- Visual distinction between linked, detected-but-unlinked, and not-found states
+
+**Gallery content per dotfile (one story each):**
+
+| Dotfile | Key Config Files | Platform Notes |
+|---------|-----------------|----------------|
+| git | .gitconfig, .gitignore_global | Same path all platforms via ~ |
+| PowerShell | Microsoft.PowerShell_profile.ps1, modules | Different path Windows vs Linux/macOS |
+| node/npm | .npmrc, .nvmrc | ~ on all platforms |
+| bash | .bashrc, .bash_profile, .bash_aliases | Linux/macOS only |
+
+**Acceptance per dotfile:** gallery YAML entry with `kind: dotfile`, card shows on Dotfiles page with metadata, detection works.
+
+#### P2: Apps Page + Gallery
+
+Improve the Apps WPF page with richer gallery data: sorting, categories, alternatives, top choices, suggestions.
+
+**Apps page improvements:**
+- **Sorting:** apps within categories sorted by gallery `sort:` value, then alphabetically
+- **Categories:** deep category paths rendered as collapsible sections
+- **Alternatives:** app cards show "Also consider: X, Y" from gallery `alternatives:` field
+- **Top choices:** curated "Editor's Pick" or "Top Choice" badges from gallery metadata
+- **Suggestions:** "Suggested for You" tier driven by profile + `suggests:` links
+
+**Gallery content work:**
+- Assign categories to all existing app entries
+- Add `alternatives:` links between competing apps (e.g., VS Code / Sublime / Notepad++)
+- Add `suggests:` links for natural pairings (e.g., Node → nvm, Python → pyenv)
+- Curate top-choice badges for recommended apps per category
+- Add sorting values to categories
+
+**Acceptance:** Apps page shows sorted categories, alternative links on cards, suggestion badges, top-choice indicators. All driven by gallery YAML data.
+
+### Scope 3: Experience Completion (P3)
+
+#### Dashboard Refinements
+- Drift hero banner shows accurate real-time data
+- Attention cards link to the relevant page for resolution
+- Pending changes queue reliable across all change types
+
+#### Wizard End-to-End Validation (#34)
+- Smoke test all 7 steps (Profile, Config, Dotfiles, Apps, Tweaks, Review, Deploy)
+- Verify data flow into deploy pipeline
+- Re-launchable from Dashboard
+
+#### Persist UI Changes to Config (#33)
+- UI selections write to perch-config manifest YAMLs
+- "Apply All" persists to manifests then deploys from them
+- `perch deploy` CLI and Desktop use the same manifest-driven path
+- Rollback on failure, conflict handling with manual edits
+
+### Scope 4: Analysis & Planning
+
+#### Tweaks Expansion (needs brainstorm)
+Existing tweak infrastructure works (registry detection, apply/revert, three-value model). Before expanding, needs analysis:
+- Which of the 18 planned tweak cards are actually useful?
+- What mechanisms does each need (registry, PowerShell, WMI)?
+- UX: are individual cards the right model, or should some be grouped?
+- Gallery structure for tweak entries
+- Import pipeline: WinUtil/Sophia Script as content sources?
+
+**Planned tweak cards (pending analysis):**
+
+| Card | Mechanism | Priority TBD |
+|------|-----------|-------------|
+| File Explorer settings | Registry | — |
+| Taskbar and Start Menu | Registry | — |
+| Notifications manager | Registry | — |
+| Audio devices manager | WMI/PowerShell | — |
+| Display and scaling | Registry | — |
+| Mouse and keyboard | Registry | — |
+| Windows Update settings | Registry/GPO | — |
+| Shell extensions manager | Registry | — |
+| Default apps / file associations | Registry/COM | — |
+| Environment variables manager | Registry | — |
+| Context menu manager | Registry | — |
+| Scheduled tasks manager | COM/PowerShell | — |
+| Windows services manager | WMI/PowerShell | — |
+| Hosts file manager | File I/O | — |
+| Power plan manager | PowerShell | — |
+| Firewall rules manager | COM/PowerShell | — |
+| Windows optional features | DISM/PowerShell | — |
+| DNS and network settings | WMI/Registry | — |
+| Privacy and telemetry | Registry | — |
+
+#### CLI Scope Evaluation
+Evaluate whether the CLI should be:
+- **Full-featured:** mirror all Desktop capabilities (current 14 commands)
+- **Minimal:** `perch deploy` (sync everything) + `perch status` (detect drift) only
+- **Hybrid:** core commands for automation, Desktop for interactive configuration
+
+### Structural Fixes (as needed)
+
+These foundation issues should be addressed when they block P1-P3 work:
+
+**Fix pending change handlers:**
+- `ApplyChangesService` must handle `LinkDotfileChange` and `OnboardFontChange`
 - Acceptance: every change type that can be staged can also be applied
 
-**D1.2 Resolve Startup page duplication**
-- Remove standalone StartupPage; System Tweaks startup sub-section is the canonical location
-- Remove StartupPage from sidebar navigation
-- Acceptance: one place to manage startup items, not two
+**Resolve Startup page duplication:**
+- Remove standalone StartupPage; System Tweaks sub-section is canonical
+- Acceptance: one place to manage startup items
 
-**D1.3 Extract shared page scaffolding**
-- Create a reusable `CardGalleryHost` control that provides: search box + refresh button header, loading overlay, error banner, scrollable card grid (ItemsControl + WrapPanel), detail view with back button
-- AppsPage, DotfilesPage, and SystemTweaksPage consume this control instead of duplicating the pattern
-- Acceptance: fixing a loading spinner bug is a one-file change, not three
+**Extract shared page scaffolding:**
+- Create `CardGalleryHost` control: search + refresh header, loading overlay, error banner, card grid, detail view
+- AppsPage, DotfilesPage, SystemTweaksPage consume it
+- Acceptance: loading spinner fix is one-file change
 
-**D1.4 Fix font UI bugs**
-- #29: Fonts "open location" button does not open Explorer to font file. Verify path, file existence, Process.Start arguments
-- #30: Font group toggler vertical alignment is off
-- Acceptance: open location reveals font file in Explorer; toggle aligns with surrounding elements
+**Fix font UI bugs:**
+- #29: "open location" button, #30: font group toggler alignment
 
-**D1.5 Add FlaUI assertion tests** (relates to #87)
-- Extend existing smoke tests beyond screenshots to include targeted assertions:
-  - Dashboard loads and shows health banner
-  - Apps page loads and displays at least 1 app card
-  - Clicking an app card opens the detail view
-  - System Tweaks page shows all four sub-sections
-  - Pending change count updates when toggling an item
-- Acceptance: `dotnet test tests/Perch.SmokeTests` catches UI regressions, not just crashes
+**Font installation mechanism** (#88):
+- Download and install Nerd Fonts, register in registry, drift detection
+- Acceptance: toggle a Nerd Font in UI, deploy, font is installed
 
-#### Phase D2: Complete Core Experience
+### Deferred
 
-High-priority features that close functional gaps in the current experience. These are features users expect to work.
-
-**D2.1 Font installation mechanism** (#88, priority:high)
-- Gallery has font entries but no install logic
-- Download font files (Nerd Fonts GitHub releases)
-- Install to Windows Fonts folder + register in registry
-- Support drift detection (font installed vs not)
-- Wire into `OnboardFontChange` handler from D1.1
-- Acceptance: user can toggle a Nerd Font in the UI, deploy, and the font is installed
-
-**D2.2 Settings symlink from config repo** (#78, priority:high)
-- Perch's own `settings.yaml` should be a symlink from perch-config
-- Transfers settings between machines automatically
-- Acceptance: `settings.yaml` is managed by Perch like any other config file
-
-**D2.3 App detail page** (#69, priority:medium, epic)
-- Each app card gets a "Configure" button opening a detail page
-- Detail page shows: card info, additional symlinks (with add/remove), related entries (suggests, alternatives, tweaks), submodule linking
-- Acceptance: user can view and manage per-app configuration from the Desktop UI
-
-**D2.4 Git onboarding wizard paths** (#59, priority:medium)
-- Git config needs special handling in the wizard
-- Four paths: clone git setup repo, clone barebones repo, use existing ~/.gitconfig, clone full-fledged repo
-- Detect existing git config files and pre-select appropriate path
-- Acceptance: wizard handles git config setup without manual steps
-
-**D2.5 Persist UI changes to perch-config manifests** (#33, epic)
-- UI selections must write to perch-config manifest YAMLs so the config repo becomes the source of truth
-- "Apply All" should persist to manifests then deploy from them
-- `perch deploy` CLI and Desktop app use the same manifest-driven path
-- Handle edge cases: rollback on failure, conflict with manual edits
-- Acceptance: toggling an app in the UI and deploying results in a manifest change visible in `git diff`
-
-**D2.6 Detected page: onboard unmanaged apps** (#22, epic)
-- New page surfacing installed apps that have no config/symlinks in perch-config
-- Badge with unmanaged app count in sidebar navigation
-- Support single-app and batch onboarding: module creation, symlink setup, backup, verification
-- Empty state: "Everything is onboarded"
-- Acceptance: user sees unmanaged apps, can onboard them, badge updates after onboarding
-
-**D2.7 Toggle non-installed apps for onboarding** (#16)
-- Currently can only toggle apps that are already installed
-- Enable marking non-installed apps for install + symlink onboarding
-- Toggling queues pending changes visible on Dashboard
-- Acceptance: non-installed gallery apps can be toggled and deployed
-
-**D2.8 Validate wizard end-to-end** (#34)
-- Smoke test wizard across all 7 steps (Profile, Config, Dotfiles, Apps, Tweaks, Review, Deploy)
-- Verify step rendering, data flow into deploy pipeline, catalog compatibility
-- Ensure wizard is re-launchable from Dashboard
-- Acceptance: wizard completes a full run from profile selection through deploy without errors
-
-**D2.9 Startup page UX clarification** (#24)
-- Clarify the distinction between disable (writes to StartupApproved registry) and remove (deletes from Run + StartupApproved)
-- Add tooltips and confirmation dialog for destructive remove action
-- Visual weight differentiation between the two actions
-- Acceptance: user understands the difference between disable and remove before acting
-
-#### Phase D3: Tweak Expansion
-
-New tweak management cards. Each card follows the existing tweak card pattern (detect current state, show desired vs actual, toggle to stage changes). These can be worked in parallel.
-
-| Issue | Card | Priority |
-|-------|------|----------|
-| #48 | File Explorer settings (hidden files, extensions, full path, default view) | medium |
-| #47 | Taskbar and Start Menu (alignment, search, widgets, system tray) | medium |
-| #49 | Notifications manager (per-app toggles, focus assist, global settings) | low |
-| #50 | Audio devices manager (default playback/recording, per-app routing) | low |
-| #51 | Display and scaling (DPI, night light, ClearType) | low |
-| #52 | Mouse and keyboard (pointer speed, scroll, key repeat, caps lock remap) | low |
-| #53 | Windows Update settings (active hours, pause, defer) | low |
-| #54 | Shell extensions manager (list, toggle, highlight problematic) | low |
-| #35 | Default apps / file extension associations (.pdf, .txt, .html) | medium |
-| #39 | Environment variables manager (user/system, PATH editing) | medium |
-| #36 | Context menu manager (file/folder/background/desktop types) | low |
-| #37 | Scheduled tasks manager (name, status, trigger, next run) | low |
-| #38 | Windows services manager (startup type, running state) | low |
-| #41 | Hosts file manager (parse, toggle, add/remove entries) | low |
-| #42 | Power plan manager (list, switch active, toggle hidden plans) | low |
-| #43 | Firewall rules manager (inbound/outbound, toggle on/off) | low |
-| #44 | Windows optional features (WSL, Hyper-V, Sandbox, IIS) | low |
-| #45 | DNS and network settings (custom DNS per adapter, proxy) | low |
-| #46 | Privacy and telemetry settings | low |
-
-**Pattern for each card:**
-- Detect current state from registry/WMI/PowerShell
-- Show current vs desired values
-- Toggle stages a pending change
-- Deploy applies the change
-- Drift detection catches external modifications
-
-Acceptance per card: card appears in System Tweaks, detects current values, can apply desired values, drift detection works.
-
-#### Phase D4: Gallery Completion
-
-Complete the gallery catalog and card data so the Desktop app's views are comprehensive.
-
-**Gallery catalog:**
-
-| Issue | Task | Priority |
-|-------|------|----------|
-| #79 | Add gallery entries for remaining ~44 packages.yaml apps | medium |
-| #81 | Retire packages.yaml in favor of install.yaml (blocked by #79) | medium |
-| #76 | Clean-filter rules for Beyond Compare | medium |
-| #75 | Clean-filter rules for ConEmu/Cmder | medium |
-| #74 | Clean-filter rules for FileZilla | medium |
-| #73 | Clean-filter rules for Greenshot | medium |
-| #72 | Clean-filter rules for Notepad++ | medium |
-| #85 | WinUtil JSON -> gallery YAML converter | low |
-| #96 | Certificate backup/restore via perch-config | — |
-| #40 | Evaluate Winslop for tweak gallery inspiration | low |
-
-**Card data enhancements:**
-
-| Issue | Task | Priority |
-|-------|------|----------|
-| #20 | Add license filter to apps page | medium |
-| #21 | Add pricing badges for non-open-source apps (freemium, paid, free tier) | medium |
-| #18 | Display GitHub stars and repo link on app cards (may be partially done) | medium |
-| #19 | Evaluate and assign top-tier badges to apps (may be partially done) | medium |
-
-#### Phase D5: Ecosystem Onboarding
-
-Dedicated onboarding screens for language ecosystems. Each screen guides the user through SDK version, tools, IDE, and config file decisions for that ecosystem. These are epics — each one is a multi-issue effort.
-
-| Issue | Ecosystem | Priority |
-|-------|-----------|----------|
-| #59 | Git (special wizard paths — also in D2) | medium |
-| #60 | Python (runtime, package manager, global tools) | low |
-| #62 | Java (JDK, IDE, build tool, version manager) | low |
-| #63 | Ruby (runtime, version manager, global gems) | low |
-| #66 | Rust (rustup, cargo tools, IDE) | low |
-| #67 | Go (SDK, global tools, IDE) | low |
-
-#### Phase D6: Deferred
-
-These are in the PRD but explicitly deferred until D1-D5 are substantially complete.
-
-**UX polish (nice-to-have):**
-- **Global search across tweaks, apps, and dotfiles** (#25) — results grouped by type, keyboard shortcut accessible
-- **Show "other" badge count on collapsed app categories** (#14) — count updates when apps are toggled
-- **Extract and display app icons for startup entries** (#27) — Icon.ExtractAssociatedIcon from executables, cached
-- **Group tools/IDEs under parent language/shell detail pages** (#28, epic) — uses `suggests` relationship + `hidden` flag
-- **Logo watermark in bottom-right of menu** (#32)
-- **Home screen drift banner refinements** (#17, epic) — may be partially implemented already
-- **Verify font restore/backup end-to-end** (#31) — hands-on evaluation, edge cases
-
-**Architecture (deferred):**
-- **Gallery tree browser** (FR75) — unified drillable category navigation. Current flat card grid works for now
-- **Tweak detail panel with inline values** (FR74) — current card + detail view is adequate
-- **Grid/list density toggle** (FR53) — nice-to-have, not blocking
-- **Shared wizard/dashboard card views** (FR51) — the architecture doc calls for shared UserControls between wizard and dashboard pages. Current duplication is tolerable until D1.3 reduces it
+**Desktop features (post Scope 3):**
+- App detail page with configure button (#69)
+- Git onboarding wizard paths (#59)
+- Detected page: onboard unmanaged apps (#22)
+- Toggle non-installed apps for onboarding (#16)
+- Startup page UX clarification (#24)
+- Global search across tweaks, apps, dotfiles (#25)
+- Badge count on collapsed categories (#14)
+- App icons for startup entries (#27)
+- Group tools under parent language pages (#28)
+- Logo watermark (#32)
+- Drift banner refinements (#17)
+- Font restore/backup verification (#31)
+- Gallery tree browser (FR75)
+- Tweak detail panel with inline values (FR74)
+- Grid/list density toggle (FR53)
+- Shared wizard/dashboard card views (FR51)
 
 **Future:**
-- **AI config path lookup** (Journey 4b) — future
-- **Windows Sandbox integration** (Journey 4b) — future
-- **Desktop interactive filesystem explorer** (FR36) — future
-- **Visual manifest editor** (FR37) — future
-- **Manifest.yaml raw editor toggle** (#65) — low priority, deferred
-- **Competitor migration tools** (FR46-47) — chezmoi/Dotbot import
-- **Replace git/ folder with Git-Config submodule** (#80) — config repo restructuring
+- AI config path lookup (Journey 4b)
+- Windows Sandbox integration (Journey 4b)
+- Desktop interactive filesystem explorer (FR36)
+- Visual manifest editor (FR37)
+- Manifest.yaml raw editor toggle (#65)
+- Competitor migration tools (FR46-47)
+- Replace git/ folder with Git-Config submodule (#80)
 
-#### Desktop Testing Strategy
+### Desktop Testing Strategy
 
 | Layer | What | Tool |
 |-------|------|------|
 | **Unit tests** | ViewModel logic, service behavior | NUnit + NSubstitute (Perch.Desktop.Tests) |
 | **Integration tests** | Real gallery YAML parsing, manifest discovery (#86) | NUnit against real files |
 | **Smoke tests** | App launches, pages load, screenshots | FlaUI + NUnit (Perch.SmokeTests) |
-| **FlaUI assertions** | Cards render, toggles work, pending counts update (D1.4) | FlaUI + NUnit (Perch.SmokeTests) |
+| **FlaUI assertions** | Cards render, toggles work, pending counts update | FlaUI + NUnit (Perch.SmokeTests) |
 | **Wizard flow tests** | Full wizard ViewModel simulation (#87) | NUnit + NSubstitute |
 
-#### Desktop Issue Specification Requirements
+### Desktop Issue Specification Requirements
 
 Every Desktop issue must include:
 - **What exactly changes** — specific UI element, specific behavior, specific page

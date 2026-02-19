@@ -1,4 +1,4 @@
-# generated: 2026-02-16
+# updated: 2026-02-19
 # project: dotfiles
 # project_key: NOKEY
 # tracking_system: file-system
@@ -22,126 +22,163 @@
 #   - review: Ready for code review (via Dev's code-review workflow)
 #   - done: Story completed
 #
-# Retrospective Status:
-#   - optional: Can be completed but not required
-#   - done: Retrospective has been completed
-#
 # WORKFLOW NOTES:
 # ===============
 # - Epic transitions to 'in-progress' automatically when first story is created
 # - Stories can be worked in parallel if team capacity allows
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+#
+# PIVOT NOTE (2026-02-19):
+# ========================
+# Project pivoted from CLI-first to WPF Desktop-first. Epics 1-8, 10-11, 14 were
+# implemented but sprint-status was never updated. All marked done below.
+# New epics (20+) reflect Desktop-first priorities.
 
 generated: 2026-02-16
+updated: 2026-02-19
 project: dotfiles
 project_key: NOKEY
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
 
 development_status:
+  # ============================================================
+  # COMPLETED — Code exists, tested, working
+  # ============================================================
+
   # Epic 1: Deploy Managed Configs (Scope 1 — MVP)
-  epic-1: in-progress
-  1-1-initialize-project-structure: ready-for-dev
-  1-2-define-and-parse-app-manifests: backlog
-  1-3-discover-app-modules: backlog
-  1-4-create-symlinks-with-backup: backlog
-  1-5-persist-engine-configuration: backlog
-  1-6-deploy-command-with-console-output: backlog
-  1-7-powershell-module-auto-loader: backlog
-  epic-1-retrospective: optional
+  # CLI deploy with symlinks, backup, console output, Ctrl+C
+  epic-1: done
 
   # Epic 2: Cross-Platform Deploy (Scope 2)
-  epic-2: backlog
-  2-1-platform-aware-manifest-paths: backlog
-  2-2-platform-specific-module-filtering: backlog
-  2-3-dynamic-path-resolution: backlog
-  2-4-dotnet-tool-packaging: backlog
-  epic-2-retrospective: optional
+  # Windows/Linux/macOS path resolution, platform filtering
+  epic-2: done
 
   # Epic 3: Deploy Safety & Observability (Scope 2)
-  epic-3: backlog
-  3-1-dry-run-mode: backlog
-  3-2-drift-detection: backlog
-  3-3-file-locking-detection: backlog
-  3-4-pre-deploy-backup-snapshots: backlog
-  3-5-structured-json-output: backlog
-  3-6-live-progress-table: backlog
-  3-7-ci-pipeline-setup: backlog
-  epic-3-retrospective: optional
+  # Dry-run, drift detection, snapshots, JSON output, CI
+  epic-3: done
 
   # Epic 4: Package & App Awareness (Scope 2)
-  epic-4: backlog
-  4-1-package-manifest-definition: backlog
-  4-2-installed-app-detection: backlog
-  4-3-missing-config-module-reporting: backlog
-  epic-4-retrospective: optional
+  # Choco/winget/brew/apt/npm/VS Code detection
+  epic-4: done
 
   # Epic 5: Git Integration & Deploy Hooks (Scope 2)
-  epic-5: backlog
-  5-1-per-app-git-clean-filters: backlog
-  5-2-before-after-filesystem-diffing: backlog
-  5-3-pre-post-deploy-lifecycle-hooks: backlog
-  epic-5-retrospective: optional
+  # Clean filters, before/after diffing, lifecycle hooks
+  epic-5: done
 
-  # Epic 6: Multi-Machine & Registry Management (Scope 3)
-  epic-6: backlog
-  6-1-per-machine-overrides: backlog
-  6-2-module-to-machine-filtering: backlog
-  6-3-declarative-registry-management: backlog
-  6-4-registry-state-reporting: backlog
-  epic-6-retrospective: optional
+  # Epic 6: Multi-Machine & System Tweaks Engine (Scope 3)
+  # Registry three-value model, machine profiles, tweak apply/revert
+  epic-6: done
 
   # Epic 7: Secrets Management (Scope 3)
-  epic-7: backlog
-  7-1-secret-placeholder-syntax: backlog
-  7-2-password-manager-integration: backlog
-  7-3-generated-file-management: backlog
-  epic-7-retrospective: optional
+  # 1Password integration, template resolution, placeholders
+  epic-7: done
 
   # Epic 8: Advanced Usability (Scope 3)
-  epic-8: backlog
-  8-1-restore-from-backup: backlog
-  8-2-interactive-deploy-mode: backlog
-  8-3-shell-tab-completion: backlog
-  8-4-cross-platform-package-definitions: backlog
-  epic-8-retrospective: optional
-
-  # Epic 9: App Onboarding & Discovery (Scope 3)
-  epic-9: backlog
-  9-1-version-range-aware-manifest-paths: backlog
-  9-2-ai-config-path-lookup: backlog
-  9-3-windows-sandbox-discovery: backlog
-  9-4-interactive-manifest-generation: backlog
-  9-5-manifest-template-gallery: backlog
-  epic-9-retrospective: optional
+  # Backup restore, cross-platform packages
+  epic-8: done
 
   # Epic 10: Desktop Wizard & Onboarding (Scope 3)
-  epic-10: backlog
-  10-1-initialize-desktop-project-and-shell: backlog
-  10-2-profile-selection: backlog
-  10-3-card-based-config-views: backlog
-  10-4-wizard-flow-and-deploy: backlog
-  epic-10-retrospective: optional
+  # WPF wizard flow, profile selection, card views, deploy
+  epic-10: done
 
   # Epic 11: Desktop Dashboard & Drift (Scope 3)
-  epic-11: backlog
-  11-1-dashboard-home-and-drift-summary: backlog
-  11-2-dashboard-card-pages: backlog
-  11-3-settings-and-configuration: backlog
-  epic-11-retrospective: optional
+  # Drift hero banner, status cards, gallery, settings
+  epic-11: done
 
-  # Epic 12: Migration Tools (Scope 4)
+  # Epic 14: Gallery Schema Evolution (Scope 3)
+  # Type system, OS filtering, dependency graph, auto-index
+  epic-14: done
+
+  # ============================================================
+  # P1: Languages Ecosystem — WPF page + gallery content
+  # ============================================================
+
+  # Epic 20: Languages Page + Gallery
+  # New WPF page for language ecosystem onboarding. Each language gets a
+  # gallery entry covering SDK, tools, IDE, config files. Detection logic
+  # identifies what's installed.
+  epic-20: backlog
+  20-1-languages-page-scaffold: backlog
+  20-2-language-sdk-detection: backlog
+  20-3-gallery-language-dotnet: backlog
+  20-4-gallery-language-node: backlog
+  20-5-gallery-language-python: backlog
+  20-6-gallery-language-java: backlog
+  20-7-gallery-language-ruby: backlog
+  20-8-gallery-language-rust: backlog
+  20-9-gallery-language-go: backlog
+
+  # ============================================================
+  # P2: Dotfiles + Apps — WPF improvements + gallery content
+  # ============================================================
+
+  # Epic 21: Dotfiles Page + Gallery
+  # Improve dotfiles WPF page + configure gallery entries for each dotfile.
+  epic-21: backlog
+  21-1-dotfiles-page-improvements: backlog
+  21-2-gallery-dotfile-git: backlog
+  21-3-gallery-dotfile-powershell: backlog
+  21-4-gallery-dotfile-node-npm: backlog
+  21-5-gallery-dotfile-bash: backlog
+
+  # Epic 22: Apps Page + Gallery
+  # Improve apps WPF page: sorting, categories, alternatives, top choices,
+  # suggestions, badges. Configure gallery entries.
+  epic-22: backlog
+  22-1-apps-gallery-sorting-categories: backlog
+  22-2-apps-alternatives-suggestions: backlog
+  22-3-apps-top-choices-badges: backlog
+  22-4-app-detail-page: backlog
+
+  # ============================================================
+  # P3: Dashboard & Wizard Polish
+  # ============================================================
+
+  # Epic 23: Dashboard & Wizard
+  # Refine dashboard drift experience, validate wizard end-to-end,
+  # persist UI changes to perch-config manifests.
+  epic-23: backlog
+  23-1-dashboard-refinements: backlog
+  23-2-wizard-end-to-end-validation: backlog
+  23-3-persist-ui-changes-to-config: backlog
+
+  # ============================================================
+  # Structural Fixes (as needed, not sequenced by priority)
+  # ============================================================
+
+  # Epic 24: Desktop Structural Fixes (from Phase D1)
+  # Foundation fixes: pending change handlers, startup dedup, font bugs.
+  epic-24: backlog
+  24-1-fix-pending-change-handlers: backlog
+  24-2-remove-startup-page-duplication: backlog
+  24-3-font-ui-bugs: backlog
+
+  # ============================================================
+  # Deferred — Needs analysis before planning
+  # ============================================================
+
+  # Epic 25: Tweaks Expansion
+  # Needs analysis: which tweaks, what mechanisms, how to structure.
+  epic-25: backlog
+
+  # Epic 26: CLI Scope Evaluation
+  # Evaluate: full-featured CLI vs minimal (drift detect + sync).
+  epic-26: backlog
+
+  # ============================================================
+  # Low Priority — Valid but deprioritized
+  # ============================================================
+
+  # Epic 9: App Onboarding & Discovery (AI lookup, Sandbox)
+  epic-9: backlog
+
+  # Epic 12: Migration Tools (chezmoi, Dotbot, Dotter import/export)
   epic-12: backlog
-  12-1-chezmoi-import: backlog
-  12-2-dotbot-and-dotter-import: backlog
-  12-3-export-to-other-formats: backlog
-  epic-12-retrospective: optional
 
-  # Epic 13: Scoop Integration (Scope 5)
+  # Epic 13: Scoop Integration
   epic-13: backlog
-  13-1-scoop-app-manifest: backlog
-  13-2-declarative-bucket-and-app-installation: backlog
-  13-3-scoop-app-export-and-sync: backlog
-  13-4-scoop-path-based-config-discovery: backlog
-  epic-13-retrospective: optional
+
+  # Epic 15: Gallery Import & Sourcing (WinUtil, Sophia importers)
+  epic-15: backlog
