@@ -6,7 +6,6 @@ using CommunityToolkit.Mvvm.Input;
 using Perch.Desktop.Services;
 
 using Wpf.Ui;
-using Wpf.Ui.Controls;
 
 namespace Perch.Desktop.ViewModels;
 
@@ -52,17 +51,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         try
         {
             var result = await _applyChangesService.ApplyAsync(cancellationToken);
-
-            if (result.Success)
-            {
-                _snackbarService.Show("Applied", $"{result.Applied} change{(result.Applied == 1 ? "" : "s")} applied successfully",
-                    ControlAppearance.Success, null, TimeSpan.FromSeconds(3));
-            }
-            else
-            {
-                _snackbarService.Show("Errors", $"{result.Errors.Count} error{(result.Errors.Count == 1 ? "" : "s")}: {result.Errors[0]}",
-                    ControlAppearance.Danger, null, TimeSpan.FromSeconds(5));
-            }
+            result.ShowSnackbar(_snackbarService);
         }
         finally
         {

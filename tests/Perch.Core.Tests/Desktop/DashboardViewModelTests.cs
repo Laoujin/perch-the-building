@@ -287,6 +287,25 @@ public sealed class DashboardViewModelTests
         });
     }
 
+    [Test]
+    public async Task ApplyAllAsync_ServiceThrows_IsApplyingResetsToFalse()
+    {
+        var app = CreateAppCard("app1");
+        _pendingChanges.Add(new LinkAppChange(app));
+        _applyChangesService.ApplyAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("unexpected error"));
+
+        try
+        {
+            await _vm.ApplyAllCommand.ExecuteAsync(null);
+        }
+        catch (InvalidOperationException)
+        {
+        }
+
+        Assert.That(_vm.IsApplying, Is.False);
+    }
+
     private static AppCardModel CreateAppCard(string id)
     {
         var entry = new CatalogEntry(id, id, null, "test", [], null, null, null, null, null, null);

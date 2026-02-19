@@ -165,18 +165,14 @@ public sealed partial class DashboardViewModel : ViewModelBase
             return;
 
         IsApplying = true;
-        var result = await _applyChangesService.ApplyAsync(cancellationToken);
-        IsApplying = false;
-
-        if (result.Success)
+        try
         {
-            _snackbarService.Show("Applied", $"{result.Applied} change{(result.Applied == 1 ? "" : "s")} applied successfully",
-                Wpf.Ui.Controls.ControlAppearance.Success, null, TimeSpan.FromSeconds(3));
+            var result = await _applyChangesService.ApplyAsync(cancellationToken);
+            result.ShowSnackbar(_snackbarService);
         }
-        else
+        finally
         {
-            _snackbarService.Show("Errors", $"{result.Errors.Count} error{(result.Errors.Count == 1 ? "" : "s")}: {result.Errors[0]}",
-                Wpf.Ui.Controls.ControlAppearance.Danger, null, TimeSpan.FromSeconds(5));
+            IsApplying = false;
         }
     }
 
