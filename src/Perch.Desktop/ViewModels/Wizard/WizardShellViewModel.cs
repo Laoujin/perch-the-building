@@ -293,13 +293,6 @@ public sealed partial class WizardShellViewModel : ViewModelBase
         category.IsExpanded = !category.IsExpanded;
     }
 
-    public IEnumerable<AppCardModel> GetCategoryApps(string broadCategory)
-    {
-        return OtherApps
-            .Where(a => string.Equals(a.BroadCategory, broadCategory, StringComparison.OrdinalIgnoreCase))
-            .OrderBy(a => a.DisplayLabel, StringComparer.OrdinalIgnoreCase);
-    }
-
     private void RebuildBrowseCategories()
     {
         BrowseCategories.Clear();
@@ -310,12 +303,15 @@ public sealed partial class WizardShellViewModel : ViewModelBase
 
         foreach (var group in groups)
         {
-            var items = group.ToList();
+            var items = group
+                .OrderBy(a => a.DisplayLabel, StringComparer.OrdinalIgnoreCase)
+                .ToList();
             BrowseCategories.Add(new AppCategoryCardModel(
                 group.Key,
                 group.Key,
                 items.Count,
-                items.Count(a => a.IsSelected)));
+                items.Count(a => a.IsSelected),
+                apps: items));
         }
     }
 

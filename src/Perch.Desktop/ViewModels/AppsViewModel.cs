@@ -140,13 +140,27 @@ public sealed partial class AppsViewModel : GalleryViewModelBase
             .Select(g =>
             {
                 var items = g.ToList();
+                var subGroups = items
+                    .GroupBy(a => a.SubCategory, StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(sg => GetSubCategoryPriority(g.Key, sg.Key))
+                    .ThenBy(sg => sg.Key, StringComparer.OrdinalIgnoreCase)
+                    .Select(sg => new AppCategoryGroup(
+                        sg.Key,
+                        new ObservableCollection<AppCardModel>(
+                            sg.OrderBy(a => TierSortOrder(a.Tier))
+                              .ThenBy(a => StatusSortOrder(a.Status))
+                              .ThenByDescending(a => a.GitHubStars ?? 0)
+                              .ThenBy(a => a.DisplayLabel, StringComparer.OrdinalIgnoreCase))))
+                    .ToList();
+
                 return new AppCategoryCardModel(
                     g.Key,
                     g.Key,
                     items.Count,
                     items.Count(a => a.IsManaged),
                     items.Count(a => a.Status is CardStatus.Detected or CardStatus.Linked or CardStatus.Drift or CardStatus.Broken),
-                    items.Count(a => a.IsSuggested));
+                    items.Count(a => a.IsSuggested),
+                    subGroups: subGroups);
             });
 
         Categories.ReplaceAll(categories);
@@ -298,23 +312,6 @@ public sealed partial class AppsViewModel : GalleryViewModelBase
         OnPropertyChanged(nameof(HasAlternatives));
     }
 
-    public IEnumerable<AppCategoryGroup> GetCategorySubGroups(string broadCategory)
-    {
-        return _allApps
-            .Where(a => string.Equals(a.BroadCategory, broadCategory, StringComparison.OrdinalIgnoreCase))
-            .Where(a => a.MatchesSearch(SearchText))
-            .GroupBy(a => a.SubCategory, StringComparer.OrdinalIgnoreCase)
-            .OrderBy(g => GetSubCategoryPriority(broadCategory, g.Key))
-            .ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
-            .Select(g => new AppCategoryGroup(
-                g.Key,
-                new ObservableCollection<AppCardModel>(
-                    g.OrderBy(a => TierSortOrder(a.Tier))
-                     .ThenBy(a => StatusSortOrder(a.Status))
-                     .ThenByDescending(a => a.GitHubStars ?? 0)
-                     .ThenBy(a => a.DisplayLabel, StringComparer.OrdinalIgnoreCase))));
-    }
-
     private void BuildDependencyGraph(
         ImmutableArray<AppCardModel> yourApps,
         ImmutableArray<AppCardModel> suggested,
@@ -420,7 +417,5 @@ public sealed partial class AppsViewModel : GalleryViewModelBase
     }
 
 }
-
-public sealed record AppCategoryGroup(string SubCategory, ObservableCollection<AppCardModel> Apps);
 
 public sealed record EcosystemGroup(string Name, ImmutableArray<AppCardModel> Apps);

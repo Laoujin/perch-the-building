@@ -193,7 +193,7 @@ public sealed class AppsViewModelTests
     }
 
     [Test]
-    public async Task GetCategorySubGroups_SortsByTierThenStatusThenName()
+    public async Task SubGroups_SortsByTierThenStatusThenName()
     {
         var apps = ImmutableArray.Create(
             MakeCard("zapp", "Dev/IDEs", CardStatus.Detected, CardTier.Other),
@@ -209,7 +209,7 @@ public sealed class AppsViewModelTests
 
         await _vm.RefreshCommand.ExecuteAsync(null);
 
-        var subGroups = _vm.GetCategorySubGroups("Dev").ToList();
+        var subGroups = _vm.Categories.Single(c => c.BroadCategory == "Dev").SubGroups;
         Assert.That(subGroups, Has.Count.EqualTo(1));
 
         var group = subGroups[0];
@@ -234,7 +234,7 @@ public sealed class AppsViewModelTests
 
         await _vm.RefreshCommand.ExecuteAsync(null);
 
-        var subGroups = _vm.GetCategorySubGroups("Development").ToList();
+        var subGroups = _vm.Categories.Single(c => c.BroadCategory == "Development").SubGroups;
         var runtimes = subGroups.Single(g => g.SubCategory == "Runtimes");
 
         Assert.Multiple(() =>
@@ -258,7 +258,7 @@ public sealed class AppsViewModelTests
 
         await _vm.RefreshCommand.ExecuteAsync(null);
 
-        var subGroups = _vm.GetCategorySubGroups("Dev").ToList();
+        var subGroups = _vm.Categories.Single(c => c.BroadCategory == "Dev").SubGroups;
         Assert.Multiple(() =>
         {
             Assert.That(subGroups, Has.Count.EqualTo(1));
@@ -281,7 +281,7 @@ public sealed class AppsViewModelTests
 
         _vm.SearchText = "my-child";
         Assert.That(_vm.Categories, Has.Count.EqualTo(1));
-        var subGroups = _vm.GetCategorySubGroups("Development").ToList();
+        var subGroups = _vm.Categories[0].SubGroups;
         Assert.That(subGroups, Has.Count.EqualTo(1));
         Assert.That(subGroups[0].Apps[0].Name, Is.EqualTo("dotnet-sdk"));
     }
@@ -767,7 +767,7 @@ public sealed class SystemTweaksViewModelTests
     }
 
     [Test]
-    public async Task GetCategorySubGroups_ReturnsTweaksGroupedBySubCategory()
+    public async Task SubGroups_ReturnsTweaksGroupedBySubCategory()
     {
         var tweaks = ImmutableArray.Create(
             MakeTweak("tweak1", "Explorer/Files"),
@@ -781,7 +781,7 @@ public sealed class SystemTweaksViewModelTests
         _vm.SelectCategoryCommand.Execute("System Tweaks");
         _vm.SetProfileFilterCommand.Execute("All");
 
-        var subGroups = _vm.GetCategorySubGroups("Explorer").ToList();
+        var subGroups = _vm.SubCategories.Single(c => c.Category == "Explorer").SubGroups;
         Assert.Multiple(() =>
         {
             Assert.That(subGroups, Has.Count.EqualTo(2));
@@ -1031,7 +1031,7 @@ public sealed class SystemTweaksViewModelTests
         Assert.That(_vm.SubCategories, Has.Count.EqualTo(1));
         Assert.That(_vm.SubCategories[0].Category, Is.EqualTo("Explorer"));
 
-        var subGroups = _vm.GetCategorySubGroups("Explorer").ToList();
+        var subGroups = _vm.SubCategories[0].SubGroups;
         Assert.That(subGroups, Has.Count.EqualTo(1));
         Assert.That(subGroups[0].Tweaks, Has.Length.EqualTo(1));
     }

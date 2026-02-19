@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+
 using CommunityToolkit.Mvvm.ComponentModel;
 
 using Wpf.Ui.Controls;
@@ -9,6 +11,8 @@ public partial class AppCategoryCardModel : ObservableObject
     public string BroadCategory { get; }
     public string DisplayName { get; }
     public SymbolRegular IconSymbol { get; }
+    public IReadOnlyList<AppCategoryGroup> SubGroups { get; }
+    public IReadOnlyList<AppCardModel> Apps { get; }
 
     [ObservableProperty]
     private int _itemCount;
@@ -31,7 +35,9 @@ public partial class AppCategoryCardModel : ObservableObject
         int itemCount,
         int selectedCount,
         int detectedCount = 0,
-        int suggestedCount = 0)
+        int suggestedCount = 0,
+        IReadOnlyList<AppCategoryGroup>? subGroups = null,
+        IReadOnlyList<AppCardModel>? apps = null)
     {
         BroadCategory = broadCategory;
         DisplayName = displayName;
@@ -40,6 +46,8 @@ public partial class AppCategoryCardModel : ObservableObject
         SelectedCount = selectedCount;
         DetectedCount = detectedCount;
         SuggestedCount = suggestedCount;
+        SubGroups = subGroups ?? [];
+        Apps = apps ?? [];
     }
 
     private static SymbolRegular GetIcon(string category) => category switch

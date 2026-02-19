@@ -4,12 +4,12 @@ namespace Perch.Desktop.Models;
 
 public sealed class AppCategoryGroup
 {
-    public string Category { get; }
+    public string SubCategory { get; }
     public ObservableCollection<AppCardModel> Apps { get; }
 
-    public AppCategoryGroup(string category, ObservableCollection<AppCardModel> apps)
+    public AppCategoryGroup(string subCategory, ObservableCollection<AppCardModel> apps)
     {
-        Category = category;
+        SubCategory = subCategory;
         Apps = apps;
     }
 }

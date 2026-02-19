@@ -46,14 +46,6 @@ public partial class AppsPage : Page
         }
     }
 
-    private void OnCategorySubGroupsLoaded(object sender, RoutedEventArgs e)
-    {
-        if (sender is ItemsControl { Tag: string broadCategory } itemsControl)
-        {
-            itemsControl.ItemsSource = ViewModel.GetCategorySubGroups(broadCategory);
-        }
-    }
-
     private void OnConfigureClicked(object sender, RoutedEventArgs e)
     {
         if (GetAppModel(sender) is { } app)

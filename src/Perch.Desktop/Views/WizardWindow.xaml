@@ -504,10 +504,9 @@
                                             </Border>
 
                                             <ItemsControl
+                                                ItemsSource="{Binding Apps}"
                                                 Visibility="{Binding IsExpanded, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                                Margin="0,0,0,12"
-                                                Tag="{Binding BroadCategory}"
-                                                Loaded="OnWizardCategoryAppsPanelLoaded">
+                                                Margin="0,0,0,12">
                                                 <ItemsControl.ItemsPanel>
                                                     <ItemsPanelTemplate>
                                                         <WrapPanel Margin="24,0,0,0" />

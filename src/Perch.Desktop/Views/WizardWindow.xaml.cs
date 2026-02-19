@@ -85,14 +85,6 @@ public partial class WizardWindow : FluentWindow
         }
     }
 
-    private void OnWizardCategoryAppsPanelLoaded(object sender, RoutedEventArgs e)
-    {
-        if (sender is ItemsControl { Tag: string broadCategory } itemsControl)
-        {
-            itemsControl.ItemsSource = ViewModel.GetCategoryApps(broadCategory);
-        }
-    }
-
     private void OnTweakCategoryCardClick(object sender, MouseButtonEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: TweakCategoryCardModel card })

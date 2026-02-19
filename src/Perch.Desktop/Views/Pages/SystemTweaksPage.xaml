@@ -226,12 +226,11 @@
 
                                         <!-- Expanded sub-groups with tweak cards -->
                                         <ItemsControl
+                                            ItemsSource="{Binding SubGroups}"
                                             Visibility="{Binding IsExpanded, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                            Margin="0,0,0,12"
-                                            Tag="{Binding Category}"
-                                            Loaded="OnTweakSubGroupsLoaded">
+                                            Margin="0,0,0,12">
                                             <ItemsControl.ItemTemplate>
-                                                <DataTemplate DataType="{x:Type vm:TweakSubCategoryGroup}">
+                                                <DataTemplate DataType="{x:Type models:TweakSubCategoryGroup}">
                                                     <StackPanel Margin="24,0,0,8">
                                                         <!-- Sub-category header -->
                                                         <TextBlock

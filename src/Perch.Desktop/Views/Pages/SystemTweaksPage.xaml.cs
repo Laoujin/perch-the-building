@@ -42,12 +42,6 @@ public partial class SystemTweaksPage : Page
             card.IsExpanded = !card.IsExpanded;
     }
 
-    private void OnTweakSubGroupsLoaded(object sender, RoutedEventArgs e)
-    {
-        if (sender is ItemsControl { Tag: string broadCategory } itemsControl)
-            itemsControl.ItemsSource = ViewModel.GetCategorySubGroups(broadCategory);
-    }
-
     private void OnProfileFilterClick(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: string filter })

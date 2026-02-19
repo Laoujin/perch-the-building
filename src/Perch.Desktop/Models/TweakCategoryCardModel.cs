@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 using CommunityToolkit.Mvvm.ComponentModel;
 
 using Wpf.Ui.Controls;
@@ -10,6 +12,7 @@ public partial class TweakCategoryCardModel : ObservableObject
     public string DisplayName { get; }
     public string? Description { get; }
     public SymbolRegular IconSymbol { get; }
+    public IReadOnlyList<TweakSubCategoryGroup> SubGroups { get; }
 
     [ObservableProperty]
     private int _itemCount;
@@ -25,7 +28,8 @@ public partial class TweakCategoryCardModel : ObservableObject
         string displayName,
         string? description,
         int itemCount,
-        int selectedCount)
+        int selectedCount,
+        IReadOnlyList<TweakSubCategoryGroup>? subGroups = null)
     {
         Category = category;
         DisplayName = displayName;
@@ -33,6 +37,7 @@ public partial class TweakCategoryCardModel : ObservableObject
         IconSymbol = GetIcon(category);
         ItemCount = itemCount;
         SelectedCount = selectedCount;
+        SubGroups = subGroups ?? [];
     }
 
     private static SymbolRegular GetIcon(string category) => category switch
@@ -49,3 +54,5 @@ public partial class TweakCategoryCardModel : ObservableObject
         _ => SymbolRegular.Wrench24,
     };
 }
+
+public sealed record TweakSubCategoryGroup(string SubCategory, ImmutableArray<TweakCardModel> Tweaks);

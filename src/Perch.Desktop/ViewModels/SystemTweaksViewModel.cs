@@ -237,25 +237,22 @@ public sealed partial class SystemTweaksViewModel : GalleryViewModelBase
             .Select(g =>
             {
                 var items = g.ToList();
+                var subGroups = items
+                    .GroupBy(t => t.SubCategory, StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(sg => sg.Key, StringComparer.OrdinalIgnoreCase)
+                    .Select(sg => new TweakSubCategoryGroup(sg.Key, sg.ToImmutableArray()))
+                    .ToList();
+
                 return new TweakCategoryCardModel(
                     g.Key,
                     g.Key,
                     description: null,
                     items.Count,
-                    items.Count(t => t.IsSelected));
+                    items.Count(t => t.IsSelected),
+                    subGroups: subGroups);
             });
 
         SubCategories.ReplaceAll(subCategories);
-    }
-
-    public IEnumerable<TweakSubCategoryGroup> GetCategorySubGroups(string broadCategory)
-    {
-        return GetProfileFilteredTweaks()
-            .Where(t => t.MatchesSearch(SearchText))
-            .Where(t => string.Equals(t.BroadCategory, broadCategory, StringComparison.OrdinalIgnoreCase))
-            .GroupBy(t => t.SubCategory, StringComparer.OrdinalIgnoreCase)
-            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
-            .Select(g => new TweakSubCategoryGroup(g.Key, g.ToImmutableArray()));
     }
 
     private IEnumerable<TweakCardModel> GetProfileFilteredTweaks()
@@ -516,5 +513,3 @@ public sealed partial class SystemTweaksViewModel : GalleryViewModelBase
     }
 
 }
-
-public sealed record TweakSubCategoryGroup(string SubCategory, ImmutableArray<TweakCardModel> Tweaks);
