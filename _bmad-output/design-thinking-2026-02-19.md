@@ -473,16 +473,107 @@ The resulting entry is barebones (name from package manager, no description/tags
 - Machine override checkbox is sufficient for all override scenarios
 - Stars on cards are clickable links to GitHub
 
+#### Dotfiles Page
+
+Flat grid, no sub-categories. Same card components, same statuses, same buttons.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ Dotfiles                                       [Search]  │
+├──────────────────────────────────────────────────────────┤
+│                                                          │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
+│  │ ⚠ Drifted[⚙] │  │ ✓ Synced [⚙] │  │ ✓ Synced [⚙] │  │
+│  │ [□] Git      │  │ [□] Power-   │  │ [□] Claude   │  │
+│  │   Config     │  │   Shell      │  │   Code       │  │
+│  │ Git settings │  │ Shell profile│  │ AI assistant  │  │
+│  │ ★ —    MIT   │  │ ★ —    MIT   │  │ ★ —    Prop. │  │
+│  │[Remove from  │  │[Remove from  │  │[Remove from  │  │
+│  │ Perch]       │  │ Perch]       │  │ Perch]       │  │
+│  └──────────────┘  └──────────────┘  └──────────────┘  │
+│                                                          │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
+│  │ ● Detected   │  │              │  │              │  │
+│  │ [□] SSH      │  │ [□] Editor   │  │ [□] WSL      │  │
+│  │   Config     │  │   Config     │  │   Config     │  │
+│  │ SSH settings │  │ .editorconfig│  │ .wslconfig   │  │
+│  │ ★ —         │  │ ★ —          │  │ ★ —          │  │
+│  │[Add to Perch]│  │[Add to Perch]│  │[Add to Perch]│  │
+│  └──────────────┘  └──────────────┘  └──────────────┘  │
+│                                                          │
+└──────────────────────────────────────────────────────────┘
+```
+
+- **Cross-cutting dotfiles only** — things not owned by a language ecosystem. Git, PowerShell, Claude, SSH, .editorconfig, .wslconfig.
+- Language-specific dotfiles (.npmrc, nuget.config, global.json) live on the Languages page under their ecosystem.
+- Flat list — the curated gallery keeps this page intentionally small (~8-10 items).
+- Sort: Drifted → Detected → Synced → unmanaged, then gallery sort index within status.
+- ⚙ gear icon on dotfiles that have a detail page (e.g., Git config → tweaks like "enable git-lfs", "set default editor"). Simple config files without tweaks have no gear.
+
+#### Apps Page
+
+Same architecture as Languages. Category grid → category detail → item detail.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ Apps                                           [Search]  │
+├──────────────────────────────────────────────────────────┤
+│                                                          │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
+│  │ 🌐 Browsers │  │ 💬 Communic-│  │ 🎮 Gaming   │     │
+│  │             │  │   ation     │  │              │     │
+│  │ 2✓  1●     │  │ 3✓  1⚠     │  │ 1✓      2●  │     │
+│  └─────────────┘  └─────────────┘  └─────────────┘     │
+│                                                          │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
+│  │ 🔧 Utilities│  │ 📝 Editors  │  │ 🖥️ Terminal │     │
+│  │             │  │             │  │              │     │
+│  │ 5✓  1⚠     │  │ 2✓         │  │ 1✓          │     │
+│  └─────────────┘  └─────────────┘  └─────────────┘     │
+│                                                          │
+│  ┌─────────────┐  ┌─────────────┐                       │
+│  │ 🎨 Creative │  │ 📁 File Mgmt│                       │
+│  │             │  │             │                       │
+│  │        1●   │  │ 2✓         │                       │
+│  └─────────────┘  └─────────────┘                       │
+│                                                          │
+│                   [Add unlisted app]                     │
+│                                                          │
+└──────────────────────────────────────────────────────────┘
+```
+
+- **Identical to Languages** in structure: category cards with aggregate status badges → drill into category → item cards sorted by status then gallery index → item detail with app-owned tweaks
+- Categories defined by gallery (Browsers, Communication, Gaming, Utilities, Editors, Terminal, Creative, File Management, etc.)
+- **"Add unlisted app" button** at bottom — escape hatch for apps not in the gallery. Opens filtered list of installed-but-unrecognized apps (Core pre-filters non-apps), then guided flow to select config files to track.
+- All three pages (Languages, Dotfiles, Apps) use the same card components, same status badges, same buttons, same sort logic. Build one, get all three.
+
+#### Unified Architecture Confirmation
+
+All three pages proven to be the same architecture:
+
+| Aspect | Languages | Dotfiles | Apps |
+|--------|-----------|----------|------|
+| Grid level | Ecosystem cards | Flat card grid | Category cards |
+| Drill-in | Sub-categories with cards | N/A (flat) | Sub-categories with cards |
+| Item detail | ⚙ gear → tweaks, alternatives, extensions, override | ⚙ gear → tweaks (if any) | ⚙ gear → tweaks, alternatives, extensions, override |
+| Card component | Universal | Universal | Universal |
+| Status model | Drifted/Detected/Synced/Pending | Same | Same |
+| Sort logic | Category → Status → Gallery index | Status → Gallery index | Category → Status → Gallery index |
+| Action button | Add/Remove from Perch | Same | Same |
+| Special | — | Language-owned dotfiles excluded | "Add unlisted app" escape hatch |
+
 ### Key Features to Test
 
 1. **"Add to Perch" / "Remove from Perch" button** — Does the button feel deliberate enough? Does the user understand they're changing config, not their machine?
-2. **Status badges on ecosystem cards** — Are aggregate counts (5✓ 2⚠ 1●) scannable at a glance? Do users understand what the numbers mean?
+2. **Status badges on category/ecosystem cards** — Are aggregate counts (5✓ 2⚠ 1●) scannable at a glance? Do users understand what the numbers mean?
 3. **Category-first sorting with status within** — Does organizing by Runtimes/Editors/Tools feel natural? Or would users prefer status-first (all drifted items together)?
 4. **⚙ gear icon for drill-down** — Is it discoverable? Do users know to click it for app settings?
 5. **Machine override on detail page** — Is the explanatory text clear enough? Do users find it when they need it?
 6. **First-time micro-copy** — Does "Choose what Perch should manage. Nothing changes until you click Deploy." land with new users?
 7. **Pending badge direction via color** — Do green-tinted (install) and red-tinted (removal) communicate direction without text?
 8. **Config files without drill-down** — Do users expect to click into nuget.config? Or is the card sufficient?
+9. **Dotfiles page size** — Is ~8-10 items too sparse? Does the page feel useful or vestigial?
+10. **"Add unlisted app" discoverability** — Do users find the button when they need it? Is the filtered list of unrecognized apps manageable after Core filtering?
 
 ---
 
