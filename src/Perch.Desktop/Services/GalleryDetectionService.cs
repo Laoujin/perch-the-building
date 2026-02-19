@@ -200,7 +200,6 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
     public void InvalidateCache()
     {
         _catalog.InvalidateAll();
-        _cachedInstalledIds = null;
     }
 
     public async Task<TweakDetectionPageResult> DetectTweaksAsync(
