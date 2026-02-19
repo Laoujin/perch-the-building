@@ -6,17 +6,17 @@
     xmlns:controls="clr-namespace:Perch.Desktop.Views.Controls">
     <Border
         x:Name="CardBorder"
-        Background="#1A1A2E"
+        Background="{StaticResource CardBackgroundBrush}"
         BorderThickness="1"
         CornerRadius="8"
         Padding="12"
         Width="280">
         <Border.Style>
             <Style TargetType="Border">
-                <Setter Property="BorderBrush" Value="#2A2A3E" />
+                <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}" />
                 <Style.Triggers>
                     <DataTrigger Binding="{Binding IsManaged, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
-                        <Setter Property="BorderBrush" Value="#10B981" />
+                        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
                     </DataTrigger>
                 </Style.Triggers>
             </Style>
@@ -50,19 +50,19 @@
                 <!-- Suggested badge -->
                 <Border
                     Grid.Column="1"
-                    Background="#1E3A5F"
+                    Background="{StaticResource SuggestedBadgeBrush}"
                     CornerRadius="4"
                     Padding="4,1"
                     Margin="4,0,0,0"
                     VerticalAlignment="Center"
                     Visibility="{Binding IsSuggested, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <TextBlock Text="Suggested" FontSize="9" Foreground="#60A5FA" />
+                    <TextBlock Text="Suggested" FontSize="9" Foreground="{StaticResource SuggestedTextBrush}" />
                 </Border>
 
                 <!-- Kind badge -->
                 <Border
                     Grid.Column="2"
-                    Background="#2A2A3E"
+                    Background="{StaticResource CardBorderBrush}"
                     CornerRadius="4"
                     Padding="4,1"
                     Margin="4,0,0,0"
@@ -71,20 +71,20 @@
                     <TextBlock
                         Text="{Binding KindBadge, RelativeSource={RelativeSource AncestorType=UserControl}}"
                         FontSize="9"
-                        Foreground="#888888" />
+                        Foreground="{StaticResource TextMutedBrush}" />
                 </Border>
 
                 <!-- Top Pick badge -->
                 <Border
                     Grid.Column="3"
-                    Background="#1A10B981"
+                    Background="{StaticResource AccentSubtleBrush}"
                     CornerRadius="4"
                     Padding="4,1"
                     Margin="4,0,0,0"
                     VerticalAlignment="Center"
                     HorizontalAlignment="Left"
                     Visibility="{Binding IsTopPick, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <TextBlock Text="Top Pick" FontSize="9" Foreground="#10B981" />
+                    <TextBlock Text="Top Pick" FontSize="9" Foreground="{StaticResource AccentBrush}" />
                 </Border>
 
                 <ui:Button
@@ -119,12 +119,12 @@
                         Width="24"
                         Height="24"
                         CornerRadius="12"
-                        Background="#2A2A3E">
+                        Background="{StaticResource CardBorderBrush}">
                         <TextBlock
                             x:Name="FallbackInitial"
                             FontSize="12"
                             FontWeight="SemiBold"
-                            Foreground="#9CA3AF"
+                            Foreground="{StaticResource TextSubtleBrush}"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center" />
                     </Border>
@@ -156,7 +156,7 @@
                 Grid.Row="2"
                 Text="{Binding Description, RelativeSource={RelativeSource AncestorType=UserControl}}"
                 FontSize="11"
-                Foreground="#888888"
+                Foreground="{StaticResource TextMutedBrush}"
                 TextWrapping="Wrap"
                 TextTrimming="CharacterEllipsis"
                 MaxHeight="32"
@@ -178,8 +178,8 @@
                     ToolTip="{Binding Website, RelativeSource={RelativeSource AncestorType=UserControl}}"
                     Visibility="{Binding Website, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource CountToVisibilityConverter}}">
                     <StackPanel Orientation="Horizontal">
-                        <ui:SymbolIcon Symbol="Globe24" FontSize="12" Foreground="#6B7280" />
-                        <TextBlock Text="Website" FontSize="10" Foreground="#6B7280" Margin="4,0,0,0" VerticalAlignment="Center" />
+                        <ui:SymbolIcon Symbol="Globe24" FontSize="12" Foreground="{StaticResource LinkTextBrush}" />
+                        <TextBlock Text="Website" FontSize="10" Foreground="{StaticResource LinkTextBrush}" Margin="4,0,0,0" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
                 <Button
@@ -192,8 +192,8 @@
                     ToolTip="{Binding Docs, RelativeSource={RelativeSource AncestorType=UserControl}}"
                     Visibility="{Binding Docs, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource CountToVisibilityConverter}}">
                     <StackPanel Orientation="Horizontal">
-                        <ui:SymbolIcon Symbol="Document24" FontSize="12" Foreground="#6B7280" />
-                        <TextBlock Text="Docs" FontSize="10" Foreground="#6B7280" Margin="4,0,0,0" VerticalAlignment="Center" />
+                        <ui:SymbolIcon Symbol="Document24" FontSize="12" Foreground="{StaticResource LinkTextBrush}" />
+                        <TextBlock Text="Docs" FontSize="10" Foreground="{StaticResource LinkTextBrush}" Margin="4,0,0,0" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
                 <Button
@@ -205,12 +205,12 @@
                     ToolTip="{Binding GitHub, RelativeSource={RelativeSource AncestorType=UserControl}}"
                     Visibility="{Binding GitHub, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource CountToVisibilityConverter}}">
                     <StackPanel Orientation="Horizontal">
-                        <ui:SymbolIcon Symbol="Code24" FontSize="12" Foreground="#6B7280" />
-                        <TextBlock Text="GitHub" FontSize="10" Foreground="#6B7280" Margin="4,0,0,0" VerticalAlignment="Center" />
+                        <ui:SymbolIcon Symbol="Code24" FontSize="12" Foreground="{StaticResource LinkTextBrush}" />
+                        <TextBlock Text="GitHub" FontSize="10" Foreground="{StaticResource LinkTextBrush}" Margin="4,0,0,0" VerticalAlignment="Center" />
                         <TextBlock
                             Text="{Binding GitHubStarsFormatted, RelativeSource={RelativeSource AncestorType=UserControl}}"
                             FontSize="9"
-                            Foreground="#F59E0B"
+                            Foreground="{StaticResource WarningBrush}"
                             Margin="2,0,0,0"
                             VerticalAlignment="Center"
                             Visibility="{Binding GitHubStarsFormatted, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource CountToVisibilityConverter}}" />
@@ -225,8 +225,8 @@
                     ToolTip="{Binding ConfigPath, RelativeSource={RelativeSource AncestorType=UserControl}}"
                     Visibility="{Binding ConfigPath, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource CountToVisibilityConverter}}">
                     <StackPanel Orientation="Horizontal">
-                        <ui:SymbolIcon Symbol="FolderOpen24" FontSize="12" Foreground="#6B7280" />
-                        <TextBlock Text="Open Location" FontSize="10" Foreground="#6B7280" Margin="4,0,0,0" VerticalAlignment="Center" />
+                        <ui:SymbolIcon Symbol="FolderOpen24" FontSize="12" Foreground="{StaticResource LinkTextBrush}" />
+                        <TextBlock Text="Open Location" FontSize="10" Foreground="{StaticResource LinkTextBrush}" Margin="4,0,0,0" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
             </StackPanel>
@@ -247,13 +247,13 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Border
-                            Background="#2A2A3E"
+                            Background="{StaticResource CardBorderBrush}"
                             CornerRadius="8"
                             Padding="6,2"
                             Margin="0,0,4,2"
                             Cursor="Hand"
                             MouseLeftButtonUp="OnTagClick">
-                            <TextBlock Text="{Binding}" FontSize="10" Foreground="#9CA3AF" />
+                            <TextBlock Text="{Binding}" FontSize="10" Foreground="{StaticResource TextSubtleBrush}" />
                         </Border>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
@@ -262,7 +262,7 @@
             <!-- Row 5: License badge -->
             <Border
                 Grid.Row="5"
-                Background="#2A2A3E"
+                Background="{StaticResource CardBorderBrush}"
                 CornerRadius="4"
                 Padding="4,1"
                 Margin="0,6,0,0"
@@ -271,7 +271,7 @@
                 <TextBlock
                     Text="{Binding License, RelativeSource={RelativeSource AncestorType=UserControl}}"
                     FontSize="9"
-                    Foreground="#9CA3AF" />
+                    Foreground="{StaticResource TextSubtleBrush}" />
             </Border>
         </Grid>
     </Border>

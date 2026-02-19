@@ -11,6 +11,58 @@
                 <ui:ThemesDictionary Theme="Dark" />
                 <ui:ControlsDictionary />
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- Accent & Status -->
+            <SolidColorBrush x:Key="AccentBrush" Color="#10B981" />
+            <SolidColorBrush x:Key="SuccessBrush" Color="#34D399" />
+            <SolidColorBrush x:Key="WarningBrush" Color="#F59E0B" />
+            <SolidColorBrush x:Key="ErrorBrush" Color="#EF4444" />
+            <SolidColorBrush x:Key="ErrorDarkBrush" Color="#DC2626" />
+            <SolidColorBrush x:Key="InfoBrush" Color="#3B82F6" />
+
+            <!-- Surfaces -->
+            <SolidColorBrush x:Key="CardBackgroundBrush" Color="#1A1A2E" />
+            <SolidColorBrush x:Key="SurfaceBrush" Color="#16162A" />
+            <SolidColorBrush x:Key="SurfaceDeepBrush" Color="#12122A" />
+            <SolidColorBrush x:Key="SurfaceDarkBrush" Color="#0D0D1A" />
+
+            <!-- Borders -->
+            <SolidColorBrush x:Key="CardBorderBrush" Color="#2A2A3E" />
+            <SolidColorBrush x:Key="PanelBorderBrush" Color="#333350" />
+
+            <!-- Text -->
+            <SolidColorBrush x:Key="TextMutedBrush" Color="#888888" />
+            <SolidColorBrush x:Key="TextDimBrush" Color="#666666" />
+            <SolidColorBrush x:Key="TextSubtleBrush" Color="#9CA3AF" />
+            <SolidColorBrush x:Key="SubcategoryTextBrush" Color="#94A3B8" />
+            <SolidColorBrush x:Key="LinkTextBrush" Color="#6B7280" />
+            <SolidColorBrush x:Key="SpecimenTextBrush" Color="#555555" />
+            <SolidColorBrush x:Key="TextLightBrush" Color="#CCCCCC" />
+            <SolidColorBrush x:Key="TextSoftBrush" Color="#BBBBBB" />
+
+            <!-- Semi-transparent -->
+            <SolidColorBrush x:Key="AccentSubtleBrush" Color="#1A10B981" />
+            <SolidColorBrush x:Key="SuccessSubtleBrush" Color="#1A34D399" />
+            <SolidColorBrush x:Key="SuccessBadgeBrush" Color="#2634D399" />
+            <SolidColorBrush x:Key="WarningSubtleBrush" Color="#1AF59E0B" />
+            <SolidColorBrush x:Key="WarningBadgeBrush" Color="#26F59E0B" />
+            <SolidColorBrush x:Key="ErrorBadgeBrush" Color="#26EF4444" />
+            <SolidColorBrush x:Key="InfoSubtleBrush" Color="#1A3B82F6" />
+            <SolidColorBrush x:Key="DimOverlayBrush" Color="#40000000" />
+
+            <!-- Special-purpose -->
+            <SolidColorBrush x:Key="SuggestedBadgeBrush" Color="#1E3A5F" />
+            <SolidColorBrush x:Key="SuggestedTextBrush" Color="#60A5FA" />
+            <SolidColorBrush x:Key="SuggestedLightBrush" Color="#93C5FD" />
+            <SolidColorBrush x:Key="SuggestedLightSubtleBrush" Color="#1A93C5FD" />
+            <SolidColorBrush x:Key="CertValidBgBrush" Color="#1A3D2E" />
+            <SolidColorBrush x:Key="CertExpiringBgBrush" Color="#3D3A1A" />
+            <SolidColorBrush x:Key="CertExpiredBgBrush" Color="#3D1A1A" />
+            <SolidColorBrush x:Key="CertExpiringSoonBrush" Color="#EAB308" />
+            <SolidColorBrush x:Key="ErrorBannerBgBrush" Color="#331111" />
+            <SolidColorBrush x:Key="SourceBadgeBgBrush" Color="#252545" />
+            <SolidColorBrush x:Key="CurrentWorkBgBrush" Color="#1A2E1A" />
+
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
             <converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
             <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" />

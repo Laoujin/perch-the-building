@@ -28,7 +28,7 @@
             HorizontalScrollBarVisibility="Disabled"
             Visibility="{Binding ErrorMessage,
                 Converter={StaticResource CountToVisibilityConverter}}">
-            <Border Background="#331111" CornerRadius="8" Padding="16">
+            <Border Background="{StaticResource ErrorBannerBgBrush}" CornerRadius="8" Padding="16">
                 <StackPanel HorizontalAlignment="Center" MaxWidth="500">
                     <Image Source="/Assets/wizard-error.png" Width="640" Height="640"
                            Margin="0,0,0,16" Stretch="Uniform"
@@ -36,10 +36,10 @@
                     <TextBlock
                         Text="{Binding ErrorTitle, ElementName=Root}"
                         FontSize="16" FontWeight="SemiBold"
-                        Foreground="#EF4444" HorizontalAlignment="Center"
+                        Foreground="{StaticResource ErrorBrush}" HorizontalAlignment="Center"
                         Margin="0,0,0,8" />
                     <TextBox Text="{Binding ErrorMessage, Mode=OneWay}"
-                             IsReadOnly="True" Foreground="#DC2626" FontSize="12"
+                             IsReadOnly="True" Foreground="{StaticResource ErrorDarkBrush}" FontSize="12"
                              Background="Transparent" BorderThickness="0"
                              TextWrapping="Wrap" Margin="0" Focusable="True"
                              IsHitTestVisible="True"

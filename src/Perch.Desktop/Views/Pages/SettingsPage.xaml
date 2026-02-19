@@ -72,7 +72,7 @@
             <!-- Current Work -->
             <StackPanel Visibility="{Binding ShowCurrentWork, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <ui:TextBlock FontTypography="Subtitle" Text="Current Work" Margin="0,12,0,8" />
-                <Border Padding="16,12" CornerRadius="6" Background="#1A2E1A">
+                <Border Padding="16,12" CornerRadius="6" Background="{StaticResource CurrentWorkBgBrush}">
                     <StackPanel>
                         <ui:TextBlock FontTypography="BodyStrong" Text="{Binding CurrentWorkIssue}" />
                         <ui:TextBlock FontTypography="Caption" Opacity="0.6" Text="{Binding CurrentWorkBranch}" Margin="0,4,0,0" />
@@ -85,7 +85,7 @@
             <Border
                 Padding="16,12"
                 CornerRadius="6"
-                Background="#1A1A2E">
+                Background="{StaticResource CardBackgroundBrush}">
                 <StackPanel>
                     <Grid Margin="0,0,0,8">
                         <ui:TextBlock FontTypography="BodyStrong" Text="Perch Desktop" />

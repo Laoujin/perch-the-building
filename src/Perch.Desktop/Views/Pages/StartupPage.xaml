@@ -68,7 +68,7 @@
                     x:Name="EmptyState"
                     Text="No startup items found"
                     FontSize="12"
-                    Foreground="#666666"
+                    Foreground="{StaticResource TextDimBrush}"
                     Margin="0,0,0,12"
                     Visibility="Collapsed" />
 
@@ -81,8 +81,8 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type models:StartupCardModel}">
                             <Border
-                                Background="#1A1A2E"
-                                BorderBrush="#333350"
+                                Background="{StaticResource CardBackgroundBrush}"
+                                BorderBrush="{StaticResource PanelBorderBrush}"
                                 BorderThickness="1"
                                 CornerRadius="8"
                                 Padding="12"
@@ -125,7 +125,7 @@
                                         Grid.Row="1"
                                         Text="{Binding Command}"
                                         FontSize="11"
-                                        Foreground="#888888"
+                                        Foreground="{StaticResource TextMutedBrush}"
                                         TextTrimming="CharacterEllipsis"
                                         ToolTip="{Binding Command}"
                                         Margin="0,4,0,0" />
@@ -139,14 +139,14 @@
 
                                         <Border
                                             Grid.Column="0"
-                                            Background="#252545"
+                                            Background="{StaticResource SourceBadgeBgBrush}"
                                             CornerRadius="4"
                                             Padding="6,2"
                                             HorizontalAlignment="Left">
                                             <TextBlock
                                                 Text="{Binding SourceLabel}"
                                                 FontSize="10"
-                                                Foreground="#10B981" />
+                                                Foreground="{StaticResource AccentBrush}" />
                                         </Border>
 
                                         <ui:Button

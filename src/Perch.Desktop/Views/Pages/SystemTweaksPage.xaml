@@ -47,8 +47,8 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type models:TweakCategoryCardModel}">
                             <Border
-                                Background="#1A1A2E"
-                                BorderBrush="#333350"
+                                Background="{StaticResource CardBackgroundBrush}"
+                                BorderBrush="{StaticResource PanelBorderBrush}"
                                 BorderThickness="1"
                                 CornerRadius="8"
                                 Padding="16"
@@ -67,7 +67,7 @@
                                         Grid.Row="0"
                                         Symbol="{Binding IconSymbol}"
                                         FontSize="28"
-                                        Foreground="#10B981"
+                                        Foreground="{StaticResource AccentBrush}"
                                         HorizontalAlignment="Left"
                                         Margin="0,0,0,8" />
 
@@ -81,7 +81,7 @@
                                     <TextBlock
                                         Grid.Row="2"
                                         FontSize="11"
-                                        Foreground="#888888"
+                                        Foreground="{StaticResource TextMutedBrush}"
                                         Margin="0,4,0,0">
                                         <Run Text="{Binding ItemCount, Mode=OneWay}" />
                                         <Run Text=" items" />
@@ -158,8 +158,8 @@
                                     <StackPanel Margin="0,0,0,4">
                                         <!-- Category header -->
                                         <Border
-                                            Background="#1A1A2E"
-                                            BorderBrush="#333350"
+                                            Background="{StaticResource CardBackgroundBrush}"
+                                            BorderBrush="{StaticResource PanelBorderBrush}"
                                             BorderThickness="1"
                                             CornerRadius="8"
                                             Padding="12"
@@ -178,7 +178,7 @@
                                                     Grid.Column="0"
                                                     Symbol="{Binding IconSymbol}"
                                                     FontSize="20"
-                                                    Foreground="#10B981"
+                                                    Foreground="{StaticResource AccentBrush}"
                                                     VerticalAlignment="Center"
                                                     Margin="0,0,12,0" />
 
@@ -193,7 +193,7 @@
                                                 <TextBlock
                                                     Grid.Column="2"
                                                     FontSize="11"
-                                                    Foreground="#888888"
+                                                    Foreground="{StaticResource TextMutedBrush}"
                                                     VerticalAlignment="Center"
                                                     Margin="0,0,12,0">
                                                     <Run Text="{Binding ItemCount, Mode=OneWay}" />
@@ -204,7 +204,7 @@
                                                     Grid.Column="3"
                                                     Symbol="ChevronDown24"
                                                     FontSize="12"
-                                                    Foreground="#666666"
+                                                    Foreground="{StaticResource TextDimBrush}"
                                                     VerticalAlignment="Center"
                                                     RenderTransformOrigin="0.5,0.5">
                                                     <ui:SymbolIcon.Style>
@@ -238,7 +238,7 @@
                                                             Text="{Binding SubCategory}"
                                                             FontSize="12"
                                                             FontWeight="SemiBold"
-                                                            Foreground="#94A3B8"
+                                                            Foreground="{StaticResource SubcategoryTextBrush}"
                                                             Margin="0,0,0,6" />
 
                                                         <!-- Tweak cards -->
@@ -249,7 +249,7 @@
                                                             <ItemsControl.ItemTemplate>
                                                                 <DataTemplate DataType="{x:Type models:TweakCardModel}">
                                                                     <Border
-                                                                        Background="#1A1A2E"
+                                                                        Background="{StaticResource CardBackgroundBrush}"
                                                                         BorderBrush="{Binding IsSelected, Converter={StaticResource BooleanToBorderBrushConverter}}"
                                                                         BorderThickness="1"
                                                                         CornerRadius="8"
@@ -275,13 +275,13 @@
                                                                                     <controls:StatusRibbon Status="{Binding Status}" />
                                                                                     <Border
                                                                                         Background="Transparent"
-                                                                                        BorderBrush="#10B981"
+                                                                                        BorderBrush="{StaticResource AccentBrush}"
                                                                                         BorderThickness="1"
                                                                                         CornerRadius="4"
                                                                                         Padding="6,1"
                                                                                         Margin="6,0,0,0"
                                                                                         Visibility="{Binding IsSuggested, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                                                                        <TextBlock Text="Suggested" FontSize="10" Foreground="#10B981" />
+                                                                                        <TextBlock Text="Suggested" FontSize="10" Foreground="{StaticResource AccentBrush}" />
                                                                                     </Border>
                                                                                 </StackPanel>
 
@@ -302,7 +302,7 @@
                                                                                 <ui:SymbolIcon
                                                                                     Symbol="ArrowSync24"
                                                                                     FontSize="14"
-                                                                                    Foreground="#888888"
+                                                                                    Foreground="{StaticResource TextMutedBrush}"
                                                                                     ToolTip="Requires restart"
                                                                                     Margin="6,0,0,0"
                                                                                     Visibility="{Binding RestartRequired, Converter={StaticResource BooleanToVisibilityConverter}}" />
@@ -312,7 +312,7 @@
                                                                                 Grid.Row="2"
                                                                                 Text="{Binding Description}"
                                                                                 FontSize="11"
-                                                                                Foreground="#888888"
+                                                                                Foreground="{StaticResource TextMutedBrush}"
                                                                                 TextWrapping="Wrap"
                                                                                 MaxHeight="32"
                                                                                 Margin="0,4,0,0" />
@@ -327,11 +327,11 @@
                                                                                     <TextBlock
                                                                                         Text="{Binding RegistryKeyCountText}"
                                                                                         FontSize="10"
-                                                                                        Foreground="#666666" />
+                                                                                        Foreground="{StaticResource TextDimBrush}" />
                                                                                     <TextBlock
                                                                                         Text="{Binding IsExpanded, Converter={StaticResource BooleanToChevronConverter}}"
                                                                                         FontSize="10"
-                                                                                        Foreground="#666666"
+                                                                                        Foreground="{StaticResource TextDimBrush}"
                                                                                         Margin="4,0,0,0" />
                                                                                 </StackPanel>
                                                                             </ui:Button>
@@ -341,7 +341,7 @@
                                                                                 Margin="0,8,0,0"
                                                                                 Visibility="{Binding IsExpanded, Converter={StaticResource BooleanToVisibilityConverter}}">
                                                                                 <Border
-                                                                                    Background="#12122A"
+                                                                                    Background="{StaticResource SurfaceDeepBrush}"
                                                                                     CornerRadius="6"
                                                                                     Padding="10">
                                                                                     <ItemsControl ItemsSource="{Binding DetectedEntries}">
@@ -352,7 +352,7 @@
                                                                                                         Text="{Binding Definition.Key}"
                                                                                                         FontSize="10"
                                                                                                         FontFamily="Cascadia Code,Consolas,Courier New"
-                                                                                                        Foreground="#888888"
+                                                                                                        Foreground="{StaticResource TextMutedBrush}"
                                                                                                         TextTrimming="CharacterEllipsis"
                                                                                                         ToolTip="{Binding Definition.Key}" />
                                                                                                     <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
@@ -363,7 +363,7 @@
                                                                                                             Foreground="White" />
                                                                                                         <TextBlock
                                                                                                             FontSize="11"
-                                                                                                            Foreground="#666666"
+                                                                                                            Foreground="{StaticResource TextDimBrush}"
                                                                                                             Margin="4,0,0,0">
                                                                                                             <Run Text="(" /><Run Text="{Binding Definition.Kind, Mode=OneWay}" /><Run Text=")" />
                                                                                                         </TextBlock>
@@ -378,13 +378,13 @@
                                                                                                             <RowDefinition Height="Auto" />
                                                                                                             <RowDefinition Height="Auto" />
                                                                                                         </Grid.RowDefinitions>
-                                                                                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Current" FontSize="9" Foreground="#666666" />
-                                                                                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="Desired" FontSize="9" Foreground="#666666" />
-                                                                                                        <TextBlock Grid.Row="0" Grid.Column="2" Text="Default" FontSize="9" Foreground="#666666" />
+                                                                                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Current" FontSize="9" Foreground="{StaticResource TextDimBrush}" />
+                                                                                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="Desired" FontSize="9" Foreground="{StaticResource TextDimBrush}" />
+                                                                                                        <TextBlock Grid.Row="0" Grid.Column="2" Text="Default" FontSize="9" Foreground="{StaticResource TextDimBrush}" />
                                                                                                         <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding CurrentValue}" FontSize="10"
                                                                                                                    Foreground="{Binding IsApplied, Converter={StaticResource BooleanToForegroundConverter}}" />
-                                                                                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Definition.Value}" FontSize="10" Foreground="#10B981" />
-                                                                                                        <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding Definition.DefaultValue}" FontSize="10" Foreground="#888888" />
+                                                                                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Definition.Value}" FontSize="10" Foreground="{StaticResource AccentBrush}" />
+                                                                                                        <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding Definition.DefaultValue}" FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
                                                                                                     </Grid>
                                                                                                 </StackPanel>
                                                                                             </DataTemplate>
@@ -458,8 +458,8 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="{x:Type models:StartupCardModel}">
                                         <Border
-                                            Background="#1A1A2E"
-                                            BorderBrush="#333350"
+                                            Background="{StaticResource CardBackgroundBrush}"
+                                            BorderBrush="{StaticResource PanelBorderBrush}"
                                             BorderThickness="1"
                                             CornerRadius="8"
                                             Padding="12"
@@ -509,7 +509,7 @@
                                                     Background="Transparent"
                                                     FontFamily="Cascadia Code,Consolas,Courier New"
                                                     FontSize="11"
-                                                    Foreground="#888888"
+                                                    Foreground="{StaticResource TextMutedBrush}"
                                                     Margin="0,4,0,0"
                                                     Padding="0" />
 
@@ -605,8 +605,8 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type models:CertificateStoreGroupModel}">
                                     <Border
-                                        Background="#1A1A2E"
-                                        BorderBrush="#333350"
+                                        Background="{StaticResource CardBackgroundBrush}"
+                                        BorderBrush="{StaticResource PanelBorderBrush}"
                                         BorderThickness="1"
                                         CornerRadius="8"
                                         Padding="12"
@@ -640,7 +640,7 @@
                                                 <TextBlock
                                                     Grid.Column="2"
                                                     FontSize="11"
-                                                    Foreground="#666666"
+                                                    Foreground="{StaticResource TextDimBrush}"
                                                     VerticalAlignment="Center">
                                                     <Run Text="{Binding Certificates.Count, Mode=OneWay}" />
                                                     <Run Text=" certificates" />
@@ -654,8 +654,8 @@
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate DataType="{x:Type models:CertificateCardModel}">
                                                         <Border
-                                                            Background="#12122A"
-                                                            BorderBrush="#333350"
+                                                            Background="{StaticResource SurfaceDeepBrush}"
+                                                            BorderBrush="{StaticResource PanelBorderBrush}"
                                                             BorderThickness="1"
                                                             CornerRadius="6"
                                                             Padding="10"
@@ -683,7 +683,7 @@
                                                                             ToolTip="{Binding Certificate.Subject}" />
                                                                         <TextBlock
                                                                             FontSize="11"
-                                                                            Foreground="#888888"
+                                                                            Foreground="{StaticResource TextMutedBrush}"
                                                                             TextTrimming="CharacterEllipsis"
                                                                             Margin="0,2,0,0">
                                                                             <Run Text="Issuer: " /><Run Text="{Binding IssuerDisplayName, Mode=OneWay}" />
@@ -697,13 +697,13 @@
                                                                             Margin="8,0,0,0">
                                                                             <Border.Style>
                                                                                 <Style TargetType="Border">
-                                                                                    <Setter Property="Background" Value="#1A3D2E" />
+                                                                                    <Setter Property="Background" Value="{StaticResource CertValidBgBrush}" />
                                                                                     <Style.Triggers>
                                                                                         <DataTrigger Binding="{Binding ExpiryStatus}" Value="ExpiringSoon">
-                                                                                            <Setter Property="Background" Value="#3D3A1A" />
+                                                                                            <Setter Property="Background" Value="{StaticResource CertExpiringBgBrush}" />
                                                                                         </DataTrigger>
                                                                                         <DataTrigger Binding="{Binding ExpiryStatus}" Value="Expired">
-                                                                                            <Setter Property="Background" Value="#3D1A1A" />
+                                                                                            <Setter Property="Background" Value="{StaticResource CertExpiredBgBrush}" />
                                                                                         </DataTrigger>
                                                                                     </Style.Triggers>
                                                                                 </Style>
@@ -711,15 +711,15 @@
                                                                             <TextBlock FontSize="10">
                                                                                 <TextBlock.Style>
                                                                                     <Style TargetType="TextBlock">
-                                                                                        <Setter Property="Foreground" Value="#10B981" />
+                                                                                        <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
                                                                                         <Setter Property="Text" Value="Valid" />
                                                                                         <Style.Triggers>
                                                                                             <DataTrigger Binding="{Binding ExpiryStatus}" Value="ExpiringSoon">
-                                                                                                <Setter Property="Foreground" Value="#EAB308" />
+                                                                                                <Setter Property="Foreground" Value="{StaticResource CertExpiringSoonBrush}" />
                                                                                                 <Setter Property="Text" Value="Expiring soon" />
                                                                                             </DataTrigger>
                                                                                             <DataTrigger Binding="{Binding ExpiryStatus}" Value="Expired">
-                                                                                                <Setter Property="Foreground" Value="#EF4444" />
+                                                                                                <Setter Property="Foreground" Value="{StaticResource ErrorBrush}" />
                                                                                                 <Setter Property="Text" Value="Expired" />
                                                                                             </DataTrigger>
                                                                                         </Style.Triggers>
@@ -741,7 +741,7 @@
                                                                 <TextBlock
                                                                     Grid.Row="1"
                                                                     FontSize="11"
-                                                                    Foreground="#666666"
+                                                                    Foreground="{StaticResource TextDimBrush}"
                                                                     Margin="0,2,0,0">
                                                                     <Run Text="Expires: " /><Run Text="{Binding Certificate.NotAfter, Mode=OneWay, StringFormat=d}" />
                                                                 </TextBlock>
@@ -751,38 +751,38 @@
                                                                     Margin="0,6,0,0"
                                                                     Visibility="{Binding IsExpanded, Converter={StaticResource BooleanToVisibilityConverter}}">
                                                                     <Border
-                                                                        Background="#0D0D1A"
+                                                                        Background="{StaticResource SurfaceDarkBrush}"
                                                                         CornerRadius="4"
                                                                         Padding="8">
                                                                         <StackPanel>
-                                                                            <TextBlock FontSize="10" Foreground="#666666" Margin="0,0,0,2">
+                                                                            <TextBlock FontSize="10" Foreground="{StaticResource TextDimBrush}" Margin="0,0,0,2">
                                                                                 <Run Text="Thumbprint: " />
                                                                             </TextBlock>
                                                                             <TextBlock
                                                                                 Text="{Binding Certificate.Thumbprint}"
                                                                                 FontSize="10"
                                                                                 FontFamily="Cascadia Code,Consolas,Courier New"
-                                                                                Foreground="#888888"
+                                                                                Foreground="{StaticResource TextMutedBrush}"
                                                                                 TextWrapping="Wrap"
                                                                                 Margin="0,0,0,6" />
 
-                                                                            <TextBlock FontSize="10" Foreground="#666666">
+                                                                            <TextBlock FontSize="10" Foreground="{StaticResource TextDimBrush}">
                                                                                 <Run Text="Valid: " />
                                                                                 <Run Text="{Binding Certificate.NotBefore, Mode=OneWay, StringFormat=d}" />
                                                                                 <Run Text=" - " />
                                                                                 <Run Text="{Binding Certificate.NotAfter, Mode=OneWay, StringFormat=d}" />
                                                                             </TextBlock>
 
-                                                                            <TextBlock FontSize="10" Foreground="#666666" Margin="0,2,0,0">
+                                                                            <TextBlock FontSize="10" Foreground="{StaticResource TextDimBrush}" Margin="0,2,0,0">
                                                                                 <Run Text="Subject: " /><Run Text="{Binding Certificate.Subject, Mode=OneWay}" />
                                                                             </TextBlock>
 
-                                                                            <TextBlock FontSize="10" Foreground="#666666" Margin="0,2,0,0"
+                                                                            <TextBlock FontSize="10" Foreground="{StaticResource TextDimBrush}" Margin="0,2,0,0"
                                                                                        Visibility="{Binding Certificate.FriendlyName, Converter={StaticResource CountToVisibilityConverter}}">
                                                                                 <Run Text="Friendly name: " /><Run Text="{Binding Certificate.FriendlyName, Mode=OneWay}" />
                                                                             </TextBlock>
 
-                                                                            <TextBlock FontSize="10" Foreground="#666666" Margin="0,2,0,0"
+                                                                            <TextBlock FontSize="10" Foreground="{StaticResource TextDimBrush}" Margin="0,2,0,0"
                                                                                        Visibility="{Binding Certificate.HasPrivateKey, Converter={StaticResource BooleanToVisibilityConverter}}">
                                                                                 <Run Text="Has private key" />
                                                                             </TextBlock>
@@ -830,7 +830,7 @@
                         <StackPanel>
                             <!-- Nerd Fonts -->
                             <StackPanel Visibility="{Binding FilteredNerdFonts.Count, Converter={StaticResource CountToVisibilityConverter}, FallbackValue=Collapsed}">
-                                <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#888888" Margin="0,0,0,8"
+                                <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,8"
                                            Text="Nerd Fonts" />
                                 <ItemsControl ItemsSource="{Binding FilteredNerdFonts}">
                                     <ItemsControl.ItemsPanel>
@@ -839,7 +839,7 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate DataType="{x:Type models:FontCardModel}">
                                             <Border
-                                                Background="#1A1A2E"
+                                                Background="{StaticResource CardBackgroundBrush}"
                                                 BorderBrush="{Binding IsSelected, Converter={StaticResource BooleanToBorderBrushConverter}}"
                                                 BorderThickness="1"
                                                 CornerRadius="8"
@@ -880,7 +880,7 @@
                                                         Grid.Row="1"
                                                         Text="{Binding Description}"
                                                         FontSize="11"
-                                                        Foreground="#888888"
+                                                        Foreground="{StaticResource TextMutedBrush}"
                                                         TextWrapping="Wrap"
                                                         MaxHeight="32"
                                                         Margin="0,4,0,0" />
@@ -905,7 +905,7 @@
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" FontSize="13" FontWeight="SemiBold" Foreground="#888888"
+                                    <TextBlock Grid.Column="0" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextMutedBrush}"
                                                Text="Installed Fonts" VerticalAlignment="Center" />
                                     <ui:Button
                                         Grid.Column="2"
@@ -919,8 +919,8 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate DataType="{x:Type models:FontFamilyGroupModel}">
                                             <Border
-                                                Background="#1A1A2E"
-                                                BorderBrush="#333350"
+                                                Background="{StaticResource CardBackgroundBrush}"
+                                                BorderBrush="{StaticResource PanelBorderBrush}"
                                                 BorderThickness="1"
                                                 CornerRadius="8"
                                                 Padding="12"
@@ -964,7 +964,7 @@
                                                             Grid.Row="0"
                                                             Grid.Column="2"
                                                             FontSize="11"
-                                                            Foreground="#666666"
+                                                            Foreground="{StaticResource TextDimBrush}"
                                                             VerticalAlignment="Center"
                                                             Margin="0,0,8,0">
                                                             <Run Text="{Binding Fonts.Count, Mode=OneWay}" />
@@ -985,7 +985,7 @@
                                                             Text="{Binding SpecimenPhrase}"
                                                             FontFamily="{Binding FamilyName}"
                                                             FontSize="12"
-                                                            Foreground="#555555"
+                                                            Foreground="{StaticResource SpecimenTextBrush}"
                                                             FontStyle="Italic"
                                                             TextTrimming="CharacterEllipsis"
                                                             Margin="0,2,0,0" />
@@ -999,7 +999,7 @@
                                                         <ItemsControl.ItemTemplate>
                                                             <DataTemplate DataType="{x:Type models:FontCardModel}">
                                                                 <Border
-                                                                    Background="#12122A"
+                                                                    Background="{StaticResource SurfaceDeepBrush}"
                                                                     BorderBrush="{Binding IsSelected, Converter={StaticResource BooleanToBorderBrushConverter}}"
                                                                     BorderThickness="1"
                                                                     CornerRadius="6"
@@ -1033,7 +1033,7 @@
                                                                                 <TextBlock
                                                                                     Text="{Binding FileName}"
                                                                                     FontSize="9"
-                                                                                    Foreground="#555555"
+                                                                                    Foreground="{StaticResource SpecimenTextBrush}"
                                                                                     TextTrimming="CharacterEllipsis"
                                                                                     Visibility="{Binding FileName, Converter={StaticResource CountToVisibilityConverter}}" />
                                                                             </StackPanel>
@@ -1100,7 +1100,7 @@
                                                                             Grid.Row="1"
                                                                             Text="{Binding Description}"
                                                                             FontSize="11"
-                                                                            Foreground="#888888"
+                                                                            Foreground="{StaticResource TextMutedBrush}"
                                                                             TextTrimming="CharacterEllipsis"
                                                                             Margin="0,4,0,0"
                                                                             Visibility="{Binding Description, Converter={StaticResource CountToVisibilityConverter}}" />

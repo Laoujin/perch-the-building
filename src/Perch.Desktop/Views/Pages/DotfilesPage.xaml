@@ -123,7 +123,7 @@
                     Visibility="{Binding IsLoadingDetail, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
                     <StackPanel Margin="0,0,0,16">
                         <!-- Card info -->
-                        <Border Background="#1A1A2E" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                        <Border Background="{StaticResource CardBackgroundBrush}" CornerRadius="8" Padding="16" Margin="0,0,0,12">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto" />
@@ -141,7 +141,7 @@
                                     Grid.Row="1"
                                     Text="{Binding SelectedApp.Category}"
                                     FontSize="11"
-                                    Foreground="#888888"
+                                    Foreground="{StaticResource TextMutedBrush}"
                                     Margin="0,0,0,4" />
 
                                 <!-- Individual files -->
@@ -166,22 +166,22 @@
                                                     <ui:SymbolIcon.Style>
                                                         <Style TargetType="ui:SymbolIcon">
                                                             <Setter Property="Symbol" Value="Document24" />
-                                                            <Setter Property="Foreground" Value="#666666" />
+                                                            <Setter Property="Foreground" Value="{StaticResource TextDimBrush}" />
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding Status}" Value="Linked">
                                                                     <Setter Property="Symbol" Value="CheckmarkCircle24" />
-                                                                    <Setter Property="Foreground" Value="#34D399" />
+                                                                    <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
                                                                 </DataTrigger>
                                                                 <DataTrigger Binding="{Binding Status}" Value="Drift">
                                                                     <Setter Property="Symbol" Value="Warning24" />
-                                                                    <Setter Property="Foreground" Value="#F59E0B" />
+                                                                    <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
                                                                 </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
                                                     </ui:SymbolIcon.Style>
                                                 </ui:SymbolIcon>
                                                 <TextBlock Grid.Column="1" Text="{Binding FileName}" FontSize="11" Foreground="White" Margin="0,0,8,0" />
-                                                <TextBlock Grid.Column="2" Text="{Binding FullPath}" FontSize="10" Foreground="#666666"
+                                                <TextBlock Grid.Column="2" Text="{Binding FullPath}" FontSize="10" Foreground="{StaticResource TextDimBrush}"
                                                            TextTrimming="CharacterEllipsis" ToolTip="{Binding FullPath}" />
                                                 <Button
                                                     Grid.Column="3"
@@ -193,7 +193,7 @@
                                                     Tag="{Binding FullPath}"
                                                     ToolTip="Open in Explorer"
                                                     Visibility="{Binding Exists, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                                    <ui:SymbolIcon Symbol="FolderOpen24" FontSize="12" Foreground="#6B7280" />
+                                                    <ui:SymbolIcon Symbol="FolderOpen24" FontSize="12" Foreground="{StaticResource LinkTextBrush}" />
                                                 </Button>
                                             </Grid>
                                         </DataTemplate>
@@ -205,16 +205,16 @@
                                     <ui:SymbolIcon
                                         Symbol="Box24"
                                         FontSize="14"
-                                        Foreground="#888888"
+                                        Foreground="{StaticResource TextMutedBrush}"
                                         Margin="0,0,6,0" />
                                     <TextBlock
                                         FontSize="11"
-                                        Foreground="#10B981"
+                                        Foreground="{StaticResource AccentBrush}"
                                         Text="{Binding Detail.OwningModule.DisplayName}"
                                         Visibility="{Binding HasModule, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                     <TextBlock
                                         FontSize="11"
-                                        Foreground="#666666"
+                                        Foreground="{StaticResource TextDimBrush}"
                                         Text="No module found"
                                         Visibility="{Binding HasNoModule, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                 </StackPanel>
@@ -223,7 +223,7 @@
 
                         <!-- Structured view (links, hooks, registry) -->
                         <Border
-                            Background="#1A1A2E"
+                            Background="{StaticResource CardBackgroundBrush}"
                             CornerRadius="8"
                             Padding="16"
                             Margin="0,0,0,12"
@@ -235,9 +235,9 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                                <TextBlock Text="{Binding Source}" FontSize="11" Foreground="#10B981" />
-                                                <TextBlock Text=" → " FontSize="11" Foreground="#666666" />
-                                                <TextBlock Text="{Binding Target}" FontSize="11" Foreground="#888888" />
+                                                <TextBlock Text="{Binding Source}" FontSize="11" Foreground="{StaticResource AccentBrush}" />
+                                                <TextBlock Text=" → " FontSize="11" Foreground="{StaticResource TextDimBrush}" />
+                                                <TextBlock Text="{Binding Target}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" />
                                             </StackPanel>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
@@ -248,11 +248,11 @@
                                     Margin="0,12,0,0"
                                     Visibility="{Binding Detail.Manifest.Hooks, Converter={StaticResource NullToVisibilityConverter}}">
                                     <TextBlock Text="Hooks" FontSize="13" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,8" />
-                                    <TextBlock FontSize="11" Foreground="#888888">
-                                        <Run Text="pre-deploy: " /><Run Text="{Binding Detail.Manifest.Hooks.PreDeploy, Mode=OneWay}" Foreground="#10B981" />
+                                    <TextBlock FontSize="11" Foreground="{StaticResource TextMutedBrush}">
+                                        <Run Text="pre-deploy: " /><Run Text="{Binding Detail.Manifest.Hooks.PreDeploy, Mode=OneWay}" Foreground="{StaticResource AccentBrush}" />
                                     </TextBlock>
-                                    <TextBlock FontSize="11" Foreground="#888888">
-                                        <Run Text="post-deploy: " /><Run Text="{Binding Detail.Manifest.Hooks.PostDeploy, Mode=OneWay}" Foreground="#10B981" />
+                                    <TextBlock FontSize="11" Foreground="{StaticResource TextMutedBrush}">
+                                        <Run Text="post-deploy: " /><Run Text="{Binding Detail.Manifest.Hooks.PostDeploy, Mode=OneWay}" Foreground="{StaticResource AccentBrush}" />
                                     </TextBlock>
                                 </StackPanel>
 
@@ -265,8 +265,8 @@
                                     <ItemsControl ItemsSource="{Binding Detail.Manifest.Registry}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <TextBlock FontSize="11" Foreground="#888888" TextWrapping="Wrap" Margin="0,0,0,4">
-                                                    <Run Text="{Binding Key, Mode=OneWay}" /><Run Text="\" /><Run Text="{Binding Name, Mode=OneWay}" Foreground="#10B981" />
+                                                <TextBlock FontSize="11" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,0,0,4">
+                                                    <Run Text="{Binding Key, Mode=OneWay}" /><Run Text="\" /><Run Text="{Binding Name, Mode=OneWay}" Foreground="{StaticResource AccentBrush}" />
                                                 </TextBlock>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
@@ -277,7 +277,7 @@
 
                         <!-- Alternatives section -->
                         <Border
-                            Background="#1A1A2E"
+                            Background="{StaticResource CardBackgroundBrush}"
                             CornerRadius="8"
                             Padding="16"
                             Margin="0,0,0,12"
@@ -290,7 +290,7 @@
                                             <TextBlock
                                                 Text="{Binding Name, Mode=OneWay}"
                                                 FontSize="11"
-                                                Foreground="#9CA3AF"
+                                                Foreground="{StaticResource TextSubtleBrush}"
                                                 Margin="0,0,0,4" />
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>

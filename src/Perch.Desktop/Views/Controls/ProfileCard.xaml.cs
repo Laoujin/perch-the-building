@@ -82,8 +82,7 @@ public partial class ProfileCard : UserControl
 
     private void UpdateBorder(bool selected)
     {
-        CardBorder.BorderBrush = selected
-            ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#10B981")!)
-            : new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2A2A3E")!);
+        CardBorder.BorderBrush = (Brush)Application.Current.FindResource(
+            selected ? "AccentBrush" : "CardBorderBrush");
     }
 }

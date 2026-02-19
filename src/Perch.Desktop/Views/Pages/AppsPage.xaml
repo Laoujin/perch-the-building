@@ -27,24 +27,24 @@
 
                 <!-- Status summary -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
-                    <Border Background="#1A34D399" CornerRadius="10" Padding="8,3" Margin="0,0,8,0">
+                    <Border Background="{StaticResource SuccessSubtleBrush}" CornerRadius="10" Padding="8,3" Margin="0,0,8,0">
                         <TextBlock FontSize="11">
-                            <Run Text="{Binding LinkedCount, Mode=OneWay}" Foreground="#34D399" FontWeight="SemiBold" />
-                            <Run Text=" linked" Foreground="#34D399" />
+                            <Run Text="{Binding LinkedCount, Mode=OneWay}" Foreground="{StaticResource SuccessBrush}" FontWeight="SemiBold" />
+                            <Run Text=" linked" Foreground="{StaticResource SuccessBrush}" />
                         </TextBlock>
                     </Border>
-                    <Border Background="#1AF59E0B" CornerRadius="10" Padding="8,3" Margin="0,0,8,0"
+                    <Border Background="{StaticResource WarningSubtleBrush}" CornerRadius="10" Padding="8,3" Margin="0,0,8,0"
                             Visibility="{Binding DriftedCount, Converter={StaticResource CountToVisibilityConverter}}">
                         <TextBlock FontSize="11">
-                            <Run Text="{Binding DriftedCount, Mode=OneWay}" Foreground="#F59E0B" FontWeight="SemiBold" />
-                            <Run Text=" drifted" Foreground="#F59E0B" />
+                            <Run Text="{Binding DriftedCount, Mode=OneWay}" Foreground="{StaticResource WarningBrush}" FontWeight="SemiBold" />
+                            <Run Text=" drifted" Foreground="{StaticResource WarningBrush}" />
                         </TextBlock>
                     </Border>
-                    <Border Background="#1A3B82F6" CornerRadius="10" Padding="8,3"
+                    <Border Background="{StaticResource InfoSubtleBrush}" CornerRadius="10" Padding="8,3"
                             Visibility="{Binding DetectedCount, Converter={StaticResource CountToVisibilityConverter}}">
                         <TextBlock FontSize="11">
-                            <Run Text="{Binding DetectedCount, Mode=OneWay}" Foreground="#3B82F6" FontWeight="SemiBold" />
-                            <Run Text=" detected" Foreground="#3B82F6" />
+                            <Run Text="{Binding DetectedCount, Mode=OneWay}" Foreground="{StaticResource InfoBrush}" FontWeight="SemiBold" />
+                            <Run Text=" detected" Foreground="{StaticResource InfoBrush}" />
                         </TextBlock>
                     </Border>
                 </StackPanel>
@@ -70,8 +70,8 @@
                             <StackPanel Margin="0,0,0,4">
                                 <!-- Category header -->
                                 <Border
-                                    Background="#1A1A2E"
-                                    BorderBrush="#333350"
+                                    Background="{StaticResource CardBackgroundBrush}"
+                                    BorderBrush="{StaticResource PanelBorderBrush}"
                                     BorderThickness="1"
                                     CornerRadius="8"
                                     Padding="12"
@@ -90,7 +90,7 @@
                                             Grid.Column="0"
                                             Symbol="{Binding IconSymbol}"
                                             FontSize="20"
-                                            Foreground="#10B981"
+                                            Foreground="{StaticResource AccentBrush}"
                                             VerticalAlignment="Center"
                                             Margin="0,0,12,0" />
 
@@ -108,28 +108,28 @@
                                             VerticalAlignment="Center"
                                             Margin="0,0,12,0">
                                             <Border
-                                                Background="#1A3B82F6"
+                                                Background="{StaticResource InfoSubtleBrush}"
                                                 CornerRadius="8"
                                                 Padding="6,2"
                                                 Margin="0,0,6,0"
                                                 Visibility="{Binding DetectedCount, Converter={StaticResource CountToVisibilityConverter}}">
                                                 <TextBlock FontSize="10">
-                                                    <Run Text="{Binding DetectedCount, Mode=OneWay}" Foreground="#3B82F6" FontWeight="SemiBold" />
-                                                    <Run Text=" detected" Foreground="#3B82F6" />
+                                                    <Run Text="{Binding DetectedCount, Mode=OneWay}" Foreground="{StaticResource InfoBrush}" FontWeight="SemiBold" />
+                                                    <Run Text=" detected" Foreground="{StaticResource InfoBrush}" />
                                                 </TextBlock>
                                             </Border>
                                             <Border
-                                                Background="#1A93C5FD"
+                                                Background="{StaticResource SuggestedLightSubtleBrush}"
                                                 CornerRadius="8"
                                                 Padding="6,2"
                                                 Margin="0,0,6,0"
                                                 Visibility="{Binding SuggestedCount, Converter={StaticResource CountToVisibilityConverter}}">
                                                 <TextBlock FontSize="10">
-                                                    <Run Text="{Binding SuggestedCount, Mode=OneWay}" Foreground="#93C5FD" FontWeight="SemiBold" />
-                                                    <Run Text=" suggested" Foreground="#93C5FD" />
+                                                    <Run Text="{Binding SuggestedCount, Mode=OneWay}" Foreground="{StaticResource SuggestedLightBrush}" FontWeight="SemiBold" />
+                                                    <Run Text=" suggested" Foreground="{StaticResource SuggestedLightBrush}" />
                                                 </TextBlock>
                                             </Border>
-                                            <TextBlock FontSize="11" Foreground="#888888">
+                                            <TextBlock FontSize="11" Foreground="{StaticResource TextMutedBrush}">
                                                 <Run Text="{Binding ItemCount, Mode=OneWay}" />
                                                 <Run Text=" apps" />
                                             </TextBlock>
@@ -139,7 +139,7 @@
                                             Grid.Column="3"
                                             Symbol="ChevronDown24"
                                             FontSize="12"
-                                            Foreground="#666666"
+                                            Foreground="{StaticResource TextDimBrush}"
                                             VerticalAlignment="Center"
                                             RenderTransformOrigin="0.5,0.5">
                                             <ui:SymbolIcon.Style>
@@ -173,7 +173,7 @@
                                                     Text="{Binding SubCategory}"
                                                     FontSize="12"
                                                     FontWeight="SemiBold"
-                                                    Foreground="#94A3B8"
+                                                    Foreground="{StaticResource SubcategoryTextBrush}"
                                                     Margin="0,0,0,6" />
 
                                                 <!-- App cards -->
@@ -258,7 +258,7 @@
                     Visibility="{Binding IsLoadingDetail, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
                     <StackPanel Margin="0,0,0,16">
                         <!-- App info card -->
-                        <Border Background="#1A1A2E" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                        <Border Background="{StaticResource CardBackgroundBrush}" CornerRadius="8" Padding="16" Margin="0,0,0,12">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto" />
@@ -277,7 +277,7 @@
                                     Grid.Row="1"
                                     Text="{Binding SelectedApp.Description}"
                                     FontSize="12"
-                                    Foreground="#9CA3AF"
+                                    Foreground="{StaticResource TextSubtleBrush}"
                                     TextWrapping="Wrap"
                                     Margin="0,0,0,6"
                                     Visibility="{Binding SelectedApp.Description, Converter={StaticResource CountToVisibilityConverter}}" />
@@ -286,7 +286,7 @@
                                     Grid.Row="2"
                                     Text="{Binding SelectedApp.Category}"
                                     FontSize="11"
-                                    Foreground="#888888"
+                                    Foreground="{StaticResource TextMutedBrush}"
                                     Margin="0,0,0,6" />
 
                                 <!-- Links -->
@@ -301,8 +301,8 @@
                                         ToolTip="{Binding SelectedApp.Website}"
                                         Visibility="{Binding SelectedApp.Website, Converter={StaticResource CountToVisibilityConverter}}">
                                         <StackPanel Orientation="Horizontal">
-                                            <ui:SymbolIcon Symbol="Globe24" FontSize="12" Foreground="#6B7280" />
-                                            <TextBlock Text="Website" FontSize="10" Foreground="#6B7280" Margin="4,0,0,0" VerticalAlignment="Center" />
+                                            <ui:SymbolIcon Symbol="Globe24" FontSize="12" Foreground="{StaticResource LinkTextBrush}" />
+                                            <TextBlock Text="Website" FontSize="10" Foreground="{StaticResource LinkTextBrush}" Margin="4,0,0,0" VerticalAlignment="Center" />
                                         </StackPanel>
                                     </Button>
                                     <Button
@@ -315,8 +315,8 @@
                                         ToolTip="{Binding SelectedApp.Docs}"
                                         Visibility="{Binding SelectedApp.Docs, Converter={StaticResource CountToVisibilityConverter}}">
                                         <StackPanel Orientation="Horizontal">
-                                            <ui:SymbolIcon Symbol="Document24" FontSize="12" Foreground="#6B7280" />
-                                            <TextBlock Text="Docs" FontSize="10" Foreground="#6B7280" Margin="4,0,0,0" VerticalAlignment="Center" />
+                                            <ui:SymbolIcon Symbol="Document24" FontSize="12" Foreground="{StaticResource LinkTextBrush}" />
+                                            <TextBlock Text="Docs" FontSize="10" Foreground="{StaticResource LinkTextBrush}" Margin="4,0,0,0" VerticalAlignment="Center" />
                                         </StackPanel>
                                     </Button>
                                     <Button
@@ -328,8 +328,8 @@
                                         ToolTip="{Binding SelectedApp.GitHub}"
                                         Visibility="{Binding SelectedApp.GitHub, Converter={StaticResource CountToVisibilityConverter}}">
                                         <StackPanel Orientation="Horizontal">
-                                            <ui:SymbolIcon Symbol="Code24" FontSize="12" Foreground="#6B7280" />
-                                            <TextBlock Text="GitHub" FontSize="10" Foreground="#6B7280" Margin="4,0,0,0" VerticalAlignment="Center" />
+                                            <ui:SymbolIcon Symbol="Code24" FontSize="12" Foreground="{StaticResource LinkTextBrush}" />
+                                            <TextBlock Text="GitHub" FontSize="10" Foreground="{StaticResource LinkTextBrush}" Margin="4,0,0,0" VerticalAlignment="Center" />
                                         </StackPanel>
                                     </Button>
                                 </StackPanel>
@@ -343,11 +343,11 @@
                                     <ui:SymbolIcon
                                         Symbol="Box24"
                                         FontSize="14"
-                                        Foreground="#888888"
+                                        Foreground="{StaticResource TextMutedBrush}"
                                         Margin="0,0,6,0" />
                                     <TextBlock
                                         FontSize="11"
-                                        Foreground="#10B981"
+                                        Foreground="{StaticResource AccentBrush}"
                                         Text="{Binding Detail.OwningModule.DisplayName}" />
                                 </StackPanel>
                             </Grid>
@@ -355,7 +355,7 @@
 
                         <!-- Ecosystem section -->
                         <Border
-                            Background="#1A1A2E"
+                            Background="{StaticResource CardBackgroundBrush}"
                             CornerRadius="8"
                             Padding="16"
                             Margin="0,0,0,12"
@@ -371,7 +371,7 @@
                                                     Text="{Binding Name}"
                                                     FontSize="12"
                                                     FontWeight="SemiBold"
-                                                    Foreground="#94A3B8"
+                                                    Foreground="{StaticResource SubcategoryTextBrush}"
                                                     Margin="0,0,0,6" />
 
                                                 <ItemsControl ItemsSource="{Binding Apps}">
@@ -415,7 +415,7 @@
 
                         <!-- Alternatives section -->
                         <Border
-                            Background="#1A1A2E"
+                            Background="{StaticResource CardBackgroundBrush}"
                             CornerRadius="8"
                             Padding="16"
                             Margin="0,0,0,12"

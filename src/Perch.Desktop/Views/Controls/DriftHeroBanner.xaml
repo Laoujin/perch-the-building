@@ -42,7 +42,7 @@
                     <TextBlock
                         Text="Configure your dotfiles and apps"
                         FontSize="13"
-                        Foreground="#BBBBBB"
+                        Foreground="{StaticResource TextSoftBrush}"
                         HorizontalAlignment="Center" />
                 </StackPanel>
             </Border>
@@ -66,94 +66,94 @@
                     <StackPanel Orientation="Horizontal">
                         <!-- Apps badge -->
                         <Border
-                            Background="#2634D399"
+                            Background="{StaticResource SuccessBadgeBrush}"
                             CornerRadius="6"
                             Padding="10,6"
                             Margin="0,0,8,0"
                             Visibility="{Binding LinkedAppsCount, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource CountToVisibilityConverter}}">
                             <StackPanel Orientation="Horizontal">
-                                <ui:SymbolIcon Symbol="Apps24" FontSize="14" Foreground="#34D399" />
+                                <ui:SymbolIcon Symbol="Apps24" FontSize="14" Foreground="{StaticResource SuccessBrush}" />
                                 <TextBlock Margin="6,0,0,0" VerticalAlignment="Center">
                                     <Run
                                         Text="{Binding LinkedAppsCount, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        Foreground="#34D399"
+                                        Foreground="{StaticResource SuccessBrush}"
                                         FontWeight="SemiBold" />
-                                    <Run Text=" apps" Foreground="#888888" />
+                                    <Run Text=" apps" Foreground="{StaticResource TextMutedBrush}" />
                                 </TextBlock>
                             </StackPanel>
                         </Border>
 
                         <!-- Dotfiles badge -->
                         <Border
-                            Background="#2634D399"
+                            Background="{StaticResource SuccessBadgeBrush}"
                             CornerRadius="6"
                             Padding="10,6"
                             Margin="0,0,8,0"
                             Visibility="{Binding LinkedDotfilesCount, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource CountToVisibilityConverter}}">
                             <StackPanel Orientation="Horizontal">
-                                <ui:SymbolIcon Symbol="DocumentLink24" FontSize="14" Foreground="#34D399" />
+                                <ui:SymbolIcon Symbol="DocumentLink24" FontSize="14" Foreground="{StaticResource SuccessBrush}" />
                                 <TextBlock Margin="6,0,0,0" VerticalAlignment="Center">
                                     <Run
                                         Text="{Binding LinkedDotfilesCount, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        Foreground="#34D399"
+                                        Foreground="{StaticResource SuccessBrush}"
                                         FontWeight="SemiBold" />
-                                    <Run Text=" dotfiles" Foreground="#888888" />
+                                    <Run Text=" dotfiles" Foreground="{StaticResource TextMutedBrush}" />
                                 </TextBlock>
                             </StackPanel>
                         </Border>
 
                         <!-- Tweaks badge -->
                         <Border
-                            Background="#2634D399"
+                            Background="{StaticResource SuccessBadgeBrush}"
                             CornerRadius="6"
                             Padding="10,6"
                             Margin="0,0,8,0"
                             Visibility="{Binding LinkedTweaksCount, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource CountToVisibilityConverter}}">
                             <StackPanel Orientation="Horizontal">
-                                <ui:SymbolIcon Symbol="Wrench24" FontSize="14" Foreground="#34D399" />
+                                <ui:SymbolIcon Symbol="Wrench24" FontSize="14" Foreground="{StaticResource SuccessBrush}" />
                                 <TextBlock Margin="6,0,0,0" VerticalAlignment="Center">
                                     <Run
                                         Text="{Binding LinkedTweaksCount, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        Foreground="#34D399"
+                                        Foreground="{StaticResource SuccessBrush}"
                                         FontWeight="SemiBold" />
-                                    <Run Text=" tweaks" Foreground="#888888" />
+                                    <Run Text=" tweaks" Foreground="{StaticResource TextMutedBrush}" />
                                 </TextBlock>
                             </StackPanel>
                         </Border>
 
                         <!-- Attention badge -->
                         <Border
-                            Background="#26F59E0B"
+                            Background="{StaticResource WarningBadgeBrush}"
                             CornerRadius="6"
                             Padding="10,6"
                             Margin="0,0,8,0"
                             Visibility="{Binding AttentionCount, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource CountToVisibilityConverter}}">
                             <StackPanel Orientation="Horizontal">
-                                <ui:SymbolIcon Symbol="Warning24" FontSize="14" Foreground="#F59E0B" />
+                                <ui:SymbolIcon Symbol="Warning24" FontSize="14" Foreground="{StaticResource WarningBrush}" />
                                 <TextBlock Margin="6,0,0,0" VerticalAlignment="Center">
                                     <Run
                                         Text="{Binding AttentionCount, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        Foreground="#F59E0B"
+                                        Foreground="{StaticResource WarningBrush}"
                                         FontWeight="SemiBold" />
-                                    <Run Text=" attention" Foreground="#888888" />
+                                    <Run Text=" attention" Foreground="{StaticResource TextMutedBrush}" />
                                 </TextBlock>
                             </StackPanel>
                         </Border>
 
                         <!-- Broken badge -->
                         <Border
-                            Background="#26EF4444"
+                            Background="{StaticResource ErrorBadgeBrush}"
                             CornerRadius="6"
                             Padding="10,6"
                             Visibility="{Binding BrokenCount, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource CountToVisibilityConverter}}">
                             <StackPanel Orientation="Horizontal">
-                                <ui:SymbolIcon Symbol="DismissCircle24" FontSize="14" Foreground="#EF4444" />
+                                <ui:SymbolIcon Symbol="DismissCircle24" FontSize="14" Foreground="{StaticResource ErrorBrush}" />
                                 <TextBlock Margin="6,0,0,0" VerticalAlignment="Center">
                                     <Run
                                         Text="{Binding BrokenCount, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        Foreground="#EF4444"
+                                        Foreground="{StaticResource ErrorBrush}"
                                         FontWeight="SemiBold" />
-                                    <Run Text=" broken" Foreground="#888888" />
+                                    <Run Text=" broken" Foreground="{StaticResource TextMutedBrush}" />
                                 </TextBlock>
                             </StackPanel>
                         </Border>
@@ -165,7 +165,7 @@
                     Grid.Column="1"
                     VerticalAlignment="Center"
                     Margin="20,0,0,0"
-                    Background="#1A1A2E"
+                    Background="{StaticResource CardBackgroundBrush}"
                     CornerRadius="40"
                     Width="80"
                     Height="80">
@@ -174,12 +174,12 @@
                             Text="{Binding HealthPercent, RelativeSource={RelativeSource AncestorType=UserControl}, StringFormat={}{0}%}"
                             FontSize="20"
                             FontWeight="SemiBold"
-                            Foreground="#10B981"
+                            Foreground="{StaticResource AccentBrush}"
                             HorizontalAlignment="Center" />
                         <TextBlock
                             Text="healthy"
                             FontSize="10"
-                            Foreground="#888888"
+                            Foreground="{StaticResource TextMutedBrush}"
                             HorizontalAlignment="Center" />
                     </StackPanel>
                 </Border>

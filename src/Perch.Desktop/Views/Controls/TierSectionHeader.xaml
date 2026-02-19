@@ -22,7 +22,7 @@
 
         <Border
             Grid.Column="1"
-            Background="#2A2A3E"
+            Background="{StaticResource CardBorderBrush}"
             CornerRadius="10"
             Padding="8,2"
             Margin="8,0,0,0"
@@ -31,7 +31,7 @@
             <TextBlock
                 Text="{Binding ItemCount, RelativeSource={RelativeSource AncestorType=UserControl}}"
                 FontSize="11"
-                Foreground="#888888" />
+                Foreground="{StaticResource TextMutedBrush}" />
         </Border>
 
         <Button

@@ -5,8 +5,8 @@
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Visibility="Collapsed">
     <Border
-        Background="#16162A"
-        BorderBrush="#2A2A3E"
+        Background="{StaticResource SurfaceBrush}"
+        BorderBrush="{StaticResource CardBorderBrush}"
         BorderThickness="0,1,0,0"
         Padding="20,12">
         <Grid>
@@ -18,13 +18,13 @@
 
             <!-- Selected count -->
             <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                <ui:SymbolIcon Symbol="CheckmarkCircle24" FontSize="16" Foreground="#10B981" />
+                <ui:SymbolIcon Symbol="CheckmarkCircle24" FontSize="16" Foreground="{StaticResource AccentBrush}" />
                 <TextBlock Margin="8,0,0,0" VerticalAlignment="Center">
                     <Run
                         Text="{Binding SelectedCount, RelativeSource={RelativeSource AncestorType=UserControl}}"
                         FontWeight="SemiBold"
                         Foreground="White" />
-                    <Run Text=" items selected" Foreground="#888888" />
+                    <Run Text=" items selected" Foreground="{StaticResource TextMutedBrush}" />
                 </TextBlock>
             </StackPanel>
 

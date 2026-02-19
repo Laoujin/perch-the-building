@@ -11,7 +11,7 @@
         x:Name="CardBorder"
         CornerRadius="8"
         BorderThickness="3"
-        BorderBrush="#2A2A3E"
+        BorderBrush="{StaticResource CardBorderBrush}"
         ClipToBounds="True">
         <Grid>
             <!-- Hero image background -->
@@ -43,7 +43,7 @@
                 <TextBlock
                     Text="{Binding Tagline, RelativeSource={RelativeSource AncestorType=UserControl}}"
                     FontSize="11"
-                    Foreground="#CCCCCC"
+                    Foreground="{StaticResource TextLightBrush}"
                     TextWrapping="Wrap"
                     Margin="0,4,0,0" />
             </StackPanel>
@@ -51,7 +51,7 @@
             <!-- Selection badge: top-right -->
             <Border
                 x:Name="SelectionBadge"
-                Background="#10B981"
+                Background="{StaticResource AccentBrush}"
                 CornerRadius="12"
                 Padding="8,4"
                 VerticalAlignment="Top"
@@ -67,7 +67,7 @@
             <!-- Dim overlay when not selected (subtle) -->
             <Border
                 x:Name="DimOverlay"
-                Background="#40000000"
+                Background="{StaticResource DimOverlayBrush}"
                 Visibility="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
         </Grid>
     </Border>
