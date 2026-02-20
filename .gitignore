@@ -9,3 +9,5 @@ bin/
 obj/
 *.user
 .vs/
+TestResults/
+__pycache__/
