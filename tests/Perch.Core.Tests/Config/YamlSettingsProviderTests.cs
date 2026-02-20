@@ -114,4 +114,169 @@ public sealed class YamlSettingsProviderTests
             Assert.That(result.GalleryLocalPath, Is.EqualTo("C:\\local-gallery"));
         });
     }
+
+    [Test]
+    public async Task LoadAsync_LocalOverridesBase()
+    {
+        await File.WriteAllTextAsync(_settingsPath,
+            "config-repo-path: C:\\base-config\ngallery-url: https://base.gallery/\n");
+        await File.WriteAllTextAsync(
+            Path.Combine(_tempDir, "settings.local.yaml"),
+            "gallery-local-path: C:\\local-gallery\ndisable-gallery-cache: true\n");
+
+        PerchSettings result = await _provider.LoadAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.ConfigRepoPath, Is.EqualTo("C:\\base-config"));
+            Assert.That(result.GalleryUrl, Is.EqualTo("https://base.gallery/"));
+            Assert.That(result.GalleryLocalPath, Is.EqualTo("C:\\local-gallery"));
+            Assert.That(result.DisableGalleryCache, Is.True);
+        });
+    }
+
+    [Test]
+    public async Task LoadAsync_LocalOverridesBaseProperty()
+    {
+        await File.WriteAllTextAsync(_settingsPath,
+            "config-repo-path: C:\\base-config\ngallery-url: https://base.gallery/\n");
+        await File.WriteAllTextAsync(
+            Path.Combine(_tempDir, "settings.local.yaml"),
+            "config-repo-path: C:\\local-config\n");
+
+        PerchSettings result = await _provider.LoadAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.ConfigRepoPath, Is.EqualTo("C:\\local-config"));
+            Assert.That(result.GalleryUrl, Is.EqualTo("https://base.gallery/"));
+        });
+    }
+
+    [Test]
+    public async Task LoadAsync_NoLocalFile_UsesBaseOnly()
+    {
+        await File.WriteAllTextAsync(_settingsPath,
+            "config-repo-path: C:\\config\ndev: true\n");
+
+        PerchSettings result = await _provider.LoadAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.ConfigRepoPath, Is.EqualTo("C:\\config"));
+            Assert.That(result.Dev, Is.True);
+        });
+    }
+
+    [Test]
+    public async Task LoadAsync_InvalidLocalYaml_UsesBaseOnly()
+    {
+        await File.WriteAllTextAsync(_settingsPath, "config-repo-path: C:\\config\n");
+        await File.WriteAllTextAsync(
+            Path.Combine(_tempDir, "settings.local.yaml"),
+            "{{broken yaml::");
+
+        PerchSettings result = await _provider.LoadAsync();
+
+        Assert.That(result.ConfigRepoPath, Is.EqualTo("C:\\config"));
+    }
+
+    [Test]
+    public void DiscoverConfigRepoFromSymlink_NotSymlink_ReturnsNull()
+    {
+        File.WriteAllText(_settingsPath, "config-repo-path: C:\\config\n");
+
+        Assert.That(_provider.DiscoverConfigRepoFromSymlink(), Is.Null);
+    }
+
+    [Test]
+    public void DiscoverConfigRepoFromSymlink_Symlink_ReturnsConfigRepoRoot()
+    {
+        var configRepo = Path.Combine(_tempDir, "fake-config-repo");
+        var moduleDir = Path.Combine(configRepo, "perch");
+        Directory.CreateDirectory(moduleDir);
+        var sourceFile = Path.Combine(moduleDir, "settings.yaml");
+        File.WriteAllText(sourceFile, "profiles:\n  - developer\n");
+
+        try
+        {
+            File.CreateSymbolicLink(_settingsPath, sourceFile);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Assert.Ignore("Symlink creation requires elevated privileges or Developer Mode");
+            return;
+        }
+        catch (IOException)
+        {
+            Assert.Ignore("Symlink creation not supported in this environment");
+            return;
+        }
+
+        var result = _provider.DiscoverConfigRepoFromSymlink();
+
+        Assert.That(result, Is.EqualTo(configRepo));
+    }
+
+    [Test]
+    public async Task LoadAsync_SymlinkedSettings_AutoDiscoversConfigRepo()
+    {
+        var configRepo = Path.Combine(_tempDir, "fake-config-repo");
+        var moduleDir = Path.Combine(configRepo, "perch");
+        Directory.CreateDirectory(moduleDir);
+        var sourceFile = Path.Combine(moduleDir, "settings.yaml");
+        File.WriteAllText(sourceFile, "profiles:\n  - developer\n");
+
+        try
+        {
+            File.CreateSymbolicLink(_settingsPath, sourceFile);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Assert.Ignore("Symlink creation requires elevated privileges or Developer Mode");
+            return;
+        }
+        catch (IOException)
+        {
+            Assert.Ignore("Symlink creation not supported in this environment");
+            return;
+        }
+
+        PerchSettings result = await _provider.LoadAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.ConfigRepoPath, Is.EqualTo(configRepo));
+            Assert.That(result.Profiles, Is.EqualTo(new List<string> { "developer" }));
+        });
+    }
+
+    [Test]
+    public async Task LoadAsync_SymlinkedSettings_ExplicitConfigRepoTakesPrecedence()
+    {
+        var configRepo = Path.Combine(_tempDir, "fake-config-repo");
+        var moduleDir = Path.Combine(configRepo, "perch");
+        Directory.CreateDirectory(moduleDir);
+        var sourceFile = Path.Combine(moduleDir, "settings.yaml");
+        File.WriteAllText(sourceFile, "config-repo-path: C:\\explicit-config\n");
+
+        try
+        {
+            File.CreateSymbolicLink(_settingsPath, sourceFile);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Assert.Ignore("Symlink creation requires elevated privileges or Developer Mode");
+            return;
+        }
+        catch (IOException)
+        {
+            Assert.Ignore("Symlink creation not supported in this environment");
+            return;
+        }
+
+        PerchSettings result = await _provider.LoadAsync();
+
+        Assert.That(result.ConfigRepoPath, Is.EqualTo("C:\\explicit-config"));
+    }
 }
