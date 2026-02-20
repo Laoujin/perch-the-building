@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import glob
 import json
-import math
 import sys
 import xml.etree.ElementTree as ET
 
@@ -17,16 +16,37 @@ def main():
         print("No coverage files found")
         sys.exit(1)
 
-    total_covered = 0
-    total_valid = 0
+    # Collect per-assembly line hits across all coverage files, taking max
+    # hits per (assembly, filename, line_number) to deduplicate assemblies
+    # that appear in multiple test projects.
+    assembly_lines = {}
     for path in files:
         root = ET.parse(path).getroot()
-        total_covered += int(root.attrib.get("lines-covered", 0))
-        total_valid += int(root.attrib.get("lines-valid", 0))
+        for pkg in root.findall(".//package"):
+            name = pkg.attrib.get("name", "")
+            lines = assembly_lines.setdefault(name, {})
+            for cls in pkg.findall(".//class"):
+                fname = cls.attrib.get("filename", "")
+                for line in cls.findall(".//line"):
+                    key = (fname, line.attrib.get("number", ""))
+                    hits = int(line.attrib.get("hits", 0))
+                    prev = lines.get(key, 0)
+                    lines[key] = max(prev, hits)
 
-    if total_valid == 0:
+    if not assembly_lines:
         print("No lines found in coverage data")
         sys.exit(1)
+
+    total_covered = 0
+    total_valid = 0
+    for name in sorted(assembly_lines):
+        lines = assembly_lines[name]
+        valid = len(lines)
+        covered = sum(1 for h in lines.values() if h > 0)
+        total_valid += valid
+        total_covered += covered
+        pct = covered / valid * 100 if valid else 0
+        print(f"  {name}: {pct:.1f}% ({covered}/{valid})")
 
     coverage = int(total_covered / total_valid * 1000) / 10
     print(f"Line coverage ({job}): {coverage}% ({total_covered}/{total_valid})")
