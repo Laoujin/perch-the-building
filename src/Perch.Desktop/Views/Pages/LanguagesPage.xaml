@@ -428,19 +428,6 @@
                                                 <TextBlock Text="Docs" FontSize="10" Foreground="{StaticResource LinkTextBrush}" Margin="4,0,0,0" VerticalAlignment="Center" />
                                             </StackPanel>
                                         </Button>
-                                        <Button
-                                            Background="Transparent"
-                                            BorderThickness="0"
-                                            Padding="4,2"
-                                            Click="OnLinkClick"
-                                            Tag="{Binding SelectedItem.GitHub}"
-                                            ToolTip="{Binding SelectedItem.GitHub}"
-                                            Visibility="{Binding SelectedItem.GitHub, Converter={StaticResource NullToVisibilityConverter}}">
-                                            <StackPanel Orientation="Horizontal">
-                                                <ui:SymbolIcon Symbol="Code24" FontSize="12" Foreground="{StaticResource LinkTextBrush}" />
-                                                <TextBlock Text="GitHub" FontSize="10" Foreground="{StaticResource LinkTextBrush}" Margin="4,0,0,0" VerticalAlignment="Center" />
-                                            </StackPanel>
-                                        </Button>
                                     </StackPanel>
                                 </Grid>
                             </Border>
