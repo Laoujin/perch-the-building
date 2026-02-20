@@ -6,6 +6,7 @@
         <Configuration>
           <Format>cobertura</Format>
           <Exclude>[Perch.Cli]*</Exclude>
+          <ExcludeByFile>**/obj/**</ExcludeByFile>
         </Configuration>
       </DataCollector>
     </DataCollectors>
