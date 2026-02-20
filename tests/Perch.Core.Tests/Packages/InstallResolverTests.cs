@@ -107,4 +107,130 @@ public sealed class InstallResolverTests
         Assert.That(resolution.Packages, Has.Length.EqualTo(1));
         Assert.That(resolution.Packages[0].Manager, Is.EqualTo(PackageManager.Chocolatey));
     }
+
+    [Test]
+    public async Task ResolveAsync_CatalogException_ReportsError()
+    {
+        _catalogService.GetAppAsync("broken", Arg.Any<CancellationToken>())
+            .Returns<CatalogEntry?>(_ => throw new InvalidOperationException("network error"));
+
+        var manifest = CreateManifest(ImmutableArray.Create("broken"));
+
+        var resolution = await _resolver.ResolveAsync(manifest, "PC", Platform.Windows);
+
+        Assert.That(resolution.Packages, Is.Empty);
+        Assert.That(resolution.Errors, Has.Length.EqualTo(1));
+        Assert.That(resolution.Errors[0], Does.Contain("network error"));
+    }
+
+    [Test]
+    public async Task ResolveAsync_NoInstallMetadata_ReportsError()
+    {
+        var noInstall = new CatalogEntry("app", "app", null, "Test", ImmutableArray<string>.Empty,
+            null, null, null, null, null, null);
+        _catalogService.GetAppAsync("app", Arg.Any<CancellationToken>())
+            .Returns(noInstall);
+
+        var manifest = CreateManifest(ImmutableArray.Create("app"));
+
+        var resolution = await _resolver.ResolveAsync(manifest, "PC", Platform.Windows);
+
+        Assert.That(resolution.Errors, Has.Length.EqualTo(1));
+        Assert.That(resolution.Errors[0], Does.Contain("no install metadata"));
+    }
+
+    [Test]
+    public async Task ResolveAsync_NonWindows_ReturnsNoPackage()
+    {
+        _catalogService.GetAppAsync("git", Arg.Any<CancellationToken>())
+            .Returns(CreateApp("git", winget: "Git.Git"));
+
+        var manifest = CreateManifest(ImmutableArray.Create("git"));
+
+        var resolution = await _resolver.ResolveAsync(manifest, "PC", Platform.Linux);
+
+        Assert.That(resolution.Packages, Is.Empty);
+    }
+
+    [Test]
+    public async Task ResolveFontsAsync_ResolvesWingetPackage()
+    {
+        _catalogService.GetAppAsync("cascadia-code", Arg.Any<CancellationToken>())
+            .Returns(CreateApp("cascadia-code", winget: "Microsoft.CascadiaCode"));
+
+        var resolution = await _resolver.ResolveFontsAsync(
+            ImmutableArray.Create("cascadia-code"), Platform.Windows);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(resolution.Packages, Has.Length.EqualTo(1));
+            Assert.That(resolution.Packages[0].Name, Is.EqualTo("Microsoft.CascadiaCode"));
+            Assert.That(resolution.Packages[0].Manager, Is.EqualTo(PackageManager.Winget));
+            Assert.That(resolution.Errors, Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task ResolveFontsAsync_MissingEntry_ReportsError()
+    {
+        _catalogService.GetAppAsync("nonexistent-font", Arg.Any<CancellationToken>())
+            .Returns((CatalogEntry?)null);
+
+        var resolution = await _resolver.ResolveFontsAsync(
+            ImmutableArray.Create("nonexistent-font"), Platform.Windows);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(resolution.Packages, Is.Empty);
+            Assert.That(resolution.Errors, Has.Length.EqualTo(1));
+            Assert.That(resolution.Errors[0], Does.Contain("nonexistent-font"));
+        });
+    }
+
+    [Test]
+    public async Task ResolveFontsAsync_CatalogException_ReportsError()
+    {
+        _catalogService.GetAppAsync("broken-font", Arg.Any<CancellationToken>())
+            .Returns<CatalogEntry?>(_ => throw new InvalidOperationException("timeout"));
+
+        var resolution = await _resolver.ResolveFontsAsync(
+            ImmutableArray.Create("broken-font"), Platform.Windows);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(resolution.Packages, Is.Empty);
+            Assert.That(resolution.Errors, Has.Length.EqualTo(1));
+            Assert.That(resolution.Errors[0], Does.Contain("timeout"));
+        });
+    }
+
+    [Test]
+    public async Task ResolveFontsAsync_FallsBackToChoco()
+    {
+        _catalogService.GetAppAsync("fira-code", Arg.Any<CancellationToken>())
+            .Returns(CreateApp("fira-code", choco: "nerd-fonts-FiraCode"));
+
+        var resolution = await _resolver.ResolveFontsAsync(
+            ImmutableArray.Create("fira-code"), Platform.Windows);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(resolution.Packages, Has.Length.EqualTo(1));
+            Assert.That(resolution.Packages[0].Manager, Is.EqualTo(PackageManager.Chocolatey));
+        });
+    }
+
+    [Test]
+    public async Task ResolveFontsAsync_MultipleFonts_ResolvesAll()
+    {
+        _catalogService.GetAppAsync("font-a", Arg.Any<CancellationToken>())
+            .Returns(CreateApp("font-a", winget: "FontA.WinGet"));
+        _catalogService.GetAppAsync("font-b", Arg.Any<CancellationToken>())
+            .Returns(CreateApp("font-b", choco: "font-b-choco"));
+
+        var resolution = await _resolver.ResolveFontsAsync(
+            ImmutableArray.Create("font-a", "font-b"), Platform.Windows);
+
+        Assert.That(resolution.Packages, Has.Length.EqualTo(2));
+    }
 }

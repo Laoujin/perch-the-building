@@ -2032,4 +2032,152 @@ public sealed class DeployServiceTests
             Directory.Delete(tempDir, true);
         }
     }
+
+    [Test]
+    public async Task DeployAsync_InstallYaml_ResolvesAndInstalls()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(tempDir, "install.yaml"), "apps:\n  - git\n  - vscode");
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(ImmutableArray<AppModule>.Empty, ImmutableArray<string>.Empty));
+            _installResolver.ResolveAsync(Arg.Any<InstallManifest>(), Arg.Any<string>(), Arg.Any<Platform>(), Arg.Any<CancellationToken>())
+                .Returns(new InstallResolution(
+                    ImmutableArray.Create(
+                        new PackageDefinition("Git.Git", PackageManager.Winget),
+                        new PackageDefinition("Microsoft.VisualStudioCode", PackageManager.Winget)),
+                    ImmutableArray<string>.Empty));
+
+            int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { DryRun = true, Progress = _progress });
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(0));
+                var installResults = _reported.Where(r => r.ModuleName == "system-packages").ToList();
+                Assert.That(installResults, Has.Count.EqualTo(2));
+            });
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_InstallYaml_InvalidYaml_ReportsError()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(tempDir, "install.yaml"), "   ");
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(ImmutableArray<AppModule>.Empty, ImmutableArray<string>.Empty));
+
+            int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { DryRun = true, Progress = _progress });
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(1));
+                var errorResult = _reported.First(r => r.ModuleName == "system-packages");
+                Assert.That(errorResult.Level, Is.EqualTo(ResultLevel.Error));
+            });
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_InstallYaml_ResolutionErrors_ReportsAndContinues()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(tempDir, "install.yaml"), "apps:\n  - unknown-app");
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(ImmutableArray<AppModule>.Empty, ImmutableArray<string>.Empty));
+            _installResolver.ResolveAsync(Arg.Any<InstallManifest>(), Arg.Any<string>(), Arg.Any<Platform>(), Arg.Any<CancellationToken>())
+                .Returns(new InstallResolution(
+                    ImmutableArray<PackageDefinition>.Empty,
+                    ImmutableArray.Create("Gallery entry 'unknown-app' not found")));
+
+            int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { DryRun = true, Progress = _progress });
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(1));
+                var errorResult = _reported.First(r => r.ModuleName == "system-packages" && r.Level == ResultLevel.Error);
+                Assert.That(errorResult.Message, Does.Contain("unknown-app"));
+            });
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_InstallYaml_InstallFailure_ReportsError()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(tempDir, "install.yaml"), "apps:\n  - git");
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(ImmutableArray<AppModule>.Empty, ImmutableArray<string>.Empty));
+            _installResolver.ResolveAsync(Arg.Any<InstallManifest>(), Arg.Any<string>(), Arg.Any<Platform>(), Arg.Any<CancellationToken>())
+                .Returns(new InstallResolution(
+                    ImmutableArray.Create(new PackageDefinition("Git.Git", PackageManager.Winget)),
+                    ImmutableArray<string>.Empty));
+            _systemPackageInstaller.InstallAsync("Git.Git", PackageManager.Winget, Arg.Any<bool>(), Arg.Any<CancellationToken>())
+                .Returns(new DeployResult("system-packages", "", "Git.Git", ResultLevel.Error, "Install failed"));
+
+            int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { DryRun = true, Progress = _progress });
+
+            Assert.That(exitCode, Is.EqualTo(1));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public async Task DeployAsync_InstallYaml_TakesPrecedenceOverPackagesYaml()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(tempDir, "install.yaml"), "apps:\n  - git");
+            await File.WriteAllTextAsync(Path.Combine(tempDir, "packages.yaml"), "packages:\n  - name: git\n    manager: chocolatey");
+            _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(new DiscoveryResult(ImmutableArray<AppModule>.Empty, ImmutableArray<string>.Empty));
+            _installResolver.ResolveAsync(Arg.Any<InstallManifest>(), Arg.Any<string>(), Arg.Any<Platform>(), Arg.Any<CancellationToken>())
+                .Returns(new InstallResolution(
+                    ImmutableArray.Create(new PackageDefinition("Git.Git", PackageManager.Winget)),
+                    ImmutableArray<string>.Empty));
+
+            await _deployService.DeployAsync(tempDir, new DeployOptions { DryRun = true, Progress = _progress });
+
+            await _installResolver.Received(1).ResolveAsync(Arg.Any<InstallManifest>(), Arg.Any<string>(), Arg.Any<Platform>(), Arg.Any<CancellationToken>());
+            var installResults = _reported.Where(r => r.ModuleName == "system-packages").ToList();
+            Assert.That(installResults.All(r => r.TargetPath != "git"), "Should use install.yaml resolver, not packages.yaml direct install");
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
 }
