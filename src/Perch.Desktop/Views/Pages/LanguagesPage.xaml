@@ -180,7 +180,7 @@
                                                 Cursor="Hand"
                                                 Tag="{Binding SelectedEcosystem.GitHub}"
                                                 ToolTip="{Binding SelectedEcosystem.GitHub}"
-                                                MouseLeftButtonUp="OnStarsBadgeClick"
+                                                PreviewMouseLeftButtonUp="OnStarsBadgeClick"
                                                 Visibility="{Binding SelectedEcosystem.GitHubStarsFormatted, Converter={StaticResource NullToVisibilityConverter}}">
                                             <StackPanel Orientation="Horizontal">
                                                 <TextBlock Text="&#x2605;" FontSize="11" Foreground="{StaticResource WarningBrush}" />

@@ -210,10 +210,7 @@ public sealed partial class LanguagesViewModel : GalleryViewModelBase
             .OrderBy(g => SubCategorySortOrder(g.Key))
             .Select(g => new AppCategoryGroup(
                 g.Key,
-                new System.Collections.ObjectModel.ObservableCollection<AppCardModel>(
-                    g.OrderBy(a => StatusSortOrder(a.Status))
-                     .ThenByDescending(a => a.GitHubStars ?? 0)
-                     .ThenBy(a => a.DisplayLabel, StringComparer.OrdinalIgnoreCase))));
+                new System.Collections.ObjectModel.ObservableCollection<AppCardModel>(g)));
 
         SubCategories.ReplaceAll(groups);
     }
