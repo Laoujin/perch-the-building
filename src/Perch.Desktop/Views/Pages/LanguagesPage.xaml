@@ -173,8 +173,23 @@
                                         Margin="0,0,0,8"
                                         Visibility="{Binding SelectedEcosystem.Description, Converter={StaticResource NullToVisibilityConverter}}" />
 
-                                    <!-- Meta row: license, badges -->
+                                    <!-- Meta row: stars, license, badges -->
                                     <WrapPanel Margin="0,0,0,6">
+                                        <!-- GitHub Stars (clickable link to repo) -->
+                                        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="10" Margin="0,0,8,4"
+                                                Visibility="{Binding SelectedEcosystem.GitHubStarsFormatted, Converter={StaticResource NullToVisibilityConverter}}">
+                                            <Button Background="Transparent" BorderThickness="0" Padding="8,3"
+                                                    Click="OnLinkClick"
+                                                    Tag="{Binding SelectedEcosystem.GitHub}"
+                                                    ToolTip="{Binding SelectedEcosystem.GitHub}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="&#x2605;" FontSize="11" Foreground="{StaticResource WarningBrush}" />
+                                                    <TextBlock Text="{Binding SelectedEcosystem.GitHubStarsFormatted}" FontSize="11"
+                                                               Foreground="White" Margin="4,0,0,0" />
+                                                </StackPanel>
+                                            </Button>
+                                        </Border>
+
                                         <!-- License -->
                                         <Border Background="{StaticResource SurfaceBrush}" CornerRadius="10" Padding="8,3" Margin="0,0,8,4"
                                                 Visibility="{Binding SelectedEcosystem.License, Converter={StaticResource NullToVisibilityConverter}}">
@@ -411,19 +426,6 @@
                                             <StackPanel Orientation="Horizontal">
                                                 <ui:SymbolIcon Symbol="Document24" FontSize="12" Foreground="{StaticResource LinkTextBrush}" />
                                                 <TextBlock Text="Docs" FontSize="10" Foreground="{StaticResource LinkTextBrush}" Margin="4,0,0,0" VerticalAlignment="Center" />
-                                            </StackPanel>
-                                        </Button>
-                                        <Button
-                                            Background="Transparent"
-                                            BorderThickness="0"
-                                            Padding="4,2"
-                                            Click="OnLinkClick"
-                                            Tag="{Binding SelectedItem.GitHub}"
-                                            ToolTip="{Binding SelectedItem.GitHub}"
-                                            Visibility="{Binding SelectedItem.GitHub, Converter={StaticResource NullToVisibilityConverter}}">
-                                            <StackPanel Orientation="Horizontal">
-                                                <ui:SymbolIcon Symbol="Code24" FontSize="12" Foreground="{StaticResource LinkTextBrush}" />
-                                                <TextBlock Text="GitHub" FontSize="10" Foreground="{StaticResource LinkTextBrush}" Margin="4,0,0,0" VerticalAlignment="Center" />
                                             </StackPanel>
                                         </Button>
                                     </StackPanel>

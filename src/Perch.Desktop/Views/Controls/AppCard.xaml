@@ -90,6 +90,33 @@
                     <TextBlock Text="Hot" FontSize="9" Foreground="{StaticResource HotTextBrush}" />
                 </Border>
 
+                <!-- GitHub stars badge -->
+                <Border
+                    Grid.Column="4"
+                    Background="{StaticResource SurfaceBrush}"
+                    CornerRadius="10"
+                    Margin="4,0,0,0"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Left"
+                    Visibility="{Binding GitHubStarsFormatted, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource NullToVisibilityConverter}}">
+                    <Button
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Padding="6,1"
+                        Click="OnLinkClick"
+                        Tag="{Binding GitHub, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        ToolTip="{Binding GitHub, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#x2605;" FontSize="9" Foreground="{StaticResource WarningBrush}" />
+                            <TextBlock
+                                Text="{Binding GitHubStarsFormatted, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                FontSize="9"
+                                Foreground="White"
+                                Margin="3,0,0,0" />
+                        </StackPanel>
+                    </Button>
+                </Border>
+
                 <!-- Expand/collapse chevron -->
                 <ui:Button
                     Grid.Column="5"
