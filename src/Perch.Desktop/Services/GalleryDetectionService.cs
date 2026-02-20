@@ -81,9 +81,9 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
             var linked = detected && IsAppLinked(app, platform, settings.ConfigRepoPath);
 
             CardStatus status;
-            if (linked) status = CardStatus.Linked;
+            if (linked) status = CardStatus.Synced;
             else if (detected) status = CardStatus.Detected;
-            else status = CardStatus.NotInstalled;
+            else status = CardStatus.Unmanaged;
 
             var logoUrl = $"{logoBaseUrl}{app.Id}.png";
             int? appStars = stars.TryGetValue(app.Id, out var starCount) ? starCount : null;
@@ -136,9 +136,9 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
     {
         var detected = IsAppDetected(app, platform, installedIds);
         var linked = detected && IsAppLinked(app, platform, configRepoPath);
-        if (linked) return CardStatus.Linked;
+        if (linked) return CardStatus.Synced;
         if (detected) return CardStatus.Detected;
-        return CardStatus.NotInstalled;
+        return CardStatus.Unmanaged;
     }
 
     private async Task<HashSet<string>> ScanInstalledPackageIdsAsync(CancellationToken cancellationToken)
@@ -218,8 +218,8 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
                 CardStatus status = detection.Status switch
                 {
                     TweakStatus.Applied => CardStatus.Detected,
-                    TweakStatus.Partial => CardStatus.Drift,
-                    _ => CardStatus.NotInstalled,
+                    TweakStatus.Partial => CardStatus.Drifted,
+                    _ => CardStatus.Unmanaged,
                 };
 
                 var model = new TweakCardModel(tweak, status);
@@ -305,10 +305,10 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
         }
 
         if (count == 0) return null;
-        if (anyDrift) return CardStatus.Drift;
-        if (allLinked) return CardStatus.Linked;
+        if (anyDrift) return CardStatus.Drifted;
+        if (allLinked) return CardStatus.Synced;
         if (anyDetected) return CardStatus.Detected;
-        return CardStatus.NotInstalled;
+        return CardStatus.Unmanaged;
     }
 
     public async Task<FontDetectionResult> DetectFontsAsync(CancellationToken cancellationToken = default)
@@ -398,7 +398,7 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
 
             var status = (isInstalledByPackage || isNameMatched)
                 ? CardStatus.Detected
-                : CardStatus.NotInstalled;
+                : CardStatus.Unmanaged;
 
             nerdFonts.Add(new FontCardModel(
                 gf.Id,

@@ -58,8 +58,8 @@ public partial class EcosystemCardModel : ObservableObject
 
     public void UpdateCounts()
     {
-        SyncedCount = Items.Count(i => i.Status == CardStatus.Linked);
-        DriftedCount = Items.Count(i => i.Status is CardStatus.Drift or CardStatus.Broken);
+        SyncedCount = Items.Count(i => i.Status == CardStatus.Synced);
+        DriftedCount = Items.Count(i => i.Status == CardStatus.Drifted);
         DetectedCount = Items.Count(i => i.Status == CardStatus.Detected);
         OnPropertyChanged(nameof(HasBadges));
     }

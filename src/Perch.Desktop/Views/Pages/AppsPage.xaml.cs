@@ -32,7 +32,7 @@ public partial class AppsPage : Page
             ViewModel.RefreshCommand.Execute(null);
     }
 
-    private void OnToggleChanged(object sender, RoutedEventArgs e)
+    private void OnActionClicked(object sender, RoutedEventArgs e)
     {
         if (GetAppModel(sender) is { } app && ViewModel.ToggleAppCommand.CanExecute(app))
             ViewModel.ToggleAppCommand.Execute(app);

@@ -2,11 +2,10 @@ namespace Perch.Desktop.Models;
 
 public enum CardStatus
 {
-    NotInstalled,
+    Unmanaged,
     Detected,
-    Selected,
-    Linked,
-    Drift,
-    Broken,
-    Error,
+    PendingAdd,
+    PendingRemove,
+    Synced,
+    Drifted,
 }

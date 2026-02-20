@@ -87,7 +87,7 @@ public sealed class GalleryDetectionServiceFontTests
         Assert.Multiple(() =>
         {
             Assert.That(result.NerdFonts, Has.Length.EqualTo(1));
-            Assert.That(result.NerdFonts[0].Status, Is.EqualTo(CardStatus.NotInstalled));
+            Assert.That(result.NerdFonts[0].Status, Is.EqualTo(CardStatus.Unmanaged));
             Assert.That(result.NerdFonts[0].Source, Is.EqualTo(FontCardSource.Gallery));
         });
     }

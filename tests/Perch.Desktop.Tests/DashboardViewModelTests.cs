@@ -326,7 +326,7 @@ public sealed class DashboardViewModelTests
     private static TweakCardModel CreateTweakCard(string id)
     {
         var entry = new TweakCatalogEntry(id, id, "test", [], null, true, [], []);
-        return new TweakCardModel(entry, CardStatus.NotInstalled);
+        return new TweakCardModel(entry, CardStatus.Unmanaged);
     }
 
     private sealed class ImmediateSyncContext : SynchronizationContext

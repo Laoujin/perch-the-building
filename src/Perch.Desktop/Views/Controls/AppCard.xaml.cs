@@ -27,7 +27,7 @@ public partial class AppCard : UserControl
 
     public static readonly DependencyProperty StatusProperty =
         DependencyProperty.Register(nameof(Status), typeof(CardStatus), typeof(AppCard),
-            new PropertyMetadata(CardStatus.NotInstalled));
+            new PropertyMetadata(CardStatus.Unmanaged));
 
     public static readonly DependencyProperty GitHubProperty =
         DependencyProperty.Register(nameof(GitHub), typeof(string), typeof(AppCard),
@@ -49,9 +49,13 @@ public partial class AppCard : UserControl
         DependencyProperty.Register(nameof(IsManaged), typeof(bool), typeof(AppCard),
             new PropertyMetadata(false));
 
-    public static readonly DependencyProperty CanToggleProperty =
-        DependencyProperty.Register(nameof(CanToggle), typeof(bool), typeof(AppCard),
-            new PropertyMetadata(false));
+    public static readonly DependencyProperty IsActionAddProperty =
+        DependencyProperty.Register(nameof(IsActionAdd), typeof(bool), typeof(AppCard),
+            new PropertyMetadata(true));
+
+    public static readonly DependencyProperty ActionButtonTextProperty =
+        DependencyProperty.Register(nameof(ActionButtonText), typeof(string), typeof(AppCard),
+            new PropertyMetadata("Add to Perch"));
 
     public static readonly DependencyProperty LogoUrlProperty =
         DependencyProperty.Register(nameof(LogoUrl), typeof(string), typeof(AppCard),
@@ -85,8 +89,8 @@ public partial class AppCard : UserControl
         DependencyProperty.Register(nameof(Tags), typeof(ImmutableArray<string>), typeof(AppCard),
             new PropertyMetadata(ImmutableArray<string>.Empty));
 
-    public static readonly RoutedEvent ToggleChangedEvent =
-        EventManager.RegisterRoutedEvent(nameof(ToggleChanged), RoutingStrategy.Bubble,
+    public static readonly RoutedEvent ActionClickedEvent =
+        EventManager.RegisterRoutedEvent(nameof(ActionClicked), RoutingStrategy.Bubble,
             typeof(RoutedEventHandler), typeof(AppCard));
 
     public static readonly RoutedEvent ConfigureClickedEvent =
@@ -151,10 +155,16 @@ public partial class AppCard : UserControl
         set => SetValue(IsManagedProperty, value);
     }
 
-    public bool CanToggle
+    public bool IsActionAdd
     {
-        get => (bool)GetValue(CanToggleProperty);
-        set => SetValue(CanToggleProperty, value);
+        get => (bool)GetValue(IsActionAddProperty);
+        set => SetValue(IsActionAddProperty, value);
+    }
+
+    public string ActionButtonText
+    {
+        get => (string)GetValue(ActionButtonTextProperty);
+        set => SetValue(ActionButtonTextProperty, value);
     }
 
     public string? LogoUrl
@@ -211,10 +221,10 @@ public partial class AppCard : UserControl
         remove => RemoveHandler(ConfigureClickedEvent, value);
     }
 
-    public event RoutedEventHandler ToggleChanged
+    public event RoutedEventHandler ActionClicked
     {
-        add => AddHandler(ToggleChangedEvent, value);
-        remove => RemoveHandler(ToggleChangedEvent, value);
+        add => AddHandler(ActionClickedEvent, value);
+        remove => RemoveHandler(ActionClickedEvent, value);
     }
 
     public event RoutedEventHandler TagClicked
@@ -231,8 +241,8 @@ public partial class AppCard : UserControl
     private void OnConfigureClick(object sender, RoutedEventArgs e) =>
         RaiseEvent(new RoutedEventArgs(ConfigureClickedEvent, this));
 
-    private void OnToggleChanged(object sender, RoutedEventArgs e) =>
-        RaiseEvent(new RoutedEventArgs(ToggleChangedEvent, this));
+    private void OnActionClick(object sender, RoutedEventArgs e) =>
+        RaiseEvent(new RoutedEventArgs(ActionClickedEvent, this));
 
     private static void OnDisplayLabelChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {

@@ -42,7 +42,7 @@ public partial class DotfilesPage : Page
             });
     }
 
-    private void OnToggleChanged(object sender, RoutedEventArgs e)
+    private void OnActionClicked(object sender, RoutedEventArgs e)
     {
         if (GetAppModel(sender) is { } app && ViewModel.ToggleDotfileCommand.CanExecute(app))
             ViewModel.ToggleDotfileCommand.Execute(app);

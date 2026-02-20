@@ -52,7 +52,7 @@ public sealed partial class ApplyChangesService : ObservableObject, IApplyChange
                         errors.Add($"Link {app.DisplayLabel}: {results.First(r => r.Level == ResultLevel.Error).Message}");
                     else
                     {
-                        app.Status = CardStatus.Linked;
+                        app.Status = CardStatus.Synced;
                         applied++;
                     }
                 }

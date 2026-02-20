@@ -10,7 +10,7 @@ public partial class StatusRibbon : UserControl
 {
     public static readonly DependencyProperty StatusProperty =
         DependencyProperty.Register(nameof(Status), typeof(CardStatus), typeof(StatusRibbon),
-            new PropertyMetadata(CardStatus.NotInstalled, OnStatusChanged));
+            new PropertyMetadata(CardStatus.Unmanaged, OnStatusChanged));
 
     public CardStatus Status
     {
@@ -21,7 +21,7 @@ public partial class StatusRibbon : UserControl
     public StatusRibbon()
     {
         InitializeComponent();
-        UpdateVisual(CardStatus.NotInstalled);
+        UpdateVisual(CardStatus.Unmanaged);
     }
 
     private static void OnStatusChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -32,16 +32,22 @@ public partial class StatusRibbon : UserControl
 
     private void UpdateVisual(CardStatus status)
     {
+        if (status == CardStatus.Unmanaged)
+        {
+            RibbonBorder.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        RibbonBorder.Visibility = Visibility.Visible;
+
         var (text, bg) = status switch
         {
-            CardStatus.Linked => ("Adjusted", "#34D399"),
-            CardStatus.Detected => ("Detected", "#B45309"),
-            CardStatus.Selected => ("Selected", "#047857"),
-            CardStatus.Drift => ("Drifted", "#F59E0B"),
-            CardStatus.Broken => ("Broken", "#DC2626"),
-            CardStatus.Error => ("Error", "#DC2626"),
-            CardStatus.NotInstalled => ("Not Installed", "#6B7280"),
-            _ => ("System Default", "#3B82F6"),
+            CardStatus.Detected => ("Detected", "#3B82F6"),
+            CardStatus.PendingAdd => ("Pending", "#047857"),
+            CardStatus.PendingRemove => ("Pending", "#DC2626"),
+            CardStatus.Synced => ("Synced", "#34D399"),
+            CardStatus.Drifted => ("Drifted", "#F59E0B"),
+            _ => ("Unknown", "#6B7280"),
         };
 
         RibbonText.Text = text;

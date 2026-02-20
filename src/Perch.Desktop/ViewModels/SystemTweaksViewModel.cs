@@ -383,8 +383,8 @@ public sealed partial class SystemTweaksViewModel : GalleryViewModelBase
         card.Status = detection.Status switch
         {
             TweakStatus.Applied => CardStatus.Detected,
-            TweakStatus.Partial => CardStatus.Drift,
-            _ => CardStatus.NotInstalled,
+            TweakStatus.Partial => CardStatus.Drifted,
+            _ => CardStatus.Unmanaged,
         };
     }
 

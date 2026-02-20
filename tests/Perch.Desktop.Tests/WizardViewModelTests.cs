@@ -336,7 +336,7 @@ public sealed class WizardShellViewModelTests
     [Test]
     public async Task Detection_PopulatesDotfiles_AutoSelectsLinked()
     {
-        var linked = MakeDotfile("bashrc", CardStatus.Linked);
+        var linked = MakeDotfile("bashrc", CardStatus.Synced);
         var detected = MakeDotfile("gitconfig", CardStatus.Detected);
 
         _detectionService.DetectDotfilesAsync(Arg.Any<CancellationToken>())
@@ -412,7 +412,7 @@ public sealed class WizardShellViewModelTests
     public async Task TotalSelectedCount_SumsAllCategories()
     {
         var app = MakeApp("vscode", "Development/IDEs");
-        var dotfile = MakeDotfile("bashrc", CardStatus.Linked);
+        var dotfile = MakeDotfile("bashrc", CardStatus.Synced);
 
         _detectionService.DetectAppsAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
             .Returns(new GalleryDetectionResult(
@@ -504,7 +504,7 @@ public sealed class WizardShellViewModelTests
     public async Task NotifySelectionCounts_CountsEachCategorySeparately()
     {
         var app = MakeApp("vscode", "Development/IDEs");
-        var dotfile = MakeDotfile("bashrc", CardStatus.Linked);
+        var dotfile = MakeDotfile("bashrc", CardStatus.Synced);
         var tweak = MakeTweak("disable-telemetry", "Privacy");
 
         _detectionService.DetectAppsAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())

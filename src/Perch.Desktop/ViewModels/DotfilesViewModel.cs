@@ -130,7 +130,7 @@ public sealed partial class DotfilesViewModel : GalleryViewModelBase
     private void ApplyFilter()
     {
         Dotfiles.ReplaceAll(_allDotfiles.Where(df => df.MatchesSearch(SearchText)));
-        LinkedCount = _allDotfiles.Count(d => d.Status == CardStatus.Linked);
+        LinkedCount = _allDotfiles.Count(d => d.Status == CardStatus.Synced);
         TotalCount = _allDotfiles.Length;
     }
 }

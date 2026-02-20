@@ -145,7 +145,7 @@ public sealed partial class AppsViewModel : GalleryViewModelBase
                     g.Key,
                     items.Count,
                     items.Count(a => a.IsManaged),
-                    items.Count(a => a.Status is CardStatus.Detected or CardStatus.Linked or CardStatus.Drift or CardStatus.Broken),
+                    items.Count(a => a.Status is CardStatus.Detected or CardStatus.Synced or CardStatus.Drifted),
                     items.Count(a => a.IsSuggested),
                     subGroups: subGroups);
             });
@@ -156,8 +156,8 @@ public sealed partial class AppsViewModel : GalleryViewModelBase
 
     private void UpdateSummary()
     {
-        LinkedCount = _allApps.Count(a => a.Status == CardStatus.Linked);
-        DriftedCount = _allApps.Count(a => a.Status is CardStatus.Drift or CardStatus.Broken);
+        LinkedCount = _allApps.Count(a => a.Status == CardStatus.Synced);
+        DriftedCount = _allApps.Count(a => a.Status == CardStatus.Drifted);
         DetectedCount = _allApps.Count(a => a.Status == CardStatus.Detected);
     }
 
@@ -170,16 +170,13 @@ public sealed partial class AppsViewModel : GalleryViewModelBase
 
     private static int StatusSortOrder(CardStatus status) => status switch
     {
-        CardStatus.Drift or CardStatus.Broken => 0,
+        CardStatus.Drifted => 0,
         _ => 1,
     };
 
     [RelayCommand]
     private void ToggleApp(AppCardModel app)
     {
-        if (!app.CanToggle)
-            return;
-
         if (_pendingChanges.Contains(app.Id, PendingChangeKind.LinkApp))
         {
             _pendingChanges.Remove(app.Id, PendingChangeKind.LinkApp);
@@ -368,7 +365,7 @@ public sealed partial class AppsViewModel : GalleryViewModelBase
 
         foreach (var group in alternativeGroups.Values)
         {
-            var candidates = group.Where(a => a.Status == CardStatus.NotInstalled).ToList();
+            var candidates = group.Where(a => a.Status == CardStatus.Unmanaged).ToList();
             if (candidates.Count < 2)
                 continue;
 

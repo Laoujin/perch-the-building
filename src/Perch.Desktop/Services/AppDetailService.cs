@@ -77,16 +77,16 @@ public sealed class AppDetailService : IAppDetailService
             var exists = File.Exists(resolved) || Directory.Exists(resolved);
             var isSymlink = exists && _symlinkProvider.IsSymlink(resolved);
 
-            var fileStatus = isSymlink ? CardStatus.Linked
+            var fileStatus = isSymlink ? CardStatus.Synced
                 : exists ? CardStatus.Detected
-                : CardStatus.NotInstalled;
+                : CardStatus.Unmanaged;
 
             string? driftError = null;
             if (isSymlink && !string.IsNullOrEmpty(configRepoPath))
             {
                 var driftCheck = DriftDetector.Check(resolved, configRepoPath, _logger);
                 if (driftCheck.IsDrift || driftCheck.Error is not null)
-                    fileStatus = CardStatus.Drift;
+                    fileStatus = CardStatus.Drifted;
                 driftError = driftCheck.Error;
             }
 

@@ -151,7 +151,7 @@ public sealed class GalleryDetectionServiceAppTests
 
         var result = await _service.DetectAppsAsync(new HashSet<UserProfile> { UserProfile.Developer });
 
-        Assert.That(result.YourApps[0].Status, Is.EqualTo(CardStatus.Linked));
+        Assert.That(result.YourApps[0].Status, Is.EqualTo(CardStatus.Synced));
     }
 
     [Test]
@@ -172,7 +172,7 @@ public sealed class GalleryDetectionServiceAppTests
         {
             Assert.That(result.YourApps, Is.Empty);
             Assert.That(result.OtherApps, Has.Length.EqualTo(1));
-            Assert.That(result.OtherApps[0].Status, Is.EqualTo(CardStatus.NotInstalled));
+            Assert.That(result.OtherApps[0].Status, Is.EqualTo(CardStatus.Unmanaged));
         });
     }
 
@@ -295,7 +295,7 @@ public sealed class GalleryDetectionServiceAppTests
         {
             Assert.That(result, Has.Length.EqualTo(2));
             Assert.That(result[0].Status, Is.EqualTo(CardStatus.Detected));
-            Assert.That(result[1].Status, Is.EqualTo(CardStatus.NotInstalled));
+            Assert.That(result[1].Status, Is.EqualTo(CardStatus.Unmanaged));
         });
     }
 

@@ -63,7 +63,7 @@ public sealed class AppsViewModelTests
     [Test]
     public async Task RefreshAsync_PopulatesCategories()
     {
-        var yourApp = MakeCard("vscode", "Development/IDEs", CardStatus.Linked);
+        var yourApp = MakeCard("vscode", "Development/IDEs", CardStatus.Synced);
         var suggested = MakeCard("rider", "Development/IDEs", CardStatus.Detected);
         var other = MakeCard("vlc", "Media/Players", CardStatus.Detected, CardTier.Other);
 
@@ -117,7 +117,7 @@ public sealed class AppsViewModelTests
     [Test]
     public void ToggleApp_Linked_AddsUnlinkChange()
     {
-        var card = MakeCard("vscode", "Development/IDEs", CardStatus.Linked);
+        var card = MakeCard("vscode", "Development/IDEs", CardStatus.Synced);
 
         _vm.ToggleAppCommand.Execute(card);
 
@@ -127,7 +127,7 @@ public sealed class AppsViewModelTests
     [Test]
     public void ToggleApp_Broken_AddsUnlinkChange()
     {
-        var card = MakeCard("vscode", "Development/IDEs", CardStatus.Broken);
+        var card = MakeCard("vscode", "Development/IDEs", CardStatus.Drifted);
 
         _vm.ToggleAppCommand.Execute(card);
 
@@ -135,13 +135,13 @@ public sealed class AppsViewModelTests
     }
 
     [Test]
-    public void ToggleApp_NotInstalled_NoOp()
+    public void ToggleApp_Unmanaged_AddsLinkChange()
     {
-        var card = MakeCard("vscode", "Development/IDEs", CardStatus.NotInstalled);
+        var card = MakeCard("vscode", "Development/IDEs", CardStatus.Unmanaged);
 
         _vm.ToggleAppCommand.Execute(card);
 
-        _pendingChanges.DidNotReceive().Add(Arg.Any<PendingChange>());
+        _pendingChanges.Received(1).Add(Arg.Is<LinkAppChange>(c => c.App == card));
     }
 
     [Test]
@@ -159,7 +159,7 @@ public sealed class AppsViewModelTests
     [Test]
     public void ToggleApp_WithExistingUnlinkPending_RemovesIt()
     {
-        var card = MakeCard("vscode", "Development/IDEs", CardStatus.Linked);
+        var card = MakeCard("vscode", "Development/IDEs", CardStatus.Synced);
         _pendingChanges.Contains(card.Id, PendingChangeKind.UnlinkApp).Returns(true);
 
         _vm.ToggleAppCommand.Execute(card);
@@ -195,8 +195,8 @@ public sealed class AppsViewModelTests
     {
         var apps = ImmutableArray.Create(
             MakeCard("zapp", "Dev/IDEs", CardStatus.Detected, CardTier.Other),
-            MakeCard("aapp", "Dev/IDEs", CardStatus.Linked, CardTier.YourApps),
-            MakeCard("mapp", "Dev/IDEs", CardStatus.Broken, CardTier.YourApps),
+            MakeCard("aapp", "Dev/IDEs", CardStatus.Synced, CardTier.YourApps),
+            MakeCard("mapp", "Dev/IDEs", CardStatus.Drifted, CardTier.YourApps),
             MakeCard("sapp", "Dev/IDEs", CardStatus.Detected, CardTier.Suggested));
 
         _detectionService.DetectAppsAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
@@ -224,7 +224,7 @@ public sealed class AppsViewModelTests
     [Test]
     public async Task DependencyGraph_ChildHiddenFromTopLevel()
     {
-        var parent = MakeCard("dotnet-sdk", "Development/Runtimes", CardStatus.Linked);
+        var parent = MakeCard("dotnet-sdk", "Development/Runtimes", CardStatus.Synced);
         var child = MakeCardWithRequires("vscode", "Development/IDEs", ["dotnet-sdk"], CardStatus.Detected);
 
         _detectionService.DetectAppsAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
@@ -269,7 +269,7 @@ public sealed class AppsViewModelTests
     [Test]
     public async Task Search_ParentShowsIfDependentMatches()
     {
-        var parent = MakeCard("dotnet-sdk", "Development/Runtimes", CardStatus.Linked);
+        var parent = MakeCard("dotnet-sdk", "Development/Runtimes", CardStatus.Synced);
         var child = MakeCardWithRequires("my-child-tool", "Development/Tools", ["dotnet-sdk"]);
 
         _detectionService.DetectAppsAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
@@ -327,7 +327,7 @@ public sealed class AppsViewModelTests
     [Test]
     public async Task ConfigureAppAsync_SetsSelectedAppAndLoadsDetail()
     {
-        var card = MakeCard("vscode", "Development/IDEs", CardStatus.Linked);
+        var card = MakeCard("vscode", "Development/IDEs", CardStatus.Synced);
         var detail = new AppDetail(card, null, null, null, null, []);
         _detailService.LoadDetailAsync(card, Arg.Any<CancellationToken>())
             .Returns(detail);
@@ -351,7 +351,7 @@ public sealed class AppsViewModelTests
     [Test]
     public async Task BackToGrid_ResetsSelection()
     {
-        var card = MakeCard("vscode", "Development/IDEs", CardStatus.Linked);
+        var card = MakeCard("vscode", "Development/IDEs", CardStatus.Synced);
         var detail = new AppDetail(card, null, null, null, null, []);
         _detailService.LoadDetailAsync(card, Arg.Any<CancellationToken>())
             .Returns(detail);
@@ -425,7 +425,7 @@ public sealed class AppsViewModelTests
     [Test]
     public async Task ConfigureAppAsync_NoSuggests_NoDependents_NoEcosystem()
     {
-        var card = MakeCard("vscode", "Development/IDEs", CardStatus.Linked);
+        var card = MakeCard("vscode", "Development/IDEs", CardStatus.Synced);
         var detail = new AppDetail(card, null, null, null, null, []);
         _detailService.LoadDetailAsync(card, Arg.Any<CancellationToken>())
             .Returns(detail);
@@ -479,7 +479,7 @@ public sealed class DotfilesViewModelTests
     public async Task RefreshAsync_PopulatesDotfiles()
     {
         var dotfiles = ImmutableArray.Create(
-            MakeDotfileCard("bashrc", CardStatus.Linked),
+            MakeDotfileCard("bashrc", CardStatus.Synced),
             MakeDotfileCard("gitconfig", CardStatus.Detected));
 
         _detectionService.DetectDotfilesAsync(Arg.Any<CancellationToken>())
@@ -514,7 +514,7 @@ public sealed class DotfilesViewModelTests
     [Test]
     public async Task BackToGrid_ResetsSelection()
     {
-        var card = MakeDotfileCard("bashrc", CardStatus.Linked);
+        var card = MakeDotfileCard("bashrc", CardStatus.Synced);
         var detail = new AppDetail(card, null, null, null, null, []);
         _detailService.LoadDetailAsync(card, Arg.Any<CancellationToken>())
             .Returns(detail);
@@ -536,7 +536,7 @@ public sealed class DotfilesViewModelTests
     public async Task SearchText_FiltersDotfiles()
     {
         var dotfiles = ImmutableArray.Create(
-            MakeDotfileCard("bashrc", CardStatus.Linked),
+            MakeDotfileCard("bashrc", CardStatus.Synced),
             MakeDotfileCard("gitconfig", CardStatus.Detected));
 
         _detectionService.DetectDotfilesAsync(Arg.Any<CancellationToken>())
@@ -552,7 +552,7 @@ public sealed class DotfilesViewModelTests
     [Test]
     public async Task ConfigureAsync_SetsSelectedAppAndLoadsDetail()
     {
-        var card = MakeDotfileCard("bashrc", CardStatus.Linked);
+        var card = MakeDotfileCard("bashrc", CardStatus.Synced);
         var detail = new AppDetail(card, null, null, null, null, []);
         _detailService.LoadDetailAsync(card, Arg.Any<CancellationToken>())
             .Returns(detail);
@@ -570,7 +570,7 @@ public sealed class DotfilesViewModelTests
     [Test]
     public async Task ConfigureAsync_SetsIsLoadingDetail()
     {
-        var card = MakeDotfileCard("bashrc", CardStatus.Linked);
+        var card = MakeDotfileCard("bashrc", CardStatus.Synced);
         var isLoadingDuringLoad = false;
         _detailService.LoadDetailAsync(card, Arg.Any<CancellationToken>())
             .Returns(callInfo =>
@@ -592,9 +592,9 @@ public sealed class DotfilesViewModelTests
     public async Task LinkedCount_OnlyCountsLinkedStatus()
     {
         var dotfiles = ImmutableArray.Create(
-            MakeDotfileCard("bashrc", CardStatus.Linked),
+            MakeDotfileCard("bashrc", CardStatus.Synced),
             MakeDotfileCard("gitconfig", CardStatus.Detected),
-            MakeDotfileCard("vimrc", CardStatus.Linked));
+            MakeDotfileCard("vimrc", CardStatus.Synced));
 
         _detectionService.DetectDotfilesAsync(Arg.Any<CancellationToken>())
             .Returns(dotfiles);
@@ -611,7 +611,7 @@ public sealed class DotfilesViewModelTests
     [Test]
     public async Task HasModule_WhenDetailHasOwningModule_ReturnsTrue()
     {
-        var card = MakeDotfileCard("bashrc", CardStatus.Linked);
+        var card = MakeDotfileCard("bashrc", CardStatus.Synced);
         var module = new AppModule("bash", "Bash", true, "/modules/bash", [], []);
         var detail = new AppDetail(card, module, null, null, null, []);
         _detailService.LoadDetailAsync(card, Arg.Any<CancellationToken>())
@@ -625,7 +625,7 @@ public sealed class DotfilesViewModelTests
     [Test]
     public async Task HasNoModule_WhenDetailHasNullModule_ReturnsTrue()
     {
-        var card = MakeDotfileCard("bashrc", CardStatus.Linked);
+        var card = MakeDotfileCard("bashrc", CardStatus.Synced);
         var detail = new AppDetail(card, null, null, null, null, []);
         _detailService.LoadDetailAsync(card, Arg.Any<CancellationToken>())
             .Returns(detail);
@@ -1039,7 +1039,7 @@ public sealed class SystemTweaksViewModelTests
     {
         var reg = ImmutableArray.Create(new RegistryEntryDefinition("HKCU\\Test", "Val", 0, RegistryValueType.DWord));
         var entry = new TweakCatalogEntry("t1", "Tweak", "Explorer", [], null, true, [], reg);
-        var card = new TweakCardModel(entry, CardStatus.NotInstalled);
+        var card = new TweakCardModel(entry, CardStatus.Unmanaged);
 
         _vm.ApplyTweakCommand.Execute(card);
 
@@ -1077,7 +1077,7 @@ public sealed class SystemTweaksViewModelTests
             new RegistryEntryDefinition("HKCU\\Test", "Val1", 0, RegistryValueType.DWord),
             new RegistryEntryDefinition("HKCU\\Test", "Val2", 1, RegistryValueType.DWord));
         var entry = new TweakCatalogEntry("t1", "Tweak", "Explorer", [], null, true, [], reg);
-        var card = new TweakCardModel(entry, CardStatus.Drift) { AppliedCount = 1 };
+        var card = new TweakCardModel(entry, CardStatus.Drifted) { AppliedCount = 1 };
 
         Assert.That(card.IsAllApplied, Is.False);
     }
@@ -1376,4 +1376,50 @@ public sealed class NullToVisibilityConverterTests
     [Test]
     public void Convert_EmptyString_ReturnsCollapsed() =>
         Assert.That(_converter.Convert("", typeof(object), null!, null!), Is.EqualTo(Visibility.Collapsed));
+}
+
+[TestFixture]
+public sealed class AppCardModelTests
+{
+    private static AppCardModel MakeCard(CardStatus status)
+    {
+        var entry = new CatalogEntry("test", "Test", "Test", "Dev", [], null, null, null, null, null, null);
+        return new AppCardModel(entry, CardTier.YourApps, status);
+    }
+
+    [TestCase(CardStatus.Unmanaged, "Add to Perch")]
+    [TestCase(CardStatus.Detected, "Add to Perch")]
+    [TestCase(CardStatus.PendingAdd, "Remove from Perch")]
+    [TestCase(CardStatus.PendingRemove, "Add to Perch")]
+    [TestCase(CardStatus.Synced, "Remove from Perch")]
+    [TestCase(CardStatus.Drifted, "Remove from Perch")]
+    public void ActionButtonText_ReturnsCorrectText(CardStatus status, string expected)
+    {
+        var card = MakeCard(status);
+        Assert.That(card.ActionButtonText, Is.EqualTo(expected));
+    }
+
+    [TestCase(CardStatus.Unmanaged, false)]
+    [TestCase(CardStatus.Detected, false)]
+    [TestCase(CardStatus.PendingAdd, true)]
+    [TestCase(CardStatus.PendingRemove, false)]
+    [TestCase(CardStatus.Synced, true)]
+    [TestCase(CardStatus.Drifted, true)]
+    public void IsManaged_ReturnsCorrectValue(CardStatus status, bool expected)
+    {
+        var card = MakeCard(status);
+        Assert.That(card.IsManaged, Is.EqualTo(expected));
+    }
+
+    [TestCase(CardStatus.Unmanaged, true)]
+    [TestCase(CardStatus.Detected, true)]
+    [TestCase(CardStatus.PendingAdd, false)]
+    [TestCase(CardStatus.PendingRemove, true)]
+    [TestCase(CardStatus.Synced, false)]
+    [TestCase(CardStatus.Drifted, false)]
+    public void IsActionAdd_ReturnsCorrectValue(CardStatus status, bool expected)
+    {
+        var card = MakeCard(status);
+        Assert.That(card.IsActionAdd, Is.EqualTo(expected));
+    }
 }

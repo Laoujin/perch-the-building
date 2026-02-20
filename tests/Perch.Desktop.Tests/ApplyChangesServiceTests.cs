@@ -61,14 +61,14 @@ public sealed class ApplyChangesServiceTests
         {
             Assert.That(result.Applied, Is.EqualTo(1));
             Assert.That(result.Success, Is.True);
-            Assert.That(app.Status, Is.EqualTo(CardStatus.Linked));
+            Assert.That(app.Status, Is.EqualTo(CardStatus.Synced));
         });
     }
 
     [Test]
     public async Task ApplyAsync_UnlinkApp_CallsUnlinkAppAsync()
     {
-        var app = CreateAppCard("app1", CardStatus.Linked);
+        var app = CreateAppCard("app1", CardStatus.Synced);
         _pendingChanges.Add(new UnlinkAppChange(app));
         _appLinkService.UnlinkAppAsync(app.CatalogEntry, Arg.Any<CancellationToken>())
             .Returns(new List<DeployResult> { new("mod", "s", "t", ResultLevel.Ok, "ok") });
@@ -244,7 +244,7 @@ public sealed class ApplyChangesServiceTests
     private static TweakCardModel CreateTweakCard(string id)
     {
         var entry = new TweakCatalogEntry(id, id, "test", [], null, true, [], []);
-        return new TweakCardModel(entry, CardStatus.NotInstalled);
+        return new TweakCardModel(entry, CardStatus.Unmanaged);
     }
 
     private static StartupCardModel CreateStartupCard(string name)

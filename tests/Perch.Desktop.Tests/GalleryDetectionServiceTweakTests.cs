@@ -141,7 +141,7 @@ public sealed class GalleryDetectionServiceTweakTests
         var result = await _service.DetectTweaksAsync(
             new HashSet<UserProfile> { UserProfile.Developer });
 
-        Assert.That(result.Tweaks[0].Status, Is.EqualTo(CardStatus.NotInstalled));
+        Assert.That(result.Tweaks[0].Status, Is.EqualTo(CardStatus.Unmanaged));
     }
 
     [Test]
@@ -183,7 +183,7 @@ public sealed class GalleryDetectionServiceTweakTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(result.Tweaks[0].Status, Is.EqualTo(CardStatus.Drift));
+            Assert.That(result.Tweaks[0].Status, Is.EqualTo(CardStatus.Drifted));
             Assert.That(result.Tweaks[0].AppliedCount, Is.EqualTo(1));
         });
     }

@@ -114,7 +114,7 @@ public sealed class GalleryDetectionServiceDotfileTests
 
         var result = await _service.DetectDotfilesAsync();
 
-        Assert.That(result[0].Status, Is.EqualTo(CardStatus.Linked));
+        Assert.That(result[0].Status, Is.EqualTo(CardStatus.Synced));
     }
 
     [Test]
@@ -210,7 +210,7 @@ public sealed class GalleryDetectionServiceDotfileTests
 
         var result = await _service.DetectDotfilesAsync();
 
-        Assert.That(result[0].Status, Is.EqualTo(CardStatus.Drift));
+        Assert.That(result[0].Status, Is.EqualTo(CardStatus.Drifted));
     }
 
     [Test]
@@ -238,7 +238,7 @@ public sealed class GalleryDetectionServiceDotfileTests
 
         var result = await _service.DetectDotfilesAsync();
 
-        Assert.That(result[0].Status, Is.EqualTo(CardStatus.Linked));
+        Assert.That(result[0].Status, Is.EqualTo(CardStatus.Synced));
     }
 
     [Test]
@@ -263,7 +263,7 @@ public sealed class GalleryDetectionServiceDotfileTests
 
         var result = await _service.DetectDotfilesAsync();
 
-        Assert.That(result[0].Status, Is.EqualTo(CardStatus.Linked));
+        Assert.That(result[0].Status, Is.EqualTo(CardStatus.Synced));
     }
 
     [Test]
@@ -299,7 +299,7 @@ public sealed class GalleryDetectionServiceDotfileTests
 
         var result = await _service.DetectDotfilesAsync();
 
-        Assert.That(result[0].Status, Is.EqualTo(CardStatus.Drift));
+        Assert.That(result[0].Status, Is.EqualTo(CardStatus.Drifted));
     }
 
     private static CatalogConfigLink MakeLink(string source, string target) =>

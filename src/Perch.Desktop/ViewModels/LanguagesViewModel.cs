@@ -262,9 +262,6 @@ public sealed partial class LanguagesViewModel : GalleryViewModelBase
     [RelayCommand]
     private void ToggleApp(AppCardModel app)
     {
-        if (!app.CanToggle)
-            return;
-
         if (_pendingChanges.Contains(app.Id, PendingChangeKind.LinkApp))
             _pendingChanges.Remove(app.Id, PendingChangeKind.LinkApp);
         else if (_pendingChanges.Contains(app.Id, PendingChangeKind.UnlinkApp))
@@ -277,9 +274,9 @@ public sealed partial class LanguagesViewModel : GalleryViewModelBase
 
     private static int StatusSortOrder(CardStatus status) => status switch
     {
-        CardStatus.Drift or CardStatus.Broken => 0,
+        CardStatus.Drifted => 0,
         CardStatus.Detected => 1,
-        CardStatus.Linked => 2,
+        CardStatus.Synced => 2,
         _ => 3,
     };
 

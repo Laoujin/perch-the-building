@@ -60,8 +60,9 @@ public partial class AppCardModel : ObservableObject
     public string BroadCategory => Category.Split('/')[0];
     public string SubCategory => Category.Contains('/') ? Category[(Category.IndexOf('/') + 1)..] : Category;
 
-    public bool IsManaged => Status is CardStatus.Linked or CardStatus.Drift or CardStatus.Broken;
-    public bool CanToggle => Status != CardStatus.NotInstalled;
+    public bool IsManaged => Status is CardStatus.Synced or CardStatus.Drifted or CardStatus.PendingAdd;
+    public bool IsActionAdd => Status is CardStatus.Unmanaged or CardStatus.Detected or CardStatus.PendingRemove;
+    public string ActionButtonText => IsActionAdd ? "Add to Perch" : "Remove from Perch";
     public bool IsSuggested => Tier == CardTier.Suggested;
 
     public string? KindBadge => CatalogEntry.Kind switch
@@ -95,7 +96,8 @@ public partial class AppCardModel : ObservableObject
     partial void OnStatusChanged(CardStatus value)
     {
         OnPropertyChanged(nameof(IsManaged));
-        OnPropertyChanged(nameof(CanToggle));
+        OnPropertyChanged(nameof(IsActionAdd));
+        OnPropertyChanged(nameof(ActionButtonText));
     }
 
     public bool MatchesSearch(string query)

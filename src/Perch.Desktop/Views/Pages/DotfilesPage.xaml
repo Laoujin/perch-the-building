@@ -71,14 +71,15 @@
                                 GitHub="{Binding GitHub}"
                                 License="{Binding License}"
                                 IsManaged="{Binding IsManaged}"
-                                CanToggle="{Binding CanToggle}"
+                                ActionButtonText="{Binding ActionButtonText}"
+                                IsActionAdd="{Binding IsActionAdd}"
                                 IsSuggested="{Binding IsSuggested}"
                                 KindBadge="{Binding KindBadge}"
                                 GitHubStarsFormatted="{Binding GitHubStarsFormatted}"
                                 IsTopPick="{Binding IsTopPick}"
                                 Tags="{Binding Tags}"
                                 ConfigureClicked="OnConfigureClicked"
-                                ToggleChanged="OnToggleChanged"
+                                ActionClicked="OnActionClicked"
                                 Margin="0,0,12,12" />
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
