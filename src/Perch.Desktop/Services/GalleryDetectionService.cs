@@ -90,15 +90,15 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
 
             if (detected)
             {
-                yourApps.Add(new AppCardModel(app, CardTier.YourApps, status, logoUrl) { GitHubStars = appStars });
+                yourApps.Add(new AppCardModel(app, CardTier.YourApps, status, logoUrl) { GitHubStars = appStars, IsHot = app.Hot });
             }
             else if (IsSuggestedForProfiles(app, selectedProfiles))
             {
-                suggested.Add(new AppCardModel(app, CardTier.Suggested, status, logoUrl) { GitHubStars = appStars });
+                suggested.Add(new AppCardModel(app, CardTier.Suggested, status, logoUrl) { GitHubStars = appStars, IsHot = app.Hot });
             }
             else
             {
-                other.Add(new AppCardModel(app, CardTier.Other, status, logoUrl) { GitHubStars = appStars });
+                other.Add(new AppCardModel(app, CardTier.Other, status, logoUrl) { GitHubStars = appStars, IsHot = app.Hot });
             }
         }
 
@@ -126,7 +126,7 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
 
             var status = ResolveStatus(app, platform, settings.ConfigRepoPath, installedIds);
             int? appStars = stars.TryGetValue(app.Id, out var starCount) ? starCount : null;
-            builder.Add(new AppCardModel(app, CardTier.Other, status, $"{logoBaseUrl}{app.Id}.png") { GitHubStars = appStars });
+            builder.Add(new AppCardModel(app, CardTier.Other, status, $"{logoBaseUrl}{app.Id}.png") { GitHubStars = appStars, IsHot = app.Hot });
         }
 
         return builder.ToImmutable();
@@ -262,7 +262,7 @@ public sealed class GalleryDetectionService : IGalleryDetectionService
             if (status is null)
                 continue;
 
-            builder.Add(new AppCardModel(app, CardTier.Other, status.Value));
+            builder.Add(new AppCardModel(app, CardTier.Other, status.Value) { IsHot = app.Hot });
         }
 
         return builder.ToImmutable();

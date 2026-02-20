@@ -59,7 +59,8 @@ public sealed class CatalogParser
             model.License,
             ToImmutableTags(model.Alternatives),
             ToImmutableTags(model.Suggests),
-            ToImmutableTags(model.Requires));
+            ToImmutableTags(model.Requires),
+            model.Hot);
 
         return CatalogParseResult<CatalogEntry>.Ok(entry);
     }

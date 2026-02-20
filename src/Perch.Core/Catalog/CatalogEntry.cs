@@ -33,7 +33,8 @@ public sealed record CatalogEntry(
     string? License = null,
     ImmutableArray<string> Alternatives = default,
     ImmutableArray<string> Suggests = default,
-    ImmutableArray<string> Requires = default);
+    ImmutableArray<string> Requires = default,
+    bool Hot = false);
 
 public sealed record CatalogLinks(string? Website, string? Docs, string? GitHub);
 

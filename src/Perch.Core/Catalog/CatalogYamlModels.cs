@@ -17,6 +17,7 @@ internal sealed class AppCatalogYamlModel
     public List<string>? Profiles { get; set; }
     public List<string>? Os { get; set; }
     public bool Hidden { get; set; }
+    public bool Hot { get; set; }
     public string? License { get; set; }
     public CatalogLinksYamlModel? Links { get; set; }
     public InstallYamlModel? Install { get; set; }
