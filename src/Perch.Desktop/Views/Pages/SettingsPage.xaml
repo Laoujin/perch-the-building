@@ -93,7 +93,8 @@
                             FontTypography="Caption"
                             Opacity="0.6"
                             HorizontalAlignment="Right"
-                            Text="{Binding AppVersion, StringFormat='v{0}'}" />
+                            Text="{Binding AppVersion, StringFormat='v{0}'}"
+                            ToolTip="{Binding AppVersion, StringFormat='Perch Desktop v{0}'}" />
                     </Grid>
                     <ui:TextBlock
                         FontTypography="Caption"
