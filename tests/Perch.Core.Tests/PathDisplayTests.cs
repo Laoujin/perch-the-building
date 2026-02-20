@@ -84,4 +84,33 @@ public sealed class PathDisplayTests
 
         Assert.That(result, Is.EqualTo(path));
     }
+
+    [Test]
+    public void TruncateMiddle_MaxLengthBelowMinimum_ThrowsArgumentOutOfRangeException()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            PathDisplay.TruncateMiddle(@"C:\some\path.txt", 4));
+    }
+
+    [Test]
+    public void TruncateMiddle_SingleSegmentPath_UsesFallbackTruncation()
+    {
+        var path = new string('x', 80);
+
+        var result = PathDisplay.TruncateMiddle(path, 20);
+
+        Assert.That(result, Does.Contain("..."));
+        Assert.That(result.Length, Is.LessThanOrEqualTo(20));
+    }
+
+    [Test]
+    public void TruncateMiddle_PathFitsWithinLimit_ReturnsOriginalPath()
+    {
+        // maxLength >= path.Length: short-circuit at line 12, no truncation applied
+        var path = @"C:\ab\file.txt";
+
+        var result = PathDisplay.TruncateMiddle(path, path.Length + 10);
+
+        Assert.That(result, Is.EqualTo(path));
+    }
 }

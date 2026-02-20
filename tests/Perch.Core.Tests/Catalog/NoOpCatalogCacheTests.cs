@@ -28,4 +28,10 @@ public sealed class NoOpCatalogCacheTests
     {
         Assert.DoesNotThrowAsync(() => _cache.SetAsync("any-key", "any-content"));
     }
+
+    [Test]
+    public void InvalidateAll_DoesNotThrow()
+    {
+        Assert.DoesNotThrow(() => _cache.InvalidateAll());
+    }
 }
