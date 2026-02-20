@@ -118,7 +118,7 @@ development_status:
   # Improve dotfiles WPF page + configure gallery entries for each dotfile.
   epic-21: in-progress
   21-1-dotfiles-page-improvements: ready-for-dev
-  21-2-gallery-dotfile-git: ready-for-dev
+  21-2-gallery-dotfile-git: review
   21-3-gallery-dotfile-powershell: ready-for-dev
   21-4-gallery-dotfile-node-npm: ready-for-dev
   21-5-gallery-dotfile-bash: ready-for-dev
