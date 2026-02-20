@@ -27,7 +27,7 @@ jobs:
         run: dotnet test Perch.CrossPlatform.slnx --no-build --configuration Release --verbosity normal --settings coverage.runsettings
 
       - name: Check coverage
-        run: python scripts/check-coverage.py linux
+        run: python scripts/check_coverage.py linux
 
       - name: Upload coverage
         if: always()
@@ -56,7 +56,7 @@ jobs:
         run: dotnet test Perch.slnx --no-build --configuration Release --verbosity normal --settings coverage.runsettings --filter "FullyQualifiedName!~Perch.SmokeTests"
 
       - name: Check coverage
-        run: python scripts/check-coverage.py windows
+        run: python scripts/check_coverage.py windows
 
       - name: Integration smoke test
         run: pwsh tests/integration/smoke-test.ps1

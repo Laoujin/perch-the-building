@@ -4,21 +4,14 @@ import json
 import sys
 import xml.etree.ElementTree as ET
 
-def main():
-    if len(sys.argv) != 2 or sys.argv[1] not in ("linux", "windows"):
-        print("Usage: python scripts/check-coverage.py <linux|windows>")
-        sys.exit(2)
 
-    job = sys.argv[1]
-
+def parse_coverage():
     files = glob.glob("**/coverage.cobertura.xml", recursive=True)
     if not files:
-        print("No coverage files found")
-        sys.exit(1)
+        return None
 
-    # Collect per-assembly line hits across all coverage files, taking max
-    # hits per (assembly, filename, line_number) to deduplicate assemblies
-    # that appear in multiple test projects.
+    # Deduplicate assemblies that appear in multiple test projects
+    # by taking max hits per (class_name, line_number).
     assembly_lines = {}
     for path in files:
         root = ET.parse(path).getroot()
@@ -30,13 +23,12 @@ def main():
                 for line in cls.findall(".//line"):
                     key = (cls_name, line.attrib.get("number", ""))
                     hits = int(line.attrib.get("hits", 0))
-                    prev = lines.get(key, 0)
-                    lines[key] = max(prev, hits)
+                    lines[key] = max(lines.get(key, 0), hits)
 
-    if not assembly_lines:
-        print("No lines found in coverage data")
-        sys.exit(1)
+    return assembly_lines
 
+
+def print_coverage(assembly_lines):
     total_covered = 0
     total_valid = 0
     for name in sorted(assembly_lines):
@@ -49,12 +41,27 @@ def main():
         print(f"  {name}: {pct:.1f}% ({covered}/{valid})")
 
     coverage = int(total_covered / total_valid * 1000) / 10
-    print(f"Line coverage ({job}): {coverage}% ({total_covered}/{total_valid})")
+    print(f"Total: {coverage}% ({total_covered}/{total_valid})")
+    return coverage
+
+
+def main():
+    if len(sys.argv) != 2 or sys.argv[1] not in ("linux", "windows"):
+        print("Usage: python scripts/check-coverage.py <linux|windows>")
+        sys.exit(2)
+
+    job = sys.argv[1]
+
+    assembly_lines = parse_coverage()
+    if not assembly_lines:
+        print("No coverage files found")
+        sys.exit(1)
+
+    coverage = print_coverage(assembly_lines)
 
     with open("coverage-baseline.json") as f:
-        baselines = json.load(f)
+        baseline = json.load(f).get(job, 0.0)
 
-    baseline = baselines.get(job, 0.0)
     print(f"Baseline: {baseline}%")
 
     if coverage < baseline:
