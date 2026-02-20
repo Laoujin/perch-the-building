@@ -1150,6 +1150,263 @@ public sealed class SystemTweaksViewModelTests
         Assert.That(_vm.FilteredCertificateGroups, Is.Empty);
     }
 
+    [Test]
+    public async Task RefreshAsync_WithDetectionErrors_SetsErrorMessage()
+    {
+        var errors = ImmutableArray.Create(
+            new TweakDetectionError("Bad Tweak", "t1", "HKCU\\Test", null, "Access denied"));
+
+        _detectionService.DetectTweaksAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
+            .Returns(new TweakDetectionPageResult(ImmutableArray<TweakCardModel>.Empty, errors));
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_vm.ErrorMessage, Does.Contain("Bad Tweak"));
+            Assert.That(_vm.ErrorMessage, Does.Contain("Access denied"));
+            Assert.That(_vm.ErrorMessage, Does.Contain("HKCU\\Test"));
+        });
+    }
+
+    [Test]
+    public async Task RefreshAsync_WithDetectionErrors_IncludesSourceFile()
+    {
+        var errors = ImmutableArray.Create(
+            new TweakDetectionError("Tweak", "t1", null, @"C:\test.yaml", "parse error"));
+
+        _detectionService.DetectTweaksAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
+            .Returns(new TweakDetectionPageResult(ImmutableArray<TweakCardModel>.Empty, errors));
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        Assert.That(_vm.ErrorMessage, Does.Contain(@"C:\test.yaml"));
+    }
+
+    [Test]
+    public void ToggleStartupEnabled_AddsPendingChange()
+    {
+        var entry = new StartupEntry("TestApp", "Test App", "test.exe", null, StartupSource.RegistryCurrentUser, true);
+        var card = new StartupCardModel(entry);
+
+        _vm.ToggleStartupEnabledCommand.Execute(card);
+
+        _pendingChanges.Received(1).Add(Arg.Is<ToggleStartupChange>(c => c.Startup == card && !c.Enable));
+    }
+
+    [Test]
+    public void RevertTweakToCaptured_QueuesPendingChange()
+    {
+        var reg = ImmutableArray.Create(new RegistryEntryDefinition("HKCU\\Test", "Val", 0, RegistryValueType.DWord));
+        var entry = new TweakCatalogEntry("t1", "Tweak", "Explorer", [], null, true, [], reg);
+        var card = new TweakCardModel(entry, CardStatus.Detected);
+
+        _vm.RevertTweakToCapturedCommand.Execute(card);
+
+        _pendingChanges.Received(1).Add(Arg.Is<RevertTweakToCapturedChange>(c => c.Tweak == card));
+        _pendingChanges.Received(1).Remove("t1", PendingChangeKind.ApplyTweak);
+        _pendingChanges.Received(1).Remove("t1", PendingChangeKind.RevertTweak);
+    }
+
+    [Test]
+    public async Task StartupSearchText_FiltersStartupItems()
+    {
+        _startupService.GetAllAsync(Arg.Any<CancellationToken>())
+            .Returns(new[]
+            {
+                new StartupEntry("Chrome", "Chrome", "chrome.exe", null, StartupSource.RegistryCurrentUser, true),
+                new StartupEntry("Spotify", "Spotify", "spotify.exe", null, StartupSource.StartupFolderUser, true),
+            });
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+        _vm.SelectCategoryCommand.Execute("Startup");
+        Assert.That(_vm.FilteredStartupItems, Has.Count.EqualTo(2));
+
+        _vm.StartupSearchText = "Chrome";
+        Assert.That(_vm.FilteredStartupItems, Has.Count.EqualTo(1));
+    }
+
+    [Test]
+    public async Task CertificateExpiryFilter_FiltersGroups()
+    {
+        var validCert = new DetectedCertificate("AA", "CN=Valid", "CN=Issuer", null,
+            DateTime.Now.AddYears(-1), DateTime.Now.AddYears(1), false, CertificateStoreName.Personal);
+        var expiredCert = new DetectedCertificate("BB", "CN=Expired", "CN=Issuer", null,
+            DateTime.Now.AddYears(-2), DateTime.Now.AddDays(-1), false, CertificateStoreName.Personal);
+
+        _certificateScanner.ScanAsync(Arg.Any<CancellationToken>())
+            .Returns(ImmutableArray.Create(validCert, expiredCert));
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+        _vm.SelectCategoryCommand.Execute("Certificates");
+        Assert.That(_vm.FilteredCertificateGroups[0].Certificates, Has.Count.EqualTo(2));
+
+        _vm.SetCertificateExpiryFilterCommand.Execute("Valid");
+        Assert.That(_vm.FilteredCertificateGroups[0].Certificates, Has.Count.EqualTo(1));
+    }
+
+    [Test]
+    public async Task CertificateSearchText_FiltersGroups()
+    {
+        var cert1 = MakeCertificate("AABB", CertificateStoreName.Personal);
+        var cert2 = new DetectedCertificate("CCDD", "CN=Other", "CN=Issuer", null,
+            DateTime.Now.AddYears(-1), DateTime.Now.AddYears(1), false, CertificateStoreName.Personal);
+
+        _certificateScanner.ScanAsync(Arg.Any<CancellationToken>())
+            .Returns(ImmutableArray.Create(cert1, cert2));
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+        _vm.SelectCategoryCommand.Execute("Certificates");
+
+        _vm.CertificateSearchText = "Other";
+        Assert.That(_vm.FilteredCertificateGroups[0].Certificates, Has.Count.EqualTo(1));
+    }
+
+    [Test]
+    public async Task TrackAllInstalledFonts_TogglesSelection()
+    {
+        var fonts = new FontDetectionResult(
+            ImmutableArray.Create(MakeFont("Arial"), MakeFont("Consolas")),
+            ImmutableArray<FontCardModel>.Empty);
+
+        _detectionService.DetectFontsAsync(Arg.Any<CancellationToken>())
+            .Returns(fonts);
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+        Assert.That(_vm.FilteredInstalledFontGroups.All(g => g.IsSelected), Is.False);
+
+        _vm.TrackAllInstalledFontsCommand.Execute(null);
+        Assert.That(_vm.FilteredInstalledFontGroups.All(g => g.IsSelected), Is.True);
+
+        _vm.TrackAllInstalledFontsCommand.Execute(null);
+        Assert.That(_vm.FilteredInstalledFontGroups.All(g => g.IsSelected), Is.False);
+    }
+
+    [Test]
+    public async Task TrackAllNewStartupItems_TracksUntracked()
+    {
+        _startupService.GetAllAsync(Arg.Any<CancellationToken>())
+            .Returns(new[]
+            {
+                new StartupEntry("Chrome", "Chrome", "chrome.exe", null, StartupSource.RegistryCurrentUser, true),
+            });
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+        _vm.SelectCategoryCommand.Execute("Startup");
+        Assert.That(_vm.FilteredStartupItems[0].IsTracked, Is.False);
+
+        _vm.TrackAllNewStartupItemsCommand.Execute(null);
+        Assert.That(_vm.FilteredStartupItems[0].IsTracked, Is.True);
+    }
+
+    [Test]
+    public async Task OnFontPropertyChanged_IsSelected_AddsPendingChange()
+    {
+        var fonts = new FontDetectionResult(
+            ImmutableArray.Create(MakeFont("Arial")),
+            ImmutableArray<FontCardModel>.Empty);
+
+        _detectionService.DetectFontsAsync(Arg.Any<CancellationToken>())
+            .Returns(fonts);
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        _vm.InstalledFonts[0].IsSelected = true;
+        _pendingChanges.Received(1).Add(Arg.Is<OnboardFontChange>(c => c.Font.Name == "Arial"));
+
+        _vm.InstalledFonts[0].IsSelected = false;
+        _pendingChanges.Received(1).Remove("Arial", PendingChangeKind.OnboardFont);
+    }
+
+    [Test]
+    public async Task RefreshAsync_BuildsStartupCategory()
+    {
+        _startupService.GetAllAsync(Arg.Any<CancellationToken>())
+            .Returns(new[] { new StartupEntry("Chrome", "Chrome", "chrome.exe", null, StartupSource.RegistryCurrentUser, true) });
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        Assert.That(_vm.Categories.Any(c => c.Category == "Startup"), Is.True);
+    }
+
+    [Test]
+    public async Task RefreshAsync_BuildsCertificatesCategory()
+    {
+        var cert = MakeCertificate("AABB", CertificateStoreName.Personal);
+        _certificateScanner.ScanAsync(Arg.Any<CancellationToken>())
+            .Returns(ImmutableArray.Create(cert));
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        Assert.That(_vm.Categories.Any(c => c.Category == "Certificates"), Is.True);
+    }
+
+    [Test]
+    public async Task RefreshAsync_BuildsProfileFilters()
+    {
+        var entry = new TweakCatalogEntry("t1", "Tweak", "Explorer", [], null, true, ["developer", "gamer"], []);
+        var tweaks = ImmutableArray.Create(new TweakCardModel(entry, CardStatus.Detected));
+
+        _detectionService.DetectTweaksAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
+            .Returns(new TweakDetectionPageResult(tweaks, ImmutableArray<TweakDetectionError>.Empty));
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        Assert.That(_vm.AvailableProfileFilters, Does.Contain("All"));
+        Assert.That(_vm.AvailableProfileFilters, Does.Contain("Suggested"));
+        Assert.That(_vm.AvailableProfileFilters, Does.Contain("developer"));
+    }
+
+    [Test]
+    public async Task Dispose_UnsubscribesFontChanges()
+    {
+        var fonts = new FontDetectionResult(
+            ImmutableArray.Create(MakeFont("Arial")),
+            ImmutableArray<FontCardModel>.Empty);
+
+        _detectionService.DetectFontsAsync(Arg.Any<CancellationToken>())
+            .Returns(fonts);
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+        _vm.Dispose();
+
+        _vm.InstalledFonts[0].IsSelected = true;
+        _pendingChanges.DidNotReceive().Add(Arg.Any<OnboardFontChange>());
+    }
+
+    [Test]
+    public async Task RemoveStartupItemAsync_RemovesFromCollections()
+    {
+        _startupService.GetAllAsync(Arg.Any<CancellationToken>())
+            .Returns(new[] { new StartupEntry("Chrome", "Chrome", "chrome.exe", null, StartupSource.RegistryCurrentUser, true) });
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+        _vm.SelectCategoryCommand.Execute("Startup");
+        var card = _vm.StartupItems[0];
+
+        await _vm.RemoveStartupItemCommand.ExecuteAsync(card);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_vm.StartupItems, Is.Empty);
+            Assert.That(_vm.FilteredStartupItems, Is.Empty);
+        });
+        await _startupService.Received(1).RemoveAsync(card.Entry);
+    }
+
+    [Test]
+    public async Task SelectCategory_Certificates_SetsExpiryFilter()
+    {
+        var cert = MakeCertificate("AABB", CertificateStoreName.Personal);
+        _certificateScanner.ScanAsync(Arg.Any<CancellationToken>())
+            .Returns(ImmutableArray.Create(cert));
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+        _vm.SelectCategoryCommand.Execute("Certificates");
+
+        Assert.That(_vm.ActiveCertificateExpiryFilter, Is.EqualTo("All"));
+    }
+
     private static TweakCardModel MakeTweak(string name, string category)
     {
         var entry = new TweakCatalogEntry(name, name, category, [], null, true, [], []);

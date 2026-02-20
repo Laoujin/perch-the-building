@@ -133,4 +133,35 @@ public sealed class SettingsViewModelTests
             Assert.That(_vm.IsSaving, Is.False);
         });
     }
+
+    [Test]
+    public async Task SaveAsync_PreservesIsDevSetting()
+    {
+        _vm.IsDev = true;
+        _vm.ConfigRepoPath = @"C:\repos\config";
+
+        await _vm.SaveCommand.ExecuteAsync(null);
+
+        await _settingsProvider.Received(1).SaveAsync(
+            Arg.Is<PerchSettings>(s => s.Dev == true),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public void OnIsDevChanged_UpdatesShowCurrentWork()
+    {
+        _vm.IsDev = false;
+        Assert.That(_vm.ShowCurrentWork, Is.False);
+    }
+
+    [Test]
+    public void ReloadConfiguration_NavigatesToDashboard()
+    {
+        var navService = Substitute.For<INavigationService>();
+        var vm = new SettingsViewModel(_settingsProvider, navService);
+
+        vm.ReloadConfigurationCommand.Execute(null);
+
+        navService.Received(1).Navigate(typeof(Perch.Desktop.Views.Pages.DashboardPage));
+    }
 }

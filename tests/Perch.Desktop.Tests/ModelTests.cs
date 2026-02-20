@@ -125,6 +125,119 @@ public sealed class ModelTests
             var model = new FontCardModel("fira", "Fira", null, null, null, null, FontCardSource.Gallery, [], CardStatus.Unmanaged);
             Assert.That(model.SampleText, Is.EqualTo("The quick brown fox jumps over the lazy dog"));
         }
+
+        [Test]
+        public void PreviewCommand_NullPath_DoesNotThrow()
+        {
+            var model = new FontCardModel("fira", "Fira", null, null, null, null, FontCardSource.Gallery, [], CardStatus.Unmanaged);
+            Assert.DoesNotThrow(() => model.PreviewCommand.Execute(null));
+        }
+
+        [Test]
+        public void OpenLocationCommand_NullPath_DoesNotThrow()
+        {
+            var model = new FontCardModel("fira", "Fira", null, null, null, null, FontCardSource.Gallery, [], CardStatus.Unmanaged);
+            Assert.DoesNotThrow(() => model.OpenLocationCommand.Execute(null));
+        }
+
+        [Test]
+        public void ToggleBackupCommand_NullPath_DoesNotThrow()
+        {
+            var model = new FontCardModel("fira", "Fira", null, null, null, null, FontCardSource.Gallery, [], CardStatus.Unmanaged);
+            Assert.DoesNotThrow(() => model.ToggleBackupCommand.Execute(null));
+        }
+
+        [Test]
+        public void ToggleBackup_CreatesBackupFile()
+        {
+            string tempDir = Path.Combine(Path.GetTempPath(), $"perch-font-test-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(tempDir);
+            string fontPath = Path.Combine(tempDir, "test.ttf");
+            File.WriteAllText(fontPath, "font-data");
+
+            try
+            {
+                var model = new FontCardModel("test", "Test", null, null, null, fontPath, FontCardSource.Detected, [], CardStatus.Detected);
+                Assert.That(model.IsBackedUp, Is.False);
+
+                model.ToggleBackupCommand.Execute(null);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(model.IsBackedUp, Is.True);
+                    Assert.That(File.Exists(fontPath + ".backup"), Is.True);
+                    Assert.That(File.Exists(fontPath), Is.False);
+                });
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Test]
+        public void ToggleBackup_RestoresFromBackup()
+        {
+            string tempDir = Path.Combine(Path.GetTempPath(), $"perch-font-test-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(tempDir);
+            string fontPath = Path.Combine(tempDir, "test.ttf");
+            File.WriteAllText(fontPath, "font-data");
+
+            try
+            {
+                var model = new FontCardModel("test", "Test", null, null, null, fontPath, FontCardSource.Detected, [], CardStatus.Detected);
+                model.ToggleBackupCommand.Execute(null);
+                Assert.That(model.IsBackedUp, Is.True);
+
+                model.ToggleBackupCommand.Execute(null);
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(model.IsBackedUp, Is.False);
+                    Assert.That(File.Exists(fontPath), Is.True);
+                    Assert.That(File.Exists(fontPath + ".backup"), Is.False);
+                });
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Test]
+        public void Constructor_ExistingBackup_SetsIsBackedUp()
+        {
+            string tempDir = Path.Combine(Path.GetTempPath(), $"perch-font-test-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(tempDir);
+            string fontPath = Path.Combine(tempDir, "test.ttf");
+            File.WriteAllText(fontPath + ".backup", "backed-up-data");
+
+            try
+            {
+                var model = new FontCardModel("test", "Test", null, null, null, fontPath, FontCardSource.Detected, [], CardStatus.Detected);
+                Assert.That(model.IsBackedUp, Is.True);
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Test]
+        public void ObservableProperties_RaisePropertyChanged()
+        {
+            var model = new FontCardModel("fira", "Fira", null, null, null, null, FontCardSource.Gallery, [], CardStatus.Unmanaged);
+            var changed = new List<string>();
+            model.PropertyChanged += (_, e) => changed.Add(e.PropertyName!);
+
+            model.Status = CardStatus.Synced;
+            model.IsSelected = true;
+            model.IsExpanded = true;
+            model.IsBackedUp = true;
+            model.SampleText = "test";
+
+            Assert.That(changed, Is.SupersetOf(new[] { "Status", "IsSelected", "IsExpanded", "IsBackedUp", "SampleText" }));
+        }
     }
 
     [TestFixture]
