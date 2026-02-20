@@ -5,6 +5,8 @@ using NUnit.Framework;
 namespace Perch.SmokeTests;
 
 [TestFixture]
+[Category("Manual")]
+[Explicit("Launches the app and takes screenshots — run on demand only")]
 [Platform("Win")]
 [NonParallelizable]
 public sealed class PageScreenshotTests
