@@ -408,6 +408,133 @@ public sealed class AppsViewModelTests
 
         Assert.That(_vm.SearchText, Is.EqualTo("unknown-app"));
     }
+
+    [Test]
+    public async Task RefreshAsync_Cancellation_NoError()
+    {
+        _detectionService.DetectAppsAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new OperationCanceledException());
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_vm.ErrorMessage, Is.Null);
+            Assert.That(_vm.IsLoading, Is.False);
+        });
+    }
+
+    [Test]
+    public void ToggleCategoryExpand_TogglesIsExpanded()
+    {
+        var category = new AppCategoryCardModel("Dev", "Dev", 5, 2);
+        Assert.That(category.IsExpanded, Is.False);
+
+        _vm.ToggleCategoryExpandCommand.Execute(category);
+        Assert.That(category.IsExpanded, Is.True);
+
+        _vm.ToggleCategoryExpandCommand.Execute(category);
+        Assert.That(category.IsExpanded, Is.False);
+    }
+
+    [Test]
+    public async Task ComputeTopPicks_SetsIsHot_WhenStarsDouble()
+    {
+        var app1 = MakeCardWithAlternatives("editor1", "Dev/Editors", ["editor2", "editor3"]);
+        app1.GitHubStars = 10000;
+        var app2 = MakeCardWithAlternatives("editor2", "Dev/Editors", ["editor1", "editor3"]);
+        app2.GitHubStars = 4000;
+        var app3 = MakeCardWithAlternatives("editor3", "Dev/Editors", ["editor1", "editor2"]);
+        app3.GitHubStars = 3000;
+
+        _detectionService.DetectAppsAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
+            .Returns(new GalleryDetectionResult([], [], ImmutableArray.Create(app1, app2, app3)));
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        Assert.That(app1.IsHot, Is.True);
+    }
+
+    [Test]
+    public async Task ComputeTopPicks_NoHot_WhenManagedAppsInGroup()
+    {
+        var app1 = MakeCardWithAlternatives("editor1", "Dev/Editors", ["editor2"], CardStatus.Synced);
+        app1.GitHubStars = 10000;
+        var app2 = MakeCardWithAlternatives("editor2", "Dev/Editors", ["editor1"]);
+        app2.GitHubStars = 2000;
+
+        _detectionService.DetectAppsAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
+            .Returns(new GalleryDetectionResult(ImmutableArray.Create(app1), [], ImmutableArray.Create(app2)));
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        Assert.That(app1.IsHot, Is.False);
+    }
+
+    [Test]
+    public async Task ComputeTopPicks_NoHot_WhenStarsNotDoubled()
+    {
+        var app1 = MakeCardWithAlternatives("editor1", "Dev/Editors", ["editor2"]);
+        app1.GitHubStars = 5000;
+        var app2 = MakeCardWithAlternatives("editor2", "Dev/Editors", ["editor1"]);
+        app2.GitHubStars = 4000;
+
+        _detectionService.DetectAppsAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
+            .Returns(new GalleryDetectionResult([], [], ImmutableArray.Create(app1, app2)));
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(app1.IsHot, Is.False);
+            Assert.That(app2.IsHot, Is.False);
+        });
+    }
+
+    [Test]
+    public async Task SubCategoryOrder_UsesDefinedOrder()
+    {
+        var ide = MakeCard("rider", "Development/IDEs", CardStatus.Detected);
+        var cli = MakeCard("dotnet-cli", "Development/CLI Tools", CardStatus.Detected);
+        var editor = MakeCard("vim", "Development/Editors", CardStatus.Detected);
+
+        _detectionService.DetectAppsAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
+            .Returns(new GalleryDetectionResult(ImmutableArray.Create(cli, editor, ide), [], []));
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        var devCategory = _vm.Categories.Single(c => c.BroadCategory == "Development");
+        var subNames = devCategory.SubGroups.Select(g => g.SubCategory).ToList();
+        Assert.That(subNames, Is.EqualTo(new[] { "IDEs", "Editors", "CLI Tools" }));
+    }
+
+    [Test]
+    public async Task ProfilePriority_CategoriesWithProfileMatchFirst()
+    {
+        var devApp = MakeCardWithProfiles("vscode", "Development/IDEs", ["developer"], CardStatus.Detected);
+        var gameApp = MakeCard("steam", "Gaming/Stores", CardStatus.Detected);
+
+        _detectionService.DetectAppsAsync(Arg.Any<IReadOnlySet<UserProfile>>(), Arg.Any<CancellationToken>())
+            .Returns(new GalleryDetectionResult(ImmutableArray.Create(gameApp, devApp), [], []));
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        Assert.That(_vm.Categories[0].BroadCategory, Is.EqualTo("Development"));
+    }
+
+    private static AppCardModel MakeCardWithAlternatives(string name, string category, string[] alternatives, CardStatus status = CardStatus.Unmanaged, CardTier tier = CardTier.Other)
+    {
+        var entry = new CatalogEntry(name, name, name, category, [], null, null, null, null, null, null,
+            Alternatives: [.. alternatives]);
+        return new AppCardModel(entry, tier, status);
+    }
+
+    private static AppCardModel MakeCardWithProfiles(string name, string category, string[] profiles, CardStatus status = CardStatus.Detected, CardTier tier = CardTier.YourApps)
+    {
+        var entry = new CatalogEntry(name, name, name, category, [], null, null, null, null, null, null,
+            Profiles: [.. profiles]);
+        return new AppCardModel(entry, tier, status);
+    }
 }
 
 [TestFixture]

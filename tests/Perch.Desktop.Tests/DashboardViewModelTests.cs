@@ -4,6 +4,7 @@ using NSubstitute.ExceptionExtensions;
 
 using Perch.Core.Catalog;
 using Perch.Core.Config;
+using Perch.Core.Startup;
 using Perch.Core.Status;
 using Perch.Desktop.Models;
 using Perch.Desktop.Services;
@@ -304,12 +305,6 @@ public sealed class DashboardViewModelTests
         Assert.That(_vm.IsApplying, Is.False);
     }
 
-    private static AppCardModel CreateAppCard(string id)
-    {
-        var entry = new CatalogEntry(id, id, null, "test", [], null, null, null, null, null, null);
-        return new AppCardModel(entry, CardTier.YourApps, CardStatus.Detected);
-    }
-
     [Test]
     public void Dispose_UnsubscribesFromPendingChanges()
     {
@@ -321,6 +316,137 @@ public sealed class DashboardViewModelTests
         _pendingChanges.Add(new LinkAppChange(CreateAppCard("after-dispose")));
 
         Assert.That(changed, Is.False);
+    }
+
+    [Test]
+    public void TogglePendingChange_UnlinkToLink()
+    {
+        var app = CreateAppCard("app1");
+        _pendingChanges.Add(new UnlinkAppChange(app));
+
+        _vm.TogglePendingChangeCommand.Execute(_pendingChanges.Changes[0]);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_pendingChanges.Count, Is.EqualTo(1));
+            Assert.That(_pendingChanges.Changes[0].Kind, Is.EqualTo(PendingChangeKind.LinkApp));
+        });
+    }
+
+    [Test]
+    public void TogglePendingChange_RevertToApply()
+    {
+        var tweak = CreateTweakCard("tweak1");
+        _pendingChanges.Add(new RevertTweakChange(tweak));
+
+        _vm.TogglePendingChangeCommand.Execute(_pendingChanges.Changes[0]);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_pendingChanges.Count, Is.EqualTo(1));
+            Assert.That(_pendingChanges.Changes[0].Kind, Is.EqualTo(PendingChangeKind.ApplyTweak));
+        });
+    }
+
+    [Test]
+    public void TogglePendingChange_RevertToCapturedToApply()
+    {
+        var tweak = CreateTweakCard("tweak1");
+        _pendingChanges.Add(new RevertTweakToCapturedChange(tweak));
+
+        _vm.TogglePendingChangeCommand.Execute(_pendingChanges.Changes[0]);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_pendingChanges.Count, Is.EqualTo(1));
+            Assert.That(_pendingChanges.Changes[0].Kind, Is.EqualTo(PendingChangeKind.ApplyTweak));
+        });
+    }
+
+    [Test]
+    public void TogglePendingChange_ToggleStartup_FlipsEnable()
+    {
+        var entry = new StartupEntry("chrome", "Chrome", "chrome.exe", null, StartupSource.RegistryCurrentUser, true);
+        var card = new StartupCardModel(entry);
+        _pendingChanges.Add(new ToggleStartupChange(card, false));
+
+        _vm.TogglePendingChangeCommand.Execute(_pendingChanges.Changes[0]);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_pendingChanges.Count, Is.EqualTo(1));
+            Assert.That(_pendingChanges.Changes[0], Is.InstanceOf<ToggleStartupChange>());
+            Assert.That(((ToggleStartupChange)_pendingChanges.Changes[0]).Enable, Is.True);
+        });
+    }
+
+    [Test]
+    public void DiscardAll_ClearsAllChanges()
+    {
+        _pendingChanges.Add(new LinkAppChange(CreateAppCard("app1")));
+        _pendingChanges.Add(new LinkAppChange(CreateAppCard("app2")));
+        Assert.That(_pendingChanges.Count, Is.EqualTo(2));
+
+        _vm.DiscardAllCommand.Execute(null);
+
+        Assert.That(_pendingChanges.Count, Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task ApplyAllAsync_NoPendingChanges_DoesNotCallService()
+    {
+        await _vm.ApplyAllCommand.ExecuteAsync(null);
+
+        await _applyChangesService.DidNotReceive().ApplyAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task ApplyAllAsync_Success_SetsIsApplyingBackToFalse()
+    {
+        _pendingChanges.Add(new LinkAppChange(CreateAppCard("app1")));
+        var result = new ApplyChangesResult(1, []);
+        _applyChangesService.ApplyAsync(Arg.Any<CancellationToken>())
+            .Returns(result);
+
+        await _vm.ApplyAllCommand.ExecuteAsync(null);
+
+        Assert.That(_vm.IsApplying, Is.False);
+    }
+
+    [Test]
+    public void PendingChanges_PropertyChangesPropagate()
+    {
+        var changed = new List<string>();
+        _vm.PropertyChanged += (_, e) => changed.Add(e.PropertyName!);
+
+        _pendingChanges.Add(new LinkAppChange(CreateAppCard("app1")));
+
+        Assert.That(changed, Does.Contain("HasPendingChanges"));
+        Assert.That(changed, Does.Contain("PendingChangeCount"));
+    }
+
+    [Test]
+    public void HasPendingChanges_ReflectsServiceState()
+    {
+        Assert.That(_vm.HasPendingChanges, Is.False);
+
+        _pendingChanges.Add(new LinkAppChange(CreateAppCard("app1")));
+        Assert.That(_vm.HasPendingChanges, Is.True);
+    }
+
+    [Test]
+    public void PendingChangeCount_ReflectsServiceState()
+    {
+        Assert.That(_vm.PendingChangeCount, Is.EqualTo(0));
+
+        _pendingChanges.Add(new LinkAppChange(CreateAppCard("app1")));
+        Assert.That(_vm.PendingChangeCount, Is.EqualTo(1));
+    }
+
+    private static AppCardModel CreateAppCard(string id)
+    {
+        var entry = new CatalogEntry(id, id, null, "test", [], null, null, null, null, null, null);
+        return new AppCardModel(entry, CardTier.YourApps, CardStatus.Detected);
     }
 
     private static TweakCardModel CreateTweakCard(string id)
