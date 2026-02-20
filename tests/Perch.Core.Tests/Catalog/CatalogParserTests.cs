@@ -1040,6 +1040,343 @@ public sealed class CatalogParserTests
     }
 
     [Test]
+    public void ParseApp_InvalidYaml_ReturnsFailure()
+    {
+        var result = _parser.ParseApp("not: [valid: yaml: {{", "test");
+
+        Assert.That(result.IsSuccess, Is.False);
+        Assert.That(result.Error, Does.Contain("Invalid YAML"));
+    }
+
+    [Test]
+    public void ParseFont_MissingName_ReturnsFailure()
+    {
+        string yaml = """
+            category: Fonts
+            """;
+
+        var result = _parser.ParseFont(yaml, "test");
+
+        Assert.That(result.IsSuccess, Is.False);
+        Assert.That(result.Error, Does.Contain("missing 'name'"));
+    }
+
+    [Test]
+    public void ParseFont_InvalidYaml_ReturnsFailure()
+    {
+        var result = _parser.ParseFont("not: [valid: yaml: {{", "test");
+
+        Assert.That(result.IsSuccess, Is.False);
+        Assert.That(result.Error, Does.Contain("Invalid YAML"));
+    }
+
+    [Test]
+    public void ParseTweak_EmptyYaml_ReturnsFailure()
+    {
+        var result = _parser.ParseTweak("", "test");
+
+        Assert.That(result.IsSuccess, Is.False);
+        Assert.That(result.Error, Is.EqualTo("YAML content is empty."));
+    }
+
+    [Test]
+    public void ParseTweak_InvalidYaml_ReturnsFailure()
+    {
+        var result = _parser.ParseTweak("not: [valid: yaml: {{", "test");
+
+        Assert.That(result.IsSuccess, Is.False);
+        Assert.That(result.Error, Does.Contain("Invalid YAML"));
+    }
+
+    [Test]
+    public void ParseTweak_MissingName_ReturnsFailure()
+    {
+        string yaml = """
+            category: Test
+            """;
+
+        var result = _parser.ParseTweak(yaml, "test");
+
+        Assert.That(result.IsSuccess, Is.False);
+        Assert.That(result.Error, Does.Contain("missing 'name'"));
+    }
+
+    [Test]
+    public void ParseGitHubStars_InvalidYaml_ReturnsEmptyDictionary()
+    {
+        var result = _parser.ParseGitHubStars("not: [valid: yaml: {{");
+
+        Assert.That(result, Is.Empty);
+    }
+
+    [Test]
+    public void ParseIndex_InvalidYaml_ReturnsFailure()
+    {
+        var result = _parser.ParseIndex("not: [valid: yaml: {{");
+
+        Assert.That(result.IsSuccess, Is.False);
+        Assert.That(result.Error, Does.Contain("Invalid index"));
+    }
+
+    [Test]
+    public void ParseApp_ConfigLinkMissingSource_SkipsLink()
+    {
+        string yaml = """
+            name: TestApp
+            config:
+              links:
+                - target:
+                    windows: "%APPDATA%/TestApp/settings.json"
+            """;
+
+        var result = _parser.ParseApp(yaml, "testapp");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value!.Config, Is.Null);
+    }
+
+    [Test]
+    public void ParseApp_ConfigLinkMissingTarget_SkipsLink()
+    {
+        string yaml = """
+            name: TestApp
+            config:
+              links:
+                - source: settings.json
+            """;
+
+        var result = _parser.ParseApp(yaml, "testapp");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value!.Config, Is.Null);
+    }
+
+    [Test]
+    public void ParseApp_ConfigAllLinksInvalid_ConfigIsNull()
+    {
+        string yaml = """
+            name: TestApp
+            config:
+              links:
+                - source: ""
+                  target:
+                    windows: "%APPDATA%/TestApp"
+            """;
+
+        var result = _parser.ParseApp(yaml, "testapp");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value!.Config, Is.Null);
+    }
+
+    [Test]
+    public void ParseApp_CleanFilterWithJsonKeys_ParsesCorrectly()
+    {
+        string yaml = """
+            name: TestApp
+            config:
+              links:
+                - source: settings.json
+                  target:
+                    windows: "%APPDATA%/TestApp/settings.json"
+              clean-filter:
+                files: [settings.json]
+                rules:
+                  - type: strip-json-keys
+                    keys: [window.zoomLevel, sync.gist]
+            """;
+
+        var result = _parser.ParseApp(yaml, "testapp");
+
+        Assert.That(result.IsSuccess, Is.True);
+        var filter = result.Value!.Config!.CleanFilter!;
+        Assert.Multiple(() =>
+        {
+            Assert.That(filter.Rules[0].Type, Is.EqualTo("strip-json-keys"));
+            Assert.That(filter.Rules[0].Patterns, Has.Length.EqualTo(2));
+        });
+    }
+
+    [Test]
+    public void ParseApp_CleanFilterWithEmptyRuleType_SkipsRule()
+    {
+        string yaml = """
+            name: TestApp
+            config:
+              links:
+                - source: settings.json
+                  target:
+                    windows: "%APPDATA%/TestApp/settings.json"
+              clean-filter:
+                files: [settings.json]
+                rules:
+                  - type: ""
+                    keys: [test]
+            """;
+
+        var result = _parser.ParseApp(yaml, "testapp");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value!.Config!.CleanFilter, Is.Null);
+    }
+
+    [Test]
+    public void ParseApp_CleanFilterNoValidRules_CleanFilterIsNull()
+    {
+        string yaml = """
+            name: TestApp
+            config:
+              links:
+                - source: settings.json
+                  target:
+                    windows: "%APPDATA%/TestApp/settings.json"
+              clean-filter:
+                files: [settings.json]
+                rules:
+                  - type: unknown-type
+                    keys: [test]
+            """;
+
+        var result = _parser.ParseApp(yaml, "testapp");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value!.Config!.CleanFilter, Is.Null);
+    }
+
+    [Test]
+    public void ParseApp_TweakMissingIdOrName_SkipsTweak()
+    {
+        string yaml = """
+            name: TestApp
+            category: Test
+            tweaks:
+              - name: Missing ID
+                registry:
+                  - key: HKCU\Software\Test
+                    name: Val
+                    value: 1
+                    type: dword
+              - id: missing-name
+                registry:
+                  - key: HKCU\Software\Test
+                    name: Val
+                    value: 1
+                    type: dword
+            """;
+
+        var result = _parser.ParseApp(yaml, "testapp");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value!.Tweaks, Is.Empty);
+    }
+
+    [Test]
+    public void ParseTweak_RegistryMissingKeyOrName_SkipsEntry()
+    {
+        string yaml = """
+            name: Test Tweak
+            category: Test
+            reversible: true
+            registry:
+              - name: Val
+                value: 1
+                type: dword
+              - key: HKCU\Software\Test
+                value: 1
+                type: dword
+            """;
+
+        var result = _parser.ParseTweak(yaml, "test");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value!.Registry, Is.Empty);
+    }
+
+    [Test]
+    public void ParseTweak_ExpandStringType_CoercesCorrectly()
+    {
+        string yaml = """
+            name: Test Tweak
+            category: Test
+            reversible: true
+            registry:
+              - key: HKCU\Software\Test
+                name: Path
+                value: "%SystemRoot%\\system32"
+                type: expandstring
+            """;
+
+        var result = _parser.ParseTweak(yaml, "test");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Value!.Registry[0].Kind, Is.EqualTo(RegistryValueType.ExpandString));
+            Assert.That(result.Value!.Registry[0].Value, Is.EqualTo("%SystemRoot%\\system32"));
+        });
+    }
+
+    [Test]
+    public void ParseTweak_QWordType_CoercesIntToLong()
+    {
+        string yaml = """
+            name: Test Tweak
+            category: Test
+            reversible: true
+            registry:
+              - key: HKCU\Software\Test
+                name: BigVal
+                value: 42
+                type: qword
+            """;
+
+        var result = _parser.ParseTweak(yaml, "test");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value!.Registry[0].Value, Is.EqualTo(42L));
+    }
+
+    [Test]
+    public void ParseTweak_DWordStringValue_CoercesToInt()
+    {
+        string yaml = """
+            name: Test Tweak
+            category: Test
+            reversible: true
+            registry:
+              - key: HKCU\Software\Test
+                name: Val
+                value: "123"
+                type: dword
+            """;
+
+        var result = _parser.ParseTweak(yaml, "test");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value!.Registry[0].Value, Is.EqualTo(123));
+    }
+
+    [Test]
+    public void ParseTweak_QWordStringValue_CoercesToLong()
+    {
+        string yaml = """
+            name: Test Tweak
+            category: Test
+            reversible: true
+            registry:
+              - key: HKCU\Software\Test
+                name: Val
+                value: "9999999999"
+                type: qword
+            """;
+
+        var result = _parser.ParseTweak(yaml, "test");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Value!.Registry[0].Value, Is.EqualTo(9999999999L));
+    }
+
+    [Test]
     public void ParseIndex_WithProfilesAndHidden_ParsesCorrectly()
     {
         string yaml = """

@@ -1,5 +1,6 @@
 using Perch.Core;
 using Perch.Core.Modules;
+using Perch.Core.Registry;
 
 namespace Perch.Core.Tests.Modules;
 
@@ -769,5 +770,196 @@ public sealed class ManifestParserTests
         var result = _parser.Parse(yaml, "vscode");
 
         Assert.That(result.Manifest!.GalleryId, Is.Null);
+    }
+
+    [Test]
+    public void Parse_LinkWithInvalidPlatformTarget_ReturnsError()
+    {
+        string yaml = """
+            links:
+              - source: settings.json
+                target:
+                  invalid_platform: "/some/path"
+            """;
+
+        var result = _parser.Parse(yaml, "test");
+
+        Assert.That(result.IsSuccess, Is.False);
+        Assert.That(result.Error, Does.Contain("invalid 'target'"));
+    }
+
+    [Test]
+    public void Parse_HooksWithEmptyValues_ReturnsNullHooks()
+    {
+        string yaml = """
+            hooks:
+              pre-deploy: ""
+              post-deploy: ""
+            links:
+              - source: settings.json
+                target: "%APPDATA%\\App\\settings.json"
+            """;
+
+        var result = _parser.Parse(yaml, "myapp");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Manifest!.Hooks, Is.Null);
+    }
+
+    [Test]
+    public void Parse_CleanFilterMissingName_ReturnsNullCleanFilter()
+    {
+        string yaml = """
+            clean-filter:
+              script: scripts/clean.sh
+              files:
+                - data.json
+            links:
+              - source: settings.json
+                target: "%APPDATA%\\App\\settings.json"
+            """;
+
+        var result = _parser.Parse(yaml, "myapp");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Manifest!.CleanFilter, Is.Null);
+    }
+
+    [Test]
+    public void Parse_CleanFilterMissingFiles_ReturnsNullCleanFilter()
+    {
+        string yaml = """
+            clean-filter:
+              name: test-filter
+              script: scripts/clean.sh
+            links:
+              - source: settings.json
+                target: "%APPDATA%\\App\\settings.json"
+            """;
+
+        var result = _parser.Parse(yaml, "myapp");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Manifest!.CleanFilter, Is.Null);
+    }
+
+    [Test]
+    public void Parse_CleanFilterWithIniKeyRules_ParsesCorrectly()
+    {
+        string yaml = """
+            clean-filter:
+              name: ini-filter
+              files:
+                - settings.ini
+              rules:
+                - type: strip-ini-keys
+                  keys:
+                    - LastOpened
+                    - WindowPosition
+            links:
+              - source: settings.ini
+                target: "%APPDATA%\\App\\settings.ini"
+            """;
+
+        var result = _parser.Parse(yaml, "app");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Manifest!.CleanFilter!.Rules, Has.Length.EqualTo(1));
+            Assert.That(result.Manifest!.CleanFilter!.Rules[0].Type, Is.EqualTo("strip-ini-keys"));
+            Assert.That(result.Manifest!.CleanFilter!.Rules[0].Patterns, Has.Length.EqualTo(2));
+        });
+    }
+
+    [Test]
+    public void Parse_CleanFilterWithJsonKeyRules_ParsesCorrectly()
+    {
+        string yaml = """
+            clean-filter:
+              name: json-filter
+              files:
+                - settings.json
+              rules:
+                - type: strip-json-keys
+                  keys:
+                    - window.zoomLevel
+                    - sync.gist
+            links:
+              - source: settings.json
+                target: "%APPDATA%\\App\\settings.json"
+            """;
+
+        var result = _parser.Parse(yaml, "app");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Manifest!.CleanFilter!.Rules, Has.Length.EqualTo(1));
+            Assert.That(result.Manifest!.CleanFilter!.Rules[0].Type, Is.EqualTo("strip-json-keys"));
+        });
+    }
+
+    [Test]
+    public void Parse_RegistryMissingKeyOrNameOrValue_SkipsEntry()
+    {
+        string yaml = """
+            registry:
+              - name: Val
+                value: 1
+                type: dword
+              - key: HKCU\Software\Test
+                value: 1
+                type: dword
+              - key: HKCU\Software\Test
+                name: Val
+                type: dword
+            links:
+              - source: settings.json
+                target: "%APPDATA%\\App\\settings.json"
+            """;
+
+        var result = _parser.Parse(yaml, "app");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Manifest!.Registry, Is.Empty);
+    }
+
+    [Test]
+    public void Parse_RegistryDWordType_CoercesCorrectly()
+    {
+        string yaml = """
+            registry:
+              - key: HKCU\Software\Test
+                name: Val
+                value: 42
+                type: dword
+            """;
+
+        var result = _parser.Parse(yaml, "app");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Manifest!.Registry[0].Kind, Is.EqualTo(RegistryValueType.DWord));
+            Assert.That(result.Manifest!.Registry[0].Value, Is.EqualTo(42));
+        });
+    }
+
+    [Test]
+    public void Parse_RegistryExpandStringType_ParsesCorrectly()
+    {
+        string yaml = """
+            registry:
+              - key: HKCU\Software\Test
+                name: Path
+                value: "%SystemRoot%\\system32"
+                type: expandstring
+            """;
+
+        var result = _parser.Parse(yaml, "app");
+
+        Assert.That(result.IsSuccess, Is.True);
+        Assert.That(result.Manifest!.Registry[0].Kind, Is.EqualTo(RegistryValueType.ExpandString));
     }
 }
