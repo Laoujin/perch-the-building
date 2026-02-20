@@ -51,4 +51,22 @@ public sealed class FileCatalogCacheTests
         string expectedPath = Path.Combine(_tempDir, "deep", "nested", "file.yaml");
         Assert.That(File.Exists(expectedPath), Is.True);
     }
+
+    [Test]
+    public async Task InvalidateAll_DeletesCacheDirectory()
+    {
+        await _cache.SetAsync("apps/vscode.yaml", "content");
+
+        _cache.InvalidateAll();
+
+        Assert.That(Directory.Exists(_tempDir), Is.False);
+    }
+
+    [Test]
+    public void InvalidateAll_NoCacheDir_DoesNotThrow()
+    {
+        var cache = new FileCatalogCache(Path.Combine(Path.GetTempPath(), $"nonexistent-{Guid.NewGuid():N}"));
+
+        Assert.DoesNotThrow(() => cache.InvalidateAll());
+    }
 }

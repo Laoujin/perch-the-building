@@ -187,4 +187,40 @@ public sealed class YamlCapturedRegistryStoreTests
 
         Assert.DoesNotThrowAsync(() => store.SaveAsync(data));
     }
+
+    [Test]
+    public async Task Save_EmptyData_ClearsCapturedRegistrySection()
+    {
+        var store = new YamlCapturedRegistryStore(_tempDir, TestHostname);
+
+        var data = new CapturedRegistryData();
+        data.Entries["key"] = new CapturedRegistryEntry
+        {
+            Value = "1", Kind = RegistryValueType.DWord, CapturedAt = DateTime.UtcNow,
+        };
+        await store.SaveAsync(data);
+
+        await store.SaveAsync(new CapturedRegistryData());
+
+        string yaml = await File.ReadAllTextAsync(Path.Combine(_machinesDir, $"{TestHostname}.yaml"));
+        Assert.That(yaml, Does.Not.Contain("captured-registry"));
+    }
+
+    [Test]
+    public async Task Save_ExistingFileNoModel_CreatesNewModel()
+    {
+        string filePath = Path.Combine(_machinesDir, $"{TestHostname}.yaml");
+        await File.WriteAllTextAsync(filePath, "~");
+        var store = new YamlCapturedRegistryStore(_tempDir, TestHostname);
+
+        var data = new CapturedRegistryData();
+        data.Entries["key"] = new CapturedRegistryEntry
+        {
+            Value = "x", Kind = RegistryValueType.String, CapturedAt = DateTime.UtcNow,
+        };
+        await store.SaveAsync(data);
+
+        var loaded = await store.LoadAsync();
+        Assert.That(loaded.Entries, Has.Count.EqualTo(1));
+    }
 }

@@ -116,4 +116,30 @@ public sealed class HookRunnerTests
 
         await _processRunner.Received(1).RunAsync("pwsh", Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
+
+    [Test]
+    public async Task RunAsync_UnknownExtension_UsesScriptPathDirectly()
+    {
+        string scriptPath = Path.Combine(_tempDir, "setup.cmd");
+        await File.WriteAllTextAsync(scriptPath, "echo ok");
+        _processRunner.RunAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(new ProcessRunResult(0, "", ""));
+
+        await _hookRunner.RunAsync("mymod", scriptPath, _tempDir);
+
+        await _processRunner.Received(1).RunAsync(scriptPath, "", Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Test]
+    public async Task RunAsync_ExitNonZero_EmptyStderr_FallsBackToStdout()
+    {
+        string scriptPath = Path.Combine(_tempDir, "fail.ps1");
+        await File.WriteAllTextAsync(scriptPath, "exit 1");
+        _processRunner.RunAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(new ProcessRunResult(1, "stdout error info", ""));
+
+        DeployResult result = await _hookRunner.RunAsync("mymod", scriptPath, _tempDir);
+
+        Assert.That(result.Message, Does.Contain("stdout error info"));
+    }
 }

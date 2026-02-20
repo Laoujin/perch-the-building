@@ -185,4 +185,5 @@ public sealed class ThreeValueServiceTests
 
         Assert.That(results[0].Status, Is.EqualTo(ThreeValueStatus.Drifted));
     }
+
 }

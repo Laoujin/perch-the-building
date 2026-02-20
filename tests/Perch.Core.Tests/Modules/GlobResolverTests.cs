@@ -88,4 +88,42 @@ public sealed class GlobResolverTests
 
         Assert.That(result, Has.Count.EqualTo(2));
     }
+
+    [Test]
+    public void Resolve_MidPathGlob_ExpandsDirectoryThenChild()
+    {
+        var sub = Path.Combine(_tempDir, "17.0_abc", "child");
+        Directory.CreateDirectory(sub);
+        File.WriteAllText(Path.Combine(sub, "data.txt"), "hi");
+
+        string pattern = Path.Combine(_tempDir, "17.0_*", "child", "data.txt");
+
+        IReadOnlyList<string> result = _resolver.Resolve(pattern);
+
+        Assert.That(result, Has.Count.EqualTo(1));
+        Assert.That(result[0], Does.EndWith("data.txt"));
+    }
+
+    [Test]
+    public void Resolve_MidPathGlob_NonexistentDir_ReturnsEmpty()
+    {
+        string pattern = Path.Combine(_tempDir, "missing_*", "child");
+
+        IReadOnlyList<string> result = _resolver.Resolve(pattern);
+
+        Assert.That(result, Is.Empty);
+    }
+
+    [Test]
+    public void Resolve_LastSegmentGlob_MatchesBothFilesAndDirectories()
+    {
+        Directory.CreateDirectory(Path.Combine(_tempDir, "theme-dark"));
+        File.WriteAllText(Path.Combine(_tempDir, "theme-dark.css"), "");
+
+        string pattern = Path.Combine(_tempDir, "theme-*");
+
+        IReadOnlyList<string> result = _resolver.Resolve(pattern);
+
+        Assert.That(result, Has.Count.EqualTo(2));
+    }
 }

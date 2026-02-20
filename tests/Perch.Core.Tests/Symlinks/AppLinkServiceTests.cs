@@ -268,4 +268,28 @@ public sealed class AppLinkServiceTests
             Directory.Delete(tempDir, true);
         }
     }
+
+    [Test]
+    public async Task UnlinkAppAsync_NoConfig_ReturnsEmpty()
+    {
+        var app = new CatalogEntry(
+            "test-app", "test-app", "Test App", "Development/IDEs",
+            ImmutableArray<string>.Empty, null, null, null, null, null, null);
+
+        var results = await _service.UnlinkAppAsync(app);
+
+        Assert.That(results, Is.Empty);
+    }
+
+    [Test]
+    public async Task FixAppLinksAsync_NoConfig_ReturnsEmpty()
+    {
+        var app = new CatalogEntry(
+            "test-app", "test-app", "Test App", "Development/IDEs",
+            ImmutableArray<string>.Empty, null, null, null, null, null, null);
+
+        var results = await _service.FixAppLinksAsync(app);
+
+        Assert.That(results, Is.Empty);
+    }
 }
