@@ -199,10 +199,19 @@ public sealed class LanguagesViewModelTests
     }
 
     [Test]
-    public void HasDetailPage_False_WhenEntryIsPlainCliTool()
+    public void HasDetailPage_True_WhenEntryHasInstall()
     {
         var install = new InstallDefinition("some.tool", null);
         var entry = new CatalogEntry("test", "Test", null, "Dev", [], null, null, null, install, null, null,
+            Kind: CatalogKind.CliTool);
+        var card = new AppCardModel(entry, CardTier.Other, CardStatus.Unmanaged);
+        Assert.That(card.HasDetailPage, Is.True);
+    }
+
+    [Test]
+    public void HasDetailPage_False_WhenEntryHasNothingExpandable()
+    {
+        var entry = new CatalogEntry("test", "Test", null, "Dev", [], null, null, null, null, null, null,
             Kind: CatalogKind.CliTool);
         var card = new AppCardModel(entry, CardTier.Other, CardStatus.Unmanaged);
         Assert.That(card.HasDetailPage, Is.False);

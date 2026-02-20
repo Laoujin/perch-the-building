@@ -105,6 +105,10 @@ public partial class AppCard : UserControl
         EventManager.RegisterRoutedEvent(nameof(TagClicked), RoutingStrategy.Bubble,
             typeof(RoutedEventHandler), typeof(AppCard));
 
+    public static readonly RoutedEvent NavigateToAppRequestedEvent =
+        EventManager.RegisterRoutedEvent(nameof(NavigateToAppRequested), RoutingStrategy.Bubble,
+            typeof(RoutedEventHandler), typeof(AppCard));
+
     public string DisplayLabel
     {
         get => (string)GetValue(DisplayLabelProperty);
@@ -243,6 +247,12 @@ public partial class AppCard : UserControl
         remove => RemoveHandler(TagClickedEvent, value);
     }
 
+    public event RoutedEventHandler NavigateToAppRequested
+    {
+        add => AddHandler(NavigateToAppRequestedEvent, value);
+        remove => RemoveHandler(NavigateToAppRequestedEvent, value);
+    }
+
     public AppCard()
     {
         InitializeComponent();
@@ -338,4 +348,16 @@ public partial class AppCard : UserControl
 
     private void OnTagClick(object sender, MouseButtonEventArgs e) =>
         RaiseEvent(new RoutedEventArgs(TagClickedEvent, this));
+
+    private void OnNavigateToAppClick(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: string appId })
+            RaiseEvent(new NavigateToAppEventArgs(NavigateToAppRequestedEvent, this, appId));
+    }
+}
+
+public sealed class NavigateToAppEventArgs(RoutedEvent routedEvent, object source, string appId)
+    : RoutedEventArgs(routedEvent, source)
+{
+    public string AppId { get; } = appId;
 }

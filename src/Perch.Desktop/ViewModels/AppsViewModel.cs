@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 
 using CommunityToolkit.Mvvm.Input;
 
+using Perch.Core.Catalog;
 using Perch.Core.Config;
 using Perch.Desktop.Models;
 using Perch.Desktop.Services;
@@ -108,9 +109,10 @@ public sealed partial class AppsViewModel : GalleryViewModelBase
                     .Select(sg => new AppCategoryGroup(
                         sg.Key,
                         new ObservableCollection<AppCardModel>(
-                            sg.OrderBy(a => TierSortOrder(a.Tier))
-                              .ThenBy(a => StatusSortOrder(a.Status))
+                            sg.OrderBy(a => StatusSortOrder(a.Status))
+                              .ThenByDescending(a => a.IsHot)
                               .ThenByDescending(a => a.GitHubStars ?? 0)
+                              .ThenBy(a => IsCliTool(a) ? 1 : 0)
                               .ThenBy(a => a.DisplayLabel, StringComparer.OrdinalIgnoreCase))))
                     .ToList();
 
@@ -135,18 +137,16 @@ public sealed partial class AppsViewModel : GalleryViewModelBase
         DetectedCount = _allApps.Count(a => a.Status == CardStatus.Detected);
     }
 
-    private static int TierSortOrder(CardTier tier) => tier switch
-    {
-        CardTier.YourApps => 0,
-        CardTier.Suggested => 1,
-        _ => 2,
-    };
-
     private static int StatusSortOrder(CardStatus status) => status switch
     {
         CardStatus.Drifted => 0,
-        _ => 1,
+        CardStatus.Synced or CardStatus.PendingRemove => 1,
+        CardStatus.Detected or CardStatus.PendingAdd => 2,
+        _ => 3,
     };
+
+    private static bool IsCliTool(AppCardModel app) =>
+        app.CatalogEntry.Kind == CatalogKind.CliTool;
 
     [RelayCommand]
     private void ToggleApp(AppCardModel app)

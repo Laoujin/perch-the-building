@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -49,7 +48,7 @@ public partial class AppsPage : Page
     private void OnConfigureClicked(object sender, RoutedEventArgs e)
     {
         if (GetAppModel(sender) is { } app)
-            ViewModel.ConfigureAppCommand.Execute(app);
+            ViewModel.ToggleExpandCommand.Execute(app);
     }
 
     private void OnTagClicked(object sender, RoutedEventArgs e)
@@ -61,10 +60,10 @@ public partial class AppsPage : Page
         }
     }
 
-    private void OnLinkClick(object sender, RoutedEventArgs e)
+    private void OnNavigateToAppRequested(object sender, RoutedEventArgs e)
     {
-        if (sender is FrameworkElement { Tag: string url } && !string.IsNullOrEmpty(url))
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        if (e is NavigateToAppEventArgs nav)
+            ViewModel.NavigateToAppCommand.Execute(nav.AppId);
     }
 
     private static AppCardModel? GetAppModel(object sender) =>

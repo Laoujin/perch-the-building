@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:models="clr-namespace:Perch.Desktop.Models"
     xmlns:controls="clr-namespace:Perch.Desktop.Views.Controls">
     <Border
         x:Name="CardBorder"
@@ -30,9 +31,10 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- Row 0: Status ribbon + badges + detail button -->
+            <!-- Row 0: Status ribbon + badges + expand chevron -->
             <Grid Grid.Row="0" Margin="0,0,0,6">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -115,16 +117,35 @@
                     </Button>
                 </Border>
 
+                <!-- Expand/collapse chevron -->
                 <ui:Button
                     Grid.Column="5"
-                    Icon="{ui:SymbolIcon Settings24}"
                     Appearance="Secondary"
                     Padding="2"
                     Margin="4,0"
                     VerticalAlignment="Center"
                     Click="OnConfigureClick"
                     ToolTip="View details"
-                    Visibility="{Binding HasDetailPage, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    Visibility="{Binding HasDetailPage, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <ui:SymbolIcon
+                        Symbol="ChevronDown24"
+                        FontSize="14"
+                        RenderTransformOrigin="0.5,0.5">
+                        <ui:SymbolIcon.Style>
+                            <Style TargetType="ui:SymbolIcon">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                                        <Setter Property="RenderTransform">
+                                            <Setter.Value>
+                                                <RotateTransform Angle="180" />
+                                            </Setter.Value>
+                                        </Setter>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ui:SymbolIcon.Style>
+                    </ui:SymbolIcon>
+                </ui:Button>
             </Grid>
 
             <!-- Row 1: Logo + Name -->
@@ -184,16 +205,12 @@
                 Margin="0,4,0,0"
                 Visibility="{Binding Description, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource NullToVisibilityConverter}}" />
 
-            <!-- Row 3: Links bar (Website, Docs, GitHub) -->
+            <!-- Row 3: Links bar -->
             <StackPanel
                 Grid.Row="3"
                 Orientation="Horizontal"
                 Margin="0,6,0,0">
-                <Button
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Padding="4,2"
-                    Margin="0,0,4,0"
+                <Button Background="Transparent" BorderThickness="0" Padding="4,2" Margin="0,0,4,0"
                     Click="OnLinkClick"
                     Tag="{Binding Website, RelativeSource={RelativeSource AncestorType=UserControl}}"
                     ToolTip="{Binding Website, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -203,11 +220,7 @@
                         <TextBlock Text="Website" FontSize="10" Foreground="{StaticResource LinkTextBrush}" Margin="4,0,0,0" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
-                <Button
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Padding="4,2"
-                    Margin="0,0,4,0"
+                <Button Background="Transparent" BorderThickness="0" Padding="4,2" Margin="0,0,4,0"
                     Click="OnLinkClick"
                     Tag="{Binding Docs, RelativeSource={RelativeSource AncestorType=UserControl}}"
                     ToolTip="{Binding Docs, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -217,10 +230,17 @@
                         <TextBlock Text="Docs" FontSize="10" Foreground="{StaticResource LinkTextBrush}" Margin="4,0,0,0" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
-                <Button
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Padding="4,2"
+                <Button Background="Transparent" BorderThickness="0" Padding="4,2"
+                    Click="OnLinkClick"
+                    Tag="{Binding GitHub, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                    ToolTip="{Binding GitHub, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                    Visibility="{Binding GitHub, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource NullToVisibilityConverter}}">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="Code24" FontSize="12" Foreground="{StaticResource LinkTextBrush}" />
+                        <TextBlock Text="GitHub" FontSize="10" Foreground="{StaticResource LinkTextBrush}" Margin="4,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Background="Transparent" BorderThickness="0" Padding="4,2"
                     Click="OnOpenLocationClick"
                     Tag="{Binding ConfigPath, RelativeSource={RelativeSource AncestorType=UserControl}}"
                     ToolTip="{Binding ConfigPath, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -238,22 +258,14 @@
                 Margin="0,6,0,0"
                 Visibility="{Binding Tags, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource CountToVisibilityConverter}}">
                 <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel />
-                    </ItemsPanelTemplate>
+                    <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemsSource>
                     <Binding Path="Tags" RelativeSource="{RelativeSource AncestorType=UserControl}" />
                 </ItemsControl.ItemsSource>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border
-                            Background="{StaticResource CardBorderBrush}"
-                            CornerRadius="8"
-                            Padding="6,2"
-                            Margin="0,0,4,2"
-                            Cursor="Hand"
-                            MouseLeftButtonUp="OnTagClick">
+                        <Border Background="{StaticResource CardBorderBrush}" CornerRadius="8" Padding="6,2" Margin="0,0,4,2" Cursor="Hand" MouseLeftButtonUp="OnTagClick">
                             <TextBlock Text="{Binding}" FontSize="10" Foreground="{StaticResource TextSubtleBrush}" />
                         </Border>
                     </DataTemplate>
@@ -262,27 +274,17 @@
 
             <!-- Row 5: License badge -->
             <Border
-                Grid.Row="5"
-                Background="{StaticResource CardBorderBrush}"
-                CornerRadius="4"
-                Padding="4,1"
-                Margin="0,6,0,0"
-                HorizontalAlignment="Left"
+                Grid.Row="5" Background="{StaticResource CardBorderBrush}" CornerRadius="4" Padding="4,1"
+                Margin="0,6,0,0" HorizontalAlignment="Left"
                 Visibility="{Binding License, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource NullToVisibilityConverter}}">
-                <TextBlock
-                    Text="{Binding License, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                    FontSize="9"
-                    Foreground="{StaticResource TextSubtleBrush}" />
+                <TextBlock Text="{Binding License, RelativeSource={RelativeSource AncestorType=UserControl}}" FontSize="9" Foreground="{StaticResource TextSubtleBrush}" />
             </Border>
 
             <!-- Row 6: Action button -->
             <ui:Button
                 Grid.Row="6"
                 Content="{Binding ActionButtonText, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                HorizontalAlignment="Stretch"
-                Padding="8,6"
-                FontSize="11"
-                Margin="0,8,0,0"
+                HorizontalAlignment="Stretch" Padding="8,6" FontSize="11" Margin="0,8,0,0"
                 Click="OnActionClick">
                 <ui:Button.Style>
                     <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
@@ -295,6 +297,223 @@
                     </Style>
                 </ui:Button.Style>
             </ui:Button>
+
+            <!-- Row 7: Expanded detail content (binds to DataContext = AppCardModel) -->
+            <StackPanel Grid.Row="7" Margin="0,8,0,0"
+                Visibility="{Binding IsExpanded, Converter={StaticResource BooleanToVisibilityConverter}}">
+
+                <ui:ProgressRing IsIndeterminate="True" Width="24" Height="24" HorizontalAlignment="Center" Margin="0,8"
+                    Visibility="{Binding IsLoadingDetail, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                <StackPanel Visibility="{Binding IsLoadingDetail, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+
+                    <!-- Requires (amber) -->
+                    <Border Background="{StaticResource WarningSubtleBrush}" CornerRadius="6" Padding="8" Margin="0,0,0,6"
+                        Visibility="{Binding HasRequires, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <StackPanel>
+                            <TextBlock Text="Requires" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource WarningBrush}" Margin="0,0,0,4" />
+                            <ItemsControl ItemsSource="{Binding CatalogEntry.Requires}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" FontSize="10" Foreground="{StaticResource WarningBrush}"
+                                            TextDecorations="Underline" Cursor="Hand" Margin="0,1"
+                                            MouseLeftButtonUp="OnNavigateToAppClick" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Config Links -->
+                    <StackPanel Margin="0,0,0,6" Visibility="{Binding HasFileStatuses, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock Text="Config Links" FontSize="11" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,4" />
+                        <ItemsControl ItemsSource="{Binding Detail.FileStatuses}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type models:DotfileFileStatus}">
+                                    <Grid Margin="0,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="16" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" FontSize="10" VerticalAlignment="Top" HorizontalAlignment="Center">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="&#x25CB;" />
+                                                    <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Status}" Value="{x:Static models:CardStatus.Synced}">
+                                                            <Setter Property="Text" Value="&#x2713;" />
+                                                            <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Status}" Value="{x:Static models:CardStatus.Drifted}">
+                                                            <Setter Property="Text" Value="&#x2717;" />
+                                                            <Setter Property="Foreground" Value="{StaticResource ErrorBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{Binding FileName}" FontSize="10" Foreground="White" />
+                                            <TextBlock Text="{Binding FullPath, Converter={StaticResource PathEllipsisConverter}}"
+                                                FontSize="9" Foreground="{StaticResource TextDimBrush}" TextTrimming="CharacterEllipsis"
+                                                ToolTip="{Binding FullPath}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!-- Install -->
+                    <StackPanel Margin="0,0,0,6" Visibility="{Binding HasInstall, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock Text="Install" FontSize="11" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,4" />
+                        <StackPanel Visibility="{Binding CatalogEntry.Install.Winget, Converter={StaticResource NullToVisibilityConverter}}">
+                            <Grid Margin="0,1"><Grid.ColumnDefinitions><ColumnDefinition Width="60" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                <TextBlock Text="winget" FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
+                                <TextBox Grid.Column="1" Text="{Binding CatalogEntry.Install.Winget, Mode=OneWay}" IsReadOnly="True" FontSize="10" Foreground="{StaticResource TextLightBrush}" Background="Transparent" BorderThickness="0" Padding="0" />
+                            </Grid>
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding CatalogEntry.Install.Choco, Converter={StaticResource NullToVisibilityConverter}}">
+                            <Grid Margin="0,1"><Grid.ColumnDefinitions><ColumnDefinition Width="60" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                <TextBlock Text="choco" FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
+                                <TextBox Grid.Column="1" Text="{Binding CatalogEntry.Install.Choco, Mode=OneWay}" IsReadOnly="True" FontSize="10" Foreground="{StaticResource TextLightBrush}" Background="Transparent" BorderThickness="0" Padding="0" />
+                            </Grid>
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding CatalogEntry.Install.DotnetTool, Converter={StaticResource NullToVisibilityConverter}}">
+                            <Grid Margin="0,1"><Grid.ColumnDefinitions><ColumnDefinition Width="60" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                <TextBlock Text="dotnet" FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
+                                <TextBox Grid.Column="1" Text="{Binding CatalogEntry.Install.DotnetTool, Mode=OneWay}" IsReadOnly="True" FontSize="10" Foreground="{StaticResource TextLightBrush}" Background="Transparent" BorderThickness="0" Padding="0" />
+                            </Grid>
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding CatalogEntry.Install.NodePackage, Converter={StaticResource NullToVisibilityConverter}}">
+                            <Grid Margin="0,1"><Grid.ColumnDefinitions><ColumnDefinition Width="60" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                <TextBlock Text="npm" FontSize="10" Foreground="{StaticResource TextMutedBrush}" />
+                                <TextBox Grid.Column="1" Text="{Binding CatalogEntry.Install.NodePackage, Mode=OneWay}" IsReadOnly="True" FontSize="10" Foreground="{StaticResource TextLightBrush}" Background="Transparent" BorderThickness="0" Padding="0" />
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Extensions -->
+                    <StackPanel Margin="0,0,0,6" Visibility="{Binding HasExtensions, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock Text="Extensions" FontSize="11" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,4" />
+                        <StackPanel Visibility="{Binding CatalogEntry.Extensions.Bundled, Converter={StaticResource CountToVisibilityConverter}}">
+                            <TextBlock Text="Bundled" FontSize="10" Foreground="{StaticResource TextSubtleBrush}" Margin="0,0,0,2" />
+                            <ItemsControl ItemsSource="{Binding CatalogEntry.Extensions.Bundled}">
+                                <ItemsControl.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" FontSize="9" Foreground="{StaticResource TextMutedBrush}" Margin="8,1,0,0" /></DataTemplate></ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding CatalogEntry.Extensions.Recommended, Converter={StaticResource CountToVisibilityConverter}}" Margin="0,4,0,0">
+                            <TextBlock Text="Recommended" FontSize="10" Foreground="{StaticResource TextSubtleBrush}" Margin="0,0,0,2" />
+                            <ItemsControl ItemsSource="{Binding CatalogEntry.Extensions.Recommended}">
+                                <ItemsControl.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" FontSize="9" Foreground="{StaticResource TextMutedBrush}" Margin="8,1,0,0" /></DataTemplate></ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Tweaks -->
+                    <StackPanel Margin="0,0,0,6" Visibility="{Binding HasTweaks, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock Text="Tweaks" FontSize="11" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,4" />
+                        <ItemsControl ItemsSource="{Binding CatalogEntry.Tweaks}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{StaticResource SurfaceBrush}" CornerRadius="4" Padding="6,4" Margin="0,0,0,4">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Name}" FontSize="10" Foreground="White" />
+                                            <TextBlock Text="{Binding Description}" FontSize="9" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap"
+                                                Visibility="{Binding Description, Converter={StaticResource NullToVisibilityConverter}}" />
+                                            <ItemsControl ItemsSource="{Binding Registry}" Margin="0,4,0,0">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock FontSize="8" Foreground="{StaticResource TextDimBrush}" TextWrapping="Wrap">
+                                                            <Run Text="{Binding Name, Mode=OneWay}" /><Run Text=" = " /><Run Text="{Binding Value, Mode=OneWay}" />
+                                                        </TextBlock>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!-- Alternatives -->
+                    <StackPanel Margin="0,0,0,4" Orientation="Horizontal"
+                        Visibility="{Binding HasAlternatives, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock Text="Alternatives: " FontSize="10" Foreground="{StaticResource TextSubtleBrush}" VerticalAlignment="Center" />
+                        <ItemsControl ItemsSource="{Binding CatalogEntry.Alternatives}">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" FontSize="10" Foreground="{StaticResource InfoBrush}" TextDecorations="Underline" Cursor="Hand" Margin="0,0,6,0"
+                                        MouseLeftButtonUp="OnNavigateToAppClick" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!-- Also Consider -->
+                    <StackPanel Margin="0,0,0,4" Orientation="Horizontal"
+                        Visibility="{Binding HasSuggests, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock Text="Also consider: " FontSize="10" Foreground="{StaticResource TextSubtleBrush}" VerticalAlignment="Center" />
+                        <ItemsControl ItemsSource="{Binding CatalogEntry.Suggests}">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" FontSize="10" Foreground="{StaticResource InfoBrush}" TextDecorations="Underline" Cursor="Hand" Margin="0,0,6,0"
+                                        MouseLeftButtonUp="OnNavigateToAppClick" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!-- Footer: License + OS pills -->
+                    <Border Background="{StaticResource SurfaceBrush}" CornerRadius="4" Padding="6,4" Margin="0,4,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <Border Background="{StaticResource CardBorderBrush}" CornerRadius="4" Padding="4,1" Margin="0,0,6,0"
+                                Visibility="{Binding License, Converter={StaticResource NullToVisibilityConverter}}">
+                                <TextBlock Text="{Binding License}" FontSize="9" Foreground="{StaticResource TextSubtleBrush}" />
+                            </Border>
+                            <ItemsControl ItemsSource="{Binding CatalogEntry.Os}" Visibility="{Binding HasOs, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{StaticResource AccentSubtleBrush}" CornerRadius="4" Padding="4,1" Margin="0,0,4,0">
+                                            <TextBlock Text="{Binding}" FontSize="9" Foreground="{StaticResource AccentBrush}" />
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Related Apps -->
+                    <StackPanel Margin="0,6,0,0" Visibility="{Binding HasDependents, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,4">
+                            <Run Text="Related Apps (" /><Run Text="{Binding DependentAppCount, Mode=OneWay}" /><Run Text=")" />
+                        </TextBlock>
+                        <ItemsControl ItemsSource="{Binding DependentApps}">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type models:AppCardModel}">
+                                    <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="8,6" Margin="0,0,6,6" Width="160">
+                                        <Grid>
+                                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                            <controls:StatusRibbon Grid.Column="0" Status="{Binding Status}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                            <TextBlock Grid.Column="1" Text="{Binding DisplayLabel}" FontSize="10" FontWeight="SemiBold" Foreground="White" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Grid.Row="1" Grid.ColumnSpan="2" FontSize="9" Foreground="{StaticResource TextMutedBrush}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis">
+                                                <TextBlock.Text><Binding Path="Tags[0]" FallbackValue="" /></TextBlock.Text>
+                                            </TextBlock>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </StackPanel>
+            </StackPanel>
         </Grid>
     </Border>
 </UserControl>
