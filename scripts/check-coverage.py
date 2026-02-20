@@ -26,9 +26,9 @@ def main():
             name = pkg.attrib.get("name", "")
             lines = assembly_lines.setdefault(name, {})
             for cls in pkg.findall(".//class"):
-                fname = cls.attrib.get("filename", "")
+                cls_name = cls.attrib.get("name", "")
                 for line in cls.findall(".//line"):
-                    key = (fname, line.attrib.get("number", ""))
+                    key = (cls_name, line.attrib.get("number", ""))
                     hits = int(line.attrib.get("hits", 0))
                     prev = lines.get(key, 0)
                     lines[key] = max(prev, hits)
