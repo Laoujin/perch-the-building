@@ -3,10 +3,13 @@ using System.Collections.ObjectModel;
 using System.Runtime.Versioning;
 
 using Perch.Core.Catalog;
+using Perch.Core.Modules;
+using Perch.Core.Registry;
 using Perch.Core.Scanner;
 using Perch.Core.Startup;
 using Perch.Core.Deploy;
 using Perch.Core.Status;
+using Perch.Core.Tweaks;
 using Perch.Desktop.Models;
 using Perch.Desktop.ViewModels;
 using Perch.Desktop.ViewModels.Wizard;
@@ -1123,6 +1126,231 @@ public sealed class ModelTests
                 Assert.That(vm.Level, Is.EqualTo(ResultLevel.Ok));
                 Assert.That(vm.Message, Is.EqualTo("Symlink created"));
             });
+        }
+    }
+
+    [TestFixture]
+    [Platform("Win")]
+    [SupportedOSPlatform("windows")]
+    public sealed class TweakCardModelTests
+    {
+        private static TweakCatalogEntry MakeTweak(
+            string id = "dark-mode",
+            string name = "Dark Mode",
+            string category = "Appearance/Theme",
+            string? description = null,
+            bool reversible = true,
+            ImmutableArray<string> tags = default,
+            ImmutableArray<string> profiles = default,
+            ImmutableArray<RegistryEntryDefinition> registry = default) =>
+            new(id, name, category, tags.IsDefault ? [] : tags, description, reversible,
+                profiles.IsDefault ? [] : profiles, registry.IsDefault ? [] : registry);
+
+        [Test]
+        public void Constructor_SetsAllProperties()
+        {
+            var reg = ImmutableArray.Create(new RegistryEntryDefinition(@"HKCU\Software\Test", "DarkMode", 1, RegistryValueType.DWord));
+            var entry = MakeTweak(description: "Enable dark theme", tags: ["restart"], profiles: ["developer"], registry: reg);
+
+            var model = new TweakCardModel(entry, CardStatus.Synced);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(model.Id, Is.EqualTo("dark-mode"));
+                Assert.That(model.Name, Is.EqualTo("Dark Mode"));
+                Assert.That(model.Category, Is.EqualTo("Appearance/Theme"));
+                Assert.That(model.Description, Is.EqualTo("Enable dark theme"));
+                Assert.That(model.Reversible, Is.True);
+                Assert.That(model.Status, Is.EqualTo(CardStatus.Synced));
+                Assert.That(model.Tags, Has.Length.EqualTo(1));
+                Assert.That(model.Profiles, Has.Length.EqualTo(1));
+                Assert.That(model.Registry, Has.Length.EqualTo(1));
+            });
+        }
+
+        [Test]
+        public void BroadCategory_ReturnsFirstSegment()
+        {
+            var model = new TweakCardModel(MakeTweak(category: "Appearance/Theme"), CardStatus.Unmanaged);
+            Assert.That(model.BroadCategory, Is.EqualTo("Appearance"));
+        }
+
+        [Test]
+        public void SubCategory_ReturnsAfterSlash()
+        {
+            var model = new TweakCardModel(MakeTweak(category: "Appearance/Theme"), CardStatus.Unmanaged);
+            Assert.That(model.SubCategory, Is.EqualTo("Theme"));
+        }
+
+        [Test]
+        public void SubCategory_NoSlash_ReturnsCategory()
+        {
+            var model = new TweakCardModel(MakeTweak(category: "Privacy"), CardStatus.Unmanaged);
+            Assert.That(model.SubCategory, Is.EqualTo("Privacy"));
+        }
+
+        [Test]
+        public void TotalCount_ReturnsRegistryLength()
+        {
+            var reg = ImmutableArray.Create(
+                new RegistryEntryDefinition(@"HKCU\A", "X", 1, RegistryValueType.DWord),
+                new RegistryEntryDefinition(@"HKCU\B", "Y", 0, RegistryValueType.DWord));
+            var model = new TweakCardModel(MakeTweak(registry: reg), CardStatus.Unmanaged);
+            Assert.That(model.TotalCount, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void RestartRequired_TagPresent_ReturnsTrue()
+        {
+            var model = new TweakCardModel(MakeTweak(tags: ["restart"]), CardStatus.Unmanaged);
+            Assert.That(model.RestartRequired, Is.True);
+        }
+
+        [Test]
+        public void RestartRequired_NoTag_ReturnsFalse()
+        {
+            var model = new TweakCardModel(MakeTweak(tags: ["performance"]), CardStatus.Unmanaged);
+            Assert.That(model.RestartRequired, Is.False);
+        }
+
+        [Test]
+        public void RegistryKeyCountText_SingleKey()
+        {
+            var reg = ImmutableArray.Create(new RegistryEntryDefinition(@"HKCU\A", "X", 1, RegistryValueType.DWord));
+            var model = new TweakCardModel(MakeTweak(registry: reg), CardStatus.Unmanaged);
+            Assert.That(model.RegistryKeyCountText, Is.EqualTo("1 registry key"));
+        }
+
+        [Test]
+        public void RegistryKeyCountText_MultipleKeys()
+        {
+            var reg = ImmutableArray.Create(
+                new RegistryEntryDefinition(@"HKCU\A", "X", 1, RegistryValueType.DWord),
+                new RegistryEntryDefinition(@"HKCU\B", "Y", 0, RegistryValueType.DWord));
+            var model = new TweakCardModel(MakeTweak(registry: reg), CardStatus.Unmanaged);
+            Assert.That(model.RegistryKeyCountText, Is.EqualTo("2 registry keys"));
+        }
+
+        [Test]
+        public void IsAllApplied_AllApplied_ReturnsTrue()
+        {
+            var reg = ImmutableArray.Create(new RegistryEntryDefinition(@"HKCU\A", "X", 1, RegistryValueType.DWord));
+            var model = new TweakCardModel(MakeTweak(registry: reg), CardStatus.Synced) { AppliedCount = 1 };
+            Assert.That(model.IsAllApplied, Is.True);
+        }
+
+        [Test]
+        public void IsAllApplied_NotAllApplied_ReturnsFalse()
+        {
+            var reg = ImmutableArray.Create(
+                new RegistryEntryDefinition(@"HKCU\A", "X", 1, RegistryValueType.DWord),
+                new RegistryEntryDefinition(@"HKCU\B", "Y", 0, RegistryValueType.DWord));
+            var model = new TweakCardModel(MakeTweak(registry: reg), CardStatus.Synced) { AppliedCount = 1 };
+            Assert.That(model.IsAllApplied, Is.False);
+        }
+
+        [Test]
+        public void IsAllApplied_ZeroTotal_ReturnsFalse()
+        {
+            var model = new TweakCardModel(MakeTweak(), CardStatus.Unmanaged) { AppliedCount = 0 };
+            Assert.That(model.IsAllApplied, Is.False);
+        }
+
+        [Test]
+        public void HasCapturedValues_WithCapture_ReturnsTrue()
+        {
+            var def = new RegistryEntryDefinition(@"HKCU\A", "X", 1, RegistryValueType.DWord);
+            var entries = ImmutableArray.Create(new RegistryEntryStatus(def, 0, "captured", false));
+            var model = new TweakCardModel(MakeTweak(), CardStatus.Unmanaged) { DetectedEntries = entries };
+            Assert.That(model.HasCapturedValues, Is.True);
+        }
+
+        [Test]
+        public void HasCapturedValues_NoCaptured_ReturnsFalse()
+        {
+            var def = new RegistryEntryDefinition(@"HKCU\A", "X", 1, RegistryValueType.DWord);
+            var entries = ImmutableArray.Create(new RegistryEntryStatus(def, 0, null, false));
+            var model = new TweakCardModel(MakeTweak(), CardStatus.Unmanaged) { DetectedEntries = entries };
+            Assert.That(model.HasCapturedValues, Is.False);
+        }
+
+        [Test]
+        public void HasCapturedValues_DefaultEntries_ReturnsFalse()
+        {
+            var model = new TweakCardModel(MakeTweak(), CardStatus.Unmanaged);
+            Assert.That(model.HasCapturedValues, Is.False);
+        }
+
+        [Test]
+        public void MatchesProfile_EmptyProfiles_ReturnsTrue()
+        {
+            var model = new TweakCardModel(MakeTweak(), CardStatus.Unmanaged);
+            Assert.That(model.MatchesProfile([UserProfile.Developer]), Is.True);
+        }
+
+        [Test]
+        public void MatchesProfile_MatchingProfile_ReturnsTrue()
+        {
+            var model = new TweakCardModel(MakeTweak(profiles: ["developer"]), CardStatus.Unmanaged);
+            Assert.That(model.MatchesProfile([UserProfile.Developer]), Is.True);
+        }
+
+        [Test]
+        public void MatchesProfile_NonMatchingProfile_ReturnsFalse()
+        {
+            var model = new TweakCardModel(MakeTweak(profiles: ["gamer"]), CardStatus.Unmanaged);
+            Assert.That(model.MatchesProfile([UserProfile.Developer]), Is.False);
+        }
+
+        [Test]
+        public void MatchesSearch_EmptyQuery_ReturnsTrue()
+        {
+            var model = new TweakCardModel(MakeTweak(), CardStatus.Unmanaged);
+            Assert.That(model.MatchesSearch(""), Is.True);
+        }
+
+        [Test]
+        public void MatchesSearch_ByName_ReturnsTrue()
+        {
+            var model = new TweakCardModel(MakeTweak(name: "Dark Mode"), CardStatus.Unmanaged);
+            Assert.That(model.MatchesSearch("dark"), Is.True);
+        }
+
+        [Test]
+        public void MatchesSearch_ByDescription_ReturnsTrue()
+        {
+            var model = new TweakCardModel(MakeTweak(description: "Enable dark theme"), CardStatus.Unmanaged);
+            Assert.That(model.MatchesSearch("theme"), Is.True);
+        }
+
+        [Test]
+        public void MatchesSearch_ByCategory_ReturnsTrue()
+        {
+            var model = new TweakCardModel(MakeTweak(category: "Appearance/Theme"), CardStatus.Unmanaged);
+            Assert.That(model.MatchesSearch("appear"), Is.True);
+        }
+
+        [Test]
+        public void MatchesSearch_NoMatch_ReturnsFalse()
+        {
+            var model = new TweakCardModel(MakeTweak(), CardStatus.Unmanaged);
+            Assert.That(model.MatchesSearch("zzzzz"), Is.False);
+        }
+
+        [Test]
+        public void ObservableProperties_RaisePropertyChanged()
+        {
+            var model = new TweakCardModel(MakeTweak(), CardStatus.Unmanaged);
+            var changed = new List<string>();
+            model.PropertyChanged += (_, e) => changed.Add(e.PropertyName!);
+
+            model.Status = CardStatus.Synced;
+            model.IsSelected = true;
+            model.IsExpanded = true;
+            model.AppliedCount = 5;
+            model.IsSuggested = true;
+
+            Assert.That(changed, Is.SupersetOf(new[] { "Status", "IsSelected", "IsExpanded", "AppliedCount", "IsSuggested" }));
         }
     }
 }
