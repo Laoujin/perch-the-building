@@ -285,6 +285,211 @@ public sealed class LanguagesViewModelTests
         return new AppCardModel(entry, CardTier.Other, status);
     }
 
+    [Test]
+    public async Task SelectItemAsync_LoadsDetailAndSetsProperties()
+    {
+        var runtime = MakeRuntime("dotnet", ".NET SDK", CardStatus.Synced,
+            suggests: ["rider"]);
+        var ide = MakeApp("rider", "Rider", "Languages/IDEs", CardStatus.Synced);
+
+        _detectionService.DetectAllAppsAsync(Arg.Any<CancellationToken>())
+            .Returns([runtime, ide]);
+
+        var detail = new AppDetail(ide, null, null, null, null, []);
+        _detailService.LoadDetailAsync(ide, Arg.Any<CancellationToken>())
+            .Returns(detail);
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+        _vm.SelectEcosystemCommand.Execute(_vm.Ecosystems[0]);
+
+        await _vm.SelectItemCommand.ExecuteAsync(ide);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_vm.SelectedItem, Is.EqualTo(ide));
+            Assert.That(_vm.ItemDetail, Is.EqualTo(detail));
+            Assert.That(_vm.ShowItemDetail, Is.True);
+            Assert.That(_vm.ShowEcosystemDetail, Is.False);
+            Assert.That(_vm.IsLoadingDetail, Is.False);
+        });
+    }
+
+    [Test]
+    public async Task ToggleApp_UnmanagedApp_AddsLinkChange()
+    {
+        var runtime = MakeRuntime("dotnet", ".NET SDK", CardStatus.Synced,
+            suggests: ["rider"]);
+        var ide = MakeApp("rider", "Rider", "Languages/IDEs", CardStatus.Unmanaged);
+
+        _detectionService.DetectAllAppsAsync(Arg.Any<CancellationToken>())
+            .Returns([runtime, ide]);
+        _pendingChanges.Contains(Arg.Any<string>(), Arg.Any<PendingChangeKind>()).Returns(false);
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+        _vm.ToggleAppCommand.Execute(ide);
+
+        _pendingChanges.Received(1).Add(Arg.Is<LinkAppChange>(c => c.App == ide));
+    }
+
+    [Test]
+    public async Task ToggleApp_ManagedApp_AddsUnlinkChange()
+    {
+        var runtime = MakeRuntime("dotnet", ".NET SDK", CardStatus.Synced,
+            suggests: ["rider"]);
+        var ide = MakeApp("rider", "Rider", "Languages/IDEs", CardStatus.Synced);
+
+        _detectionService.DetectAllAppsAsync(Arg.Any<CancellationToken>())
+            .Returns([runtime, ide]);
+        _pendingChanges.Contains(Arg.Any<string>(), Arg.Any<PendingChangeKind>()).Returns(false);
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+        _vm.ToggleAppCommand.Execute(ide);
+
+        _pendingChanges.Received(1).Add(Arg.Is<UnlinkAppChange>(c => c.App == ide));
+    }
+
+    [Test]
+    public async Task ToggleApp_PendingLink_RemovesIt()
+    {
+        var runtime = MakeRuntime("dotnet", ".NET SDK", CardStatus.Synced,
+            suggests: ["rider"]);
+        var ide = MakeApp("rider", "Rider", "Languages/IDEs", CardStatus.Unmanaged);
+
+        _detectionService.DetectAllAppsAsync(Arg.Any<CancellationToken>())
+            .Returns([runtime, ide]);
+        _pendingChanges.Contains("rider", PendingChangeKind.LinkApp).Returns(true);
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+        _vm.ToggleAppCommand.Execute(ide);
+
+        _pendingChanges.Received(1).Remove("rider", PendingChangeKind.LinkApp);
+    }
+
+    [Test]
+    public async Task BackToGrid_ClearsEverything()
+    {
+        var runtime = MakeRuntime("dotnet", ".NET SDK", CardStatus.Synced);
+        _detectionService.DetectAllAppsAsync(Arg.Any<CancellationToken>())
+            .Returns([runtime]);
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+        _vm.SelectEcosystemCommand.Execute(_vm.Ecosystems[0]);
+        Assert.That(_vm.ShowDetail, Is.True);
+
+        _vm.BackToGridCommand.Execute(null);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_vm.SelectedEcosystem, Is.Null);
+            Assert.That(_vm.SelectedItem, Is.Null);
+            Assert.That(_vm.ItemDetail, Is.Null);
+            Assert.That(_vm.ShowGrid, Is.True);
+        });
+    }
+
+    [Test]
+    public async Task BackToEcosystem_ClearsSelectedItem()
+    {
+        var runtime = MakeRuntime("dotnet", ".NET SDK", CardStatus.Synced,
+            suggests: ["rider"]);
+        var ide = MakeApp("rider", "Rider", "Languages/IDEs", CardStatus.Synced);
+
+        _detectionService.DetectAllAppsAsync(Arg.Any<CancellationToken>())
+            .Returns([runtime, ide]);
+        _detailService.LoadDetailAsync(ide, Arg.Any<CancellationToken>())
+            .Returns(new AppDetail(ide, null, null, null, null, []));
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+        _vm.SelectEcosystemCommand.Execute(_vm.Ecosystems[0]);
+        await _vm.SelectItemCommand.ExecuteAsync(ide);
+        Assert.That(_vm.ShowItemDetail, Is.True);
+
+        _vm.BackToEcosystemCommand.Execute(null);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_vm.SelectedItem, Is.Null);
+            Assert.That(_vm.ItemDetail, Is.Null);
+            Assert.That(_vm.ShowEcosystemDetail, Is.True);
+            Assert.That(_vm.ShowItemDetail, Is.False);
+        });
+    }
+
+    [Test]
+    public async Task RefreshAsync_OnFailure_SetsErrorMessage()
+    {
+        _detectionService.DetectAllAppsAsync(Arg.Any<CancellationToken>())
+            .Returns<ImmutableArray<AppCardModel>>(_ => throw new InvalidOperationException("network error"));
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_vm.ErrorMessage, Does.Contain("network error"));
+            Assert.That(_vm.IsLoading, Is.False);
+        });
+    }
+
+    [Test]
+    public async Task RefreshAsync_CallsInvalidateCache()
+    {
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        _detectionService.Received(1).InvalidateCache();
+    }
+
+    [Test]
+    public async Task SearchText_FiltersEcosystems()
+    {
+        var dotnet = MakeRuntime("dotnet", ".NET SDK", CardStatus.Synced);
+        var node = MakeRuntime("node", "Node.js", CardStatus.Detected);
+
+        _detectionService.DetectAllAppsAsync(Arg.Any<CancellationToken>())
+            .Returns([dotnet, node]);
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+        Assert.That(_vm.Ecosystems, Has.Count.EqualTo(2));
+
+        _vm.SearchText = "Node";
+        Assert.That(_vm.Ecosystems, Has.Count.EqualTo(1));
+        Assert.That(_vm.Ecosystems[0].Name, Is.EqualTo("Node.js"));
+    }
+
+    [Test]
+    public async Task RefreshAsync_UpdatesSummaryCounts()
+    {
+        var synced = MakeRuntime("dotnet", ".NET SDK", CardStatus.Synced);
+        var detected = MakeRuntime("node", "Node.js", CardStatus.Detected);
+        var drifted = MakeRuntime("python", "Python", CardStatus.Drifted);
+
+        _detectionService.DetectAllAppsAsync(Arg.Any<CancellationToken>())
+            .Returns([synced, detected, drifted]);
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(_vm.SyncedCount, Is.EqualTo(1));
+            Assert.That(_vm.DetectedCount, Is.EqualTo(1));
+            Assert.That(_vm.DriftedCount, Is.EqualTo(1));
+        });
+    }
+
+    [Test]
+    public async Task EcosystemWithDependents_IncludesDependentItems()
+    {
+        var runtime = MakeRuntime("dotnet", ".NET SDK", CardStatus.Synced);
+        var dep = MakeApp("dotnet-ef", "EF CLI", "Languages/CLI Tools", CardStatus.Detected,
+            requires: ["dotnet"]);
+
+        _detectionService.DetectAllAppsAsync(Arg.Any<CancellationToken>())
+            .Returns([runtime, dep]);
+
+        await _vm.RefreshCommand.ExecuteAsync(null);
+
+        Assert.That(_vm.Ecosystems[0].Items, Has.Length.EqualTo(2));
+    }
+
     private static AppCardModel MakeApp(
         string id, string name, string category, CardStatus status,
         CatalogKind kind = CatalogKind.App,
