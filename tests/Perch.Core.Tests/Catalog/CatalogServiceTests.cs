@@ -234,6 +234,229 @@ public sealed class CatalogServiceTests
     }
 
     [Test]
+    public async Task GetFontAsync_FetchesAndParses()
+    {
+        string fontYaml = """
+            name: Fira Code
+            category: Monospace
+            description: Ligature mono font
+            """;
+
+        _cache.GetAsync("fonts/fira-code.yaml", Arg.Any<CancellationToken>()).Returns(fontYaml);
+
+        var font = await _service.GetFontAsync("fira-code");
+
+        Assert.That(font, Is.Not.Null);
+        Assert.That(font!.Name, Is.EqualTo("Fira Code"));
+    }
+
+    [Test]
+    public async Task GetAllFontsAsync_FetchesIndexThenEachFont()
+    {
+        string indexYaml = """
+            apps: []
+            fonts:
+              - id: fira-code
+                name: Fira Code
+                category: Monospace
+            tweaks: []
+            """;
+
+        string fontYaml = """
+            name: Fira Code
+            category: Monospace
+            description: Ligature mono font
+            """;
+
+        _cache.GetAsync("index.yaml", Arg.Any<CancellationToken>()).Returns(indexYaml);
+        _cache.GetAsync("fonts/fira-code.yaml", Arg.Any<CancellationToken>()).Returns(fontYaml);
+
+        var fonts = await _service.GetAllFontsAsync();
+
+        Assert.That(fonts, Has.Length.EqualTo(1));
+        Assert.That(fonts[0].Name, Is.EqualTo("Fira Code"));
+    }
+
+    [Test]
+    public async Task GetAllFontsAsync_CachesResult()
+    {
+        string indexYaml = """
+            apps: []
+            fonts:
+              - id: fira-code
+                name: Fira Code
+                category: Monospace
+            tweaks: []
+            """;
+
+        string fontYaml = """
+            name: Fira Code
+            category: Monospace
+            """;
+
+        _cache.GetAsync("index.yaml", Arg.Any<CancellationToken>()).Returns(indexYaml);
+        _cache.GetAsync("fonts/fira-code.yaml", Arg.Any<CancellationToken>()).Returns(fontYaml);
+
+        var first = await _service.GetAllFontsAsync();
+        var second = await _service.GetAllFontsAsync();
+
+        Assert.That(first, Is.EqualTo(second));
+    }
+
+    [Test]
+    public async Task GetAllTweaksAsync_FetchesIndexThenEachTweak()
+    {
+        string indexYaml = """
+            apps: []
+            fonts: []
+            tweaks:
+              - id: dark-mode
+                name: Dark Mode
+                category: Appearance
+            """;
+
+        string tweakYaml = """
+            name: Dark Mode
+            category: Appearance/Theme
+            reversible: true
+            registry:
+              - key: HKCU\Software\Test
+                name: DarkMode
+                value: 1
+                type: dword
+            """;
+
+        _cache.GetAsync("index.yaml", Arg.Any<CancellationToken>()).Returns(indexYaml);
+        _cache.GetAsync("tweaks/dark-mode.yaml", Arg.Any<CancellationToken>()).Returns(tweakYaml);
+
+        var tweaks = await _service.GetAllTweaksAsync();
+
+        Assert.That(tweaks, Has.Length.EqualTo(1));
+        Assert.That(tweaks[0].Name, Is.EqualTo("Dark Mode"));
+    }
+
+    [Test]
+    public async Task GetAllTweaksAsync_CachesResult()
+    {
+        string indexYaml = """
+            apps: []
+            fonts: []
+            tweaks:
+              - id: dark-mode
+                name: Dark Mode
+                category: Appearance
+            """;
+
+        string tweakYaml = """
+            name: Dark Mode
+            category: Appearance
+            reversible: true
+            registry:
+              - key: HKCU\Software\Test
+                name: DarkMode
+                value: 1
+                type: dword
+            """;
+
+        _cache.GetAsync("index.yaml", Arg.Any<CancellationToken>()).Returns(indexYaml);
+        _cache.GetAsync("tweaks/dark-mode.yaml", Arg.Any<CancellationToken>()).Returns(tweakYaml);
+
+        var first = await _service.GetAllTweaksAsync();
+        var second = await _service.GetAllTweaksAsync();
+
+        Assert.That(first, Is.EqualTo(second));
+    }
+
+    [Test]
+    public async Task GetGitHubStarsAsync_ParsesStars()
+    {
+        string starsYaml = """
+            vscode: 150000
+            firefox: 800
+            """;
+
+        _cache.GetAsync("metadata/github-stars.yaml", Arg.Any<CancellationToken>()).Returns(starsYaml);
+
+        var stars = await _service.GetGitHubStarsAsync();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(stars["vscode"], Is.EqualTo(150000));
+            Assert.That(stars["firefox"], Is.EqualTo(800));
+        });
+    }
+
+    [Test]
+    public async Task GetGitHubStarsAsync_CachesResult()
+    {
+        string starsYaml = """
+            vscode: 150000
+            """;
+
+        _cache.GetAsync("metadata/github-stars.yaml", Arg.Any<CancellationToken>()).Returns(starsYaml);
+
+        var first = await _service.GetGitHubStarsAsync();
+        var second = await _service.GetGitHubStarsAsync();
+
+        Assert.That(first, Is.SameAs(second));
+    }
+
+    [Test]
+    public async Task GetAllDotfileAppsAsync_FiltersOnlyDotfileKind()
+    {
+        string indexYaml = """
+            apps:
+              - id: git
+                name: Git
+                category: Dev
+              - id: bash
+                name: Bash
+                category: Dev
+            fonts: []
+            tweaks: []
+            """;
+
+        string gitYaml = """
+            name: Git
+            category: Development
+            install:
+              winget: Git.Git
+            """;
+
+        string bashYaml = """
+            name: Bash
+            category: Development
+            kind: dotfile
+            """;
+
+        _cache.GetAsync("index.yaml", Arg.Any<CancellationToken>()).Returns(indexYaml);
+        _cache.GetAsync("apps/git.yaml", Arg.Any<CancellationToken>()).Returns(gitYaml);
+        _cache.GetAsync("apps/bash.yaml", Arg.Any<CancellationToken>()).Returns(bashYaml);
+
+        var dotfiles = await _service.GetAllDotfileAppsAsync();
+
+        Assert.That(dotfiles, Has.Length.EqualTo(1));
+        Assert.That(dotfiles[0].Name, Is.EqualTo("Bash"));
+    }
+
+    [Test]
+    public void InvalidateAll_ClearsAllCaches()
+    {
+        _service.InvalidateAll();
+
+        _cache.Received(1).InvalidateAll();
+    }
+
+    [Test]
+    public async Task GetIndexAsync_InvalidYaml_ThrowsInvalidOperation()
+    {
+        _cache.GetAsync("index.yaml", Arg.Any<CancellationToken>()).Returns("not: valid: yaml: ::::");
+
+        Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await _service.GetIndexAsync());
+    }
+
+    [Test]
     public async Task GetAllAppOwnedTweaksAsync_MultipleTweaksFromOneApp()
     {
         string indexYaml = """
