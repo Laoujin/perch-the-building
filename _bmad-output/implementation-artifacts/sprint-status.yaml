@@ -1,4 +1,4 @@
-# updated: 2026-02-19
+# updated: 2026-02-20 (sprint-planning refresh)
 # project: dotfiles
 # project_key: NOKEY
 # tracking_system: file-system
@@ -36,7 +36,7 @@
 # New epics (20+) reflect Desktop-first priorities.
 
 generated: 2026-02-16
-updated: 2026-02-19
+updated: 2026-02-20
 project: dotfiles
 project_key: NOKEY
 tracking_system: file-system
@@ -116,8 +116,8 @@ development_status:
 
   # Epic 21: Dotfiles Page + Gallery
   # Improve dotfiles WPF page + configure gallery entries for each dotfile.
-  epic-21: backlog
-  21-1-dotfiles-page-improvements: backlog
+  epic-21: in-progress
+  21-1-dotfiles-page-improvements: ready-for-dev
   21-2-gallery-dotfile-git: backlog
   21-3-gallery-dotfile-powershell: backlog
   21-4-gallery-dotfile-node-npm: backlog
@@ -126,11 +126,12 @@ development_status:
   # Epic 22: Apps Page + Gallery
   # Improve apps WPF page: sorting, categories, alternatives, top choices,
   # suggestions, badges. Configure gallery entries.
-  epic-22: backlog
+  epic-22: in-progress
+  22-5-appcard-finish-shared-component: review
   22-1-apps-gallery-sorting-categories: backlog
   22-2-apps-alternatives-suggestions: backlog
   22-3-apps-top-choices-badges: backlog
-  22-4-app-detail-page: backlog
+  22-4-app-detail-page: ready-for-dev
 
   # ============================================================
   # P3: Dashboard & Wizard Polish
