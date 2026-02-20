@@ -62,6 +62,12 @@ public partial class LanguagesPage : Page
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
     }
 
+    private void OnStarsBadgeClick(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: string url } && !string.IsNullOrEmpty(url))
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+    }
+
     private static AppCardModel? GetAppModel(object sender) =>
         (sender as AppCard)?.DataContext as AppCardModel;
 }

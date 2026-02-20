@@ -176,17 +176,17 @@
                                     <!-- Meta row: stars, license, badges -->
                                     <WrapPanel Margin="0,0,0,6">
                                         <!-- GitHub Stars (clickable link to repo) -->
-                                        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="10" Padding="0" Margin="0,0,8,4"
+                                        <Border Background="{StaticResource SurfaceBrush}" CornerRadius="10" Padding="8,3" Margin="0,0,8,4"
+                                                Cursor="Hand"
+                                                Tag="{Binding SelectedEcosystem.GitHub}"
+                                                ToolTip="{Binding SelectedEcosystem.GitHub}"
+                                                MouseLeftButtonUp="OnStarsBadgeClick"
                                                 Visibility="{Binding SelectedEcosystem.GitHubStarsFormatted, Converter={StaticResource NullToVisibilityConverter}}">
-                                            <Button Background="Transparent" BorderThickness="0" Padding="8,3"
-                                                    Click="OnLinkClick" Tag="{Binding SelectedEcosystem.GitHub}"
-                                                    ToolTip="{Binding SelectedEcosystem.GitHub}" Cursor="Hand">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="&#x2605;" FontSize="11" Foreground="{StaticResource WarningBrush}" />
-                                                    <TextBlock Text="{Binding SelectedEcosystem.GitHubStarsFormatted}" FontSize="11"
-                                                               Foreground="White" Margin="4,0,0,0" />
-                                                </StackPanel>
-                                            </Button>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="&#x2605;" FontSize="11" Foreground="{StaticResource WarningBrush}" />
+                                                <TextBlock Text="{Binding SelectedEcosystem.GitHubStarsFormatted}" FontSize="11"
+                                                           Foreground="White" Margin="4,0,0,0" />
+                                            </StackPanel>
                                         </Border>
 
                                         <!-- License -->
