@@ -262,15 +262,15 @@ public sealed class DeployCommand : AsyncCommand<DeployCommand.Settings>
         ModuleAction PromptForAction(ref bool auto)
         {
             string choice = _console.Prompt(
-                new TextPrompt<string>("  Proceed? [[y]]es / [[n]]o / [[a]]ll / [[q]]uit")
-                    .AddChoice("y").AddChoice("n").AddChoice("a").AddChoice("q")
+                new TextPrompt<string>("  Proceed? [[y]]es / [[s]]kip / [[a]]ll / [[q]]uit")
+                    .AddChoice("y").AddChoice("s").AddChoice("a").AddChoice("q")
                     .DefaultValue("y")
-                    .InvalidChoiceMessage("[red]Please enter y, n, a, or q.[/]"));
+                    .InvalidChoiceMessage("[red]Please enter y, s, a, or q.[/]"));
 
             return choice switch
             {
                 "a" => SetAutoAll(ref auto),
-                "n" => ModuleAction.Skip,
+                "s" => ModuleAction.Skip,
                 "q" => ModuleAction.Abort,
                 _ => ModuleAction.Proceed,
             };
