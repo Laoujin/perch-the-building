@@ -38,15 +38,28 @@ public sealed class WingetPackageManagerProvider : IPackageManagerProvider
     internal static ImmutableArray<InstalledPackage> ParseOutput(string output)
     {
         var packages = new List<InstalledPackage>();
+        // Winget may include progress indicators with \r that mess up column detection
+        // Normalize by removing standalone \r characters (keep \r\n line endings)
+        output = output.Replace("\r\n", "\n").Replace("\r", "");
         string[] lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
         int headerIndex = -1;
+        int nameStart = -1;
+        int idStart = -1;
+        int versionStart = -1;
         for (int i = 0; i < lines.Length; i++)
         {
-            string trimmed = lines[i].TrimStart();
-            if (trimmed.Contains("Name") && trimmed.Contains("Id") && trimmed.Contains("Version"))
+            string line = lines[i];
+            int namePos = line.IndexOf("Name", StringComparison.Ordinal);
+            int idPos = line.IndexOf("Id", StringComparison.Ordinal);
+            int versionPos = line.IndexOf("Version", StringComparison.Ordinal);
+
+            if (namePos >= 0 && idPos > namePos && versionPos > idPos)
             {
                 headerIndex = i;
+                nameStart = namePos;
+                idStart = idPos - namePos; // Relative to where Name starts
+                versionStart = versionPos - namePos;
                 break;
             }
         }
@@ -56,10 +69,6 @@ public sealed class WingetPackageManagerProvider : IPackageManagerProvider
             return ImmutableArray<InstalledPackage>.Empty;
         }
 
-        string header = lines[headerIndex];
-        int idStart = header.IndexOf("Id", StringComparison.Ordinal);
-        int versionStart = header.IndexOf("Version", StringComparison.Ordinal);
-
         if (idStart < 0 || versionStart < 0)
         {
             return ImmutableArray<InstalledPackage>.Empty;
@@ -67,10 +76,19 @@ public sealed class WingetPackageManagerProvider : IPackageManagerProvider
 
         for (int i = headerIndex + 2; i < lines.Length; i++)
         {
-            string line = lines[i];
-            if (string.IsNullOrWhiteSpace(line))
+            string rawLine = lines[i];
+            if (string.IsNullOrWhiteSpace(rawLine))
                 continue;
 
+            // Find where the actual content starts (should align with Name column)
+            int contentStart = 0;
+            while (contentStart < rawLine.Length && char.IsWhiteSpace(rawLine[contentStart]))
+                contentStart++;
+
+            if (contentStart >= rawLine.Length)
+                continue;
+
+            string line = rawLine[contentStart..];
             string name = (line.Length > idStart ? line[..idStart] : line).Trim();
             string id = (line.Length > versionStart ? line[idStart..versionStart] : line.Length > idStart ? line[idStart..] : "").Trim();
 
