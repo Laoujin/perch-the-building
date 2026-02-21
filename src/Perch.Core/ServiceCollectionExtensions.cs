@@ -56,6 +56,7 @@ public static class ServiceCollectionExtensions
         }
         services.AddSingleton<IPackageManagerProvider, NpmPackageManagerProvider>();
         services.AddSingleton<IPackageManagerProvider, VsCodeExtensionProvider>();
+        services.AddSingleton<IInstalledAppChecker, InstalledAppChecker>();
         services.AddSingleton<IFileBackupProvider, FileBackupProvider>();
         services.AddSingleton<ISnapshotProvider, SnapshotProvider>();
         services.AddSingleton<SymlinkOrchestrator>();

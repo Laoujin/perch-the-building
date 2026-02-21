@@ -35,8 +35,9 @@ public sealed class DeployService : IDeployService
     private readonly ICleanFilterService _cleanFilterService;
     private readonly FontManifestParser _fontManifestParser;
     private readonly IPathService _pathService;
+    private readonly IInstalledAppChecker _installedAppChecker;
 
-    public DeployService(IModuleDiscoveryService discoveryService, SymlinkOrchestrator orchestrator, IPlatformDetector platformDetector, IGlobResolver globResolver, ISnapshotProvider snapshotProvider, IHookRunner hookRunner, IMachineProfileService machineProfileService, IRegistryProvider registryProvider, IGlobalPackageInstaller globalPackageInstaller, IVscodeExtensionInstaller vscodeExtensionInstaller, IPsModuleInstaller psModuleInstaller, PackageManifestParser packageManifestParser, InstallManifestParser installManifestParser, IInstallResolver installResolver, ISystemPackageInstaller systemPackageInstaller, ITemplateProcessor templateProcessor, IReferenceResolver referenceResolver, IVariableResolver variableResolver, ICleanFilterService cleanFilterService, FontManifestParser fontManifestParser, IPathService pathService)
+    public DeployService(IModuleDiscoveryService discoveryService, SymlinkOrchestrator orchestrator, IPlatformDetector platformDetector, IGlobResolver globResolver, ISnapshotProvider snapshotProvider, IHookRunner hookRunner, IMachineProfileService machineProfileService, IRegistryProvider registryProvider, IGlobalPackageInstaller globalPackageInstaller, IVscodeExtensionInstaller vscodeExtensionInstaller, IPsModuleInstaller psModuleInstaller, PackageManifestParser packageManifestParser, InstallManifestParser installManifestParser, IInstallResolver installResolver, ISystemPackageInstaller systemPackageInstaller, ITemplateProcessor templateProcessor, IReferenceResolver referenceResolver, IVariableResolver variableResolver, ICleanFilterService cleanFilterService, FontManifestParser fontManifestParser, IPathService pathService, IInstalledAppChecker installedAppChecker)
     {
         _discoveryService = discoveryService;
         _orchestrator = orchestrator;
@@ -59,6 +60,7 @@ public sealed class DeployService : IDeployService
         _cleanFilterService = cleanFilterService;
         _fontManifestParser = fontManifestParser;
         _pathService = pathService;
+        _installedAppChecker = installedAppChecker;
     }
 
     public async Task<int> DeployAsync(string configRepoPath, DeployOptions? options = null, CancellationToken cancellationToken = default)
@@ -73,8 +75,9 @@ public sealed class DeployService : IDeployService
         bool hasErrors = ReportDiscoveryErrors(discovery, progress);
         Platform currentPlatform = _platformDetector.CurrentPlatform;
         MachineProfile? machineProfile = await _machineProfileService.LoadAsync(configRepoPath, cancellationToken).ConfigureAwait(false);
+        IReadOnlySet<string> installedPackages = await _installedAppChecker.GetInstalledPackageIdsAsync(cancellationToken).ConfigureAwait(false);
 
-        var eligibleModules = FilterEligibleModules(discovery.Modules, currentPlatform, machineProfile, progress);
+        var eligibleModules = FilterEligibleModules(discovery.Modules, currentPlatform, machineProfile, installedPackages, progress);
 
         IReadOnlyDictionary<string, string>? variables = machineProfile?.Variables;
 
@@ -147,7 +150,7 @@ public sealed class DeployService : IDeployService
         return hasErrors ? 1 : 0;
     }
 
-    private static string? GetSkipReason(AppModule module, Platform currentPlatform, MachineProfile? machineProfile)
+    private static string? GetSkipReason(AppModule module, Platform currentPlatform, MachineProfile? machineProfile, IReadOnlySet<string> installedPackages)
     {
         if (!module.Enabled)
         {
@@ -169,6 +172,11 @@ public sealed class DeployService : IDeployService
             return "Skipped (excluded by machine profile)";
         }
 
+        if (module.Install?.Winget != null && !installedPackages.Contains(module.Install.Winget))
+        {
+            return "Skipped (not installed)";
+        }
+
         return null;
     }
 
@@ -182,12 +190,12 @@ public sealed class DeployService : IDeployService
         return discovery.Errors.Length > 0;
     }
 
-    private static List<AppModule> FilterEligibleModules(System.Collections.Immutable.ImmutableArray<AppModule> modules, Platform currentPlatform, MachineProfile? machineProfile, IProgress<DeployResult>? progress)
+    private static List<AppModule> FilterEligibleModules(System.Collections.Immutable.ImmutableArray<AppModule> modules, Platform currentPlatform, MachineProfile? machineProfile, IReadOnlySet<string> installedPackages, IProgress<DeployResult>? progress)
     {
         var eligibleModules = new List<AppModule>();
         foreach (AppModule module in modules)
         {
-            string? skipReason = GetSkipReason(module, currentPlatform, machineProfile);
+            string? skipReason = GetSkipReason(module, currentPlatform, machineProfile, installedPackages);
             if (skipReason != null)
             {
                 progress?.Report(new DeployResult(module.DisplayName, "", "", ResultLevel.Ok, skipReason, DeployEventType.ModuleSkipped));

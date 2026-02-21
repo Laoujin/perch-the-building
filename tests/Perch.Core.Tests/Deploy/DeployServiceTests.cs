@@ -41,6 +41,7 @@ public sealed class DeployServiceTests
     private ICleanFilterService _cleanFilterService = null!;
     private IInstallResolver _installResolver = null!;
     private IPathService _pathService = null!;
+    private IInstalledAppChecker _installedAppChecker = null!;
     private SymlinkOrchestrator _orchestrator = null!;
     private DeployService _deployService = null!;
     private List<DeployResult> _reported = null!;
@@ -77,7 +78,10 @@ public sealed class DeployServiceTests
             .Returns(ImmutableArray<CleanFilterResult>.Empty);
         _installResolver = Substitute.For<IInstallResolver>();
         _pathService = Substitute.For<IPathService>();
-        _deployService = new DeployService(_discoveryService, _orchestrator, _platformDetector, _globResolver, _snapshotProvider, _hookRunner, _machineProfileService, _registryProvider, _globalPackageInstaller, _vscodeExtensionInstaller, _psModuleInstaller, new PackageManifestParser(), new InstallManifestParser(), _installResolver, _systemPackageInstaller, new TemplateProcessor(), _referenceResolver, _variableResolver, _cleanFilterService, new FontManifestParser(), _pathService);
+        _installedAppChecker = Substitute.For<IInstalledAppChecker>();
+        _installedAppChecker.GetInstalledPackageIdsAsync(Arg.Any<CancellationToken>())
+            .Returns(new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+        _deployService = new DeployService(_discoveryService, _orchestrator, _platformDetector, _globResolver, _snapshotProvider, _hookRunner, _machineProfileService, _registryProvider, _globalPackageInstaller, _vscodeExtensionInstaller, _psModuleInstaller, new PackageManifestParser(), new InstallManifestParser(), _installResolver, _systemPackageInstaller, new TemplateProcessor(), _referenceResolver, _variableResolver, _cleanFilterService, new FontManifestParser(), _pathService, _installedAppChecker);
         _reported = new List<DeployResult>();
         _progress = new SynchronousProgress<DeployResult>(r => _reported.Add(r));
     }

@@ -24,6 +24,7 @@ public sealed class GalleryOverlayService : IGalleryOverlayService
             Platforms = platforms,
             DisplayName = displayName,
             PathEntries = pathEntries,
+            Install = gallery.Install,
         };
     }
 
