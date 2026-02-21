@@ -112,6 +112,14 @@ internal sealed class CatalogConfigYamlModel
 
     [YamlMember(Alias = "clean-filter")]
     public CatalogCleanFilterYamlModel? CleanFilter { get; set; }
+
+    [YamlMember(Alias = "path-entries")]
+    public List<CatalogPathEntryYamlModel>? PathEntries { get; set; }
+}
+
+internal sealed class CatalogPathEntryYamlModel
+{
+    public Dictionary<string, string>? Path { get; set; }
 }
 
 internal sealed class CatalogConfigLinkYamlModel

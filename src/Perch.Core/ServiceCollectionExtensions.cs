@@ -4,6 +4,7 @@ using Perch.Core.Catalog;
 using Perch.Core.Config;
 using Perch.Core.Deploy;
 using Perch.Core.Diff;
+using Perch.Core.EnvPath;
 using Perch.Core.Fonts;
 using Perch.Core.Git;
 using Perch.Core.Machines;
@@ -33,6 +34,7 @@ public static class ServiceCollectionExtensions
             services.AddSingleton<IFileLockDetector, WindowsFileLockDetector>();
             services.AddSingleton<IRegistryProvider, WindowsRegistryProvider>();
             services.AddSingleton<IStartupService, WindowsStartupService>();
+            services.AddSingleton<IPathService, WindowsPathService>();
             services.AddSingleton<IPackageManagerProvider, ChocolateyPackageManagerProvider>();
             services.AddSingleton<IPackageManagerProvider, WingetPackageManagerProvider>();
         }
@@ -42,6 +44,7 @@ public static class ServiceCollectionExtensions
             services.AddSingleton<IFileLockDetector, UnixFileLockDetector>();
             services.AddSingleton<IRegistryProvider, NoOpRegistryProvider>();
             services.AddSingleton<IStartupService, NoOpStartupService>();
+            services.AddSingleton<IPathService, NoOpPathService>();
         }
         if (OperatingSystem.IsLinux())
         {

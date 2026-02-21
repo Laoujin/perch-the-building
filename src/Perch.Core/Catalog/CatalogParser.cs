@@ -235,43 +235,81 @@ public sealed class CatalogParser
 
     private static CatalogConfigDefinition? ParseConfig(CatalogConfigYamlModel? model)
     {
-        if (model?.Links == null || model.Links.Count == 0)
+        if (model == null)
         {
             return null;
         }
 
         var links = new List<CatalogConfigLink>();
-        foreach (var link in model.Links)
+        if (model.Links != null)
         {
-            if (string.IsNullOrWhiteSpace(link.Source) || link.Target == null)
+            foreach (var link in model.Links)
             {
-                continue;
-            }
-
-            var targets = new Dictionary<Platform, string>();
-            foreach (var kvp in link.Target)
-            {
-                if (Enum.TryParse<Platform>(kvp.Key, ignoreCase: true, out var platform))
+                if (string.IsNullOrWhiteSpace(link.Source) || link.Target == null)
                 {
-                    targets[platform] = kvp.Value;
+                    continue;
                 }
-            }
 
-            if (targets.Count > 0)
-            {
-                var linkType = ParseLinkType(link.LinkType);
-                var platforms = ParsePlatforms(link.Platforms);
-                links.Add(new CatalogConfigLink(link.Source, targets.ToImmutableDictionary(), linkType, platforms, link.Template));
+                var targets = new Dictionary<Platform, string>();
+                foreach (var kvp in link.Target)
+                {
+                    if (Enum.TryParse<Platform>(kvp.Key, ignoreCase: true, out var platform))
+                    {
+                        targets[platform] = kvp.Value;
+                    }
+                }
+
+                if (targets.Count > 0)
+                {
+                    var linkType = ParseLinkType(link.LinkType);
+                    var platforms = ParsePlatforms(link.Platforms);
+                    links.Add(new CatalogConfigLink(link.Source, targets.ToImmutableDictionary(), linkType, platforms, link.Template));
+                }
             }
         }
 
-        if (links.Count == 0)
+        var pathEntries = ParsePathEntries(model.PathEntries);
+        var cleanFilter = ParseCatalogCleanFilter(model.CleanFilter);
+
+        if (links.Count == 0 && pathEntries.IsDefaultOrEmpty && cleanFilter == null)
         {
             return null;
         }
 
-        var cleanFilter = ParseCatalogCleanFilter(model.CleanFilter);
-        return new CatalogConfigDefinition(links.ToImmutableArray(), cleanFilter);
+        return new CatalogConfigDefinition(links.ToImmutableArray(), cleanFilter, pathEntries);
+    }
+
+    private static ImmutableArray<CatalogPathEntry> ParsePathEntries(List<CatalogPathEntryYamlModel>? pathEntries)
+    {
+        if (pathEntries == null || pathEntries.Count == 0)
+        {
+            return default;
+        }
+
+        var entries = new List<CatalogPathEntry>();
+        foreach (var entry in pathEntries)
+        {
+            if (entry.Path == null || entry.Path.Count == 0)
+            {
+                continue;
+            }
+
+            var paths = new Dictionary<Platform, string>();
+            foreach (var kvp in entry.Path)
+            {
+                if (Enum.TryParse<Platform>(kvp.Key, ignoreCase: true, out var platform))
+                {
+                    paths[platform] = kvp.Value;
+                }
+            }
+
+            if (paths.Count > 0)
+            {
+                entries.Add(new CatalogPathEntry(paths.ToImmutableDictionary()));
+            }
+        }
+
+        return entries.ToImmutableArray();
     }
 
     private static LinkType ParseLinkType(string? linkType) =>

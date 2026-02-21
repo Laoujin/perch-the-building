@@ -59,7 +59,7 @@ public sealed class ModuleDiscoveryService : IModuleDiscoveryService
                 {
                     AppManifest manifest = parseResult.Manifest!;
                     manifest = await ApplyGalleryOverlayAsync(manifest, errors, cancellationToken).ConfigureAwait(false);
-                    modules.Add(new AppModule(manifest.ModuleName, manifest.DisplayName, manifest.Enabled, subdir, manifest.Platforms, manifest.Links, manifest.Hooks, manifest.CleanFilter, manifest.Registry, manifest.GlobalPackages, manifest.VscodeExtensions, manifest.PsModules));
+                    modules.Add(new AppModule(manifest.ModuleName, manifest.DisplayName, manifest.Enabled, subdir, manifest.Platforms, manifest.Links, manifest.Hooks, manifest.CleanFilter, manifest.Registry, manifest.GlobalPackages, manifest.VscodeExtensions, manifest.PsModules, manifest.PathEntries));
                 }
                 else
                 {

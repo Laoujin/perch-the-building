@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Perch.Core.Backup;
+using Perch.Core.EnvPath;
 using Perch.Core.Fonts;
 using Perch.Core.Git;
 using Perch.Core.Machines;
@@ -33,8 +34,9 @@ public sealed class DeployService : IDeployService
     private readonly IVariableResolver _variableResolver;
     private readonly ICleanFilterService _cleanFilterService;
     private readonly FontManifestParser _fontManifestParser;
+    private readonly IPathService _pathService;
 
-    public DeployService(IModuleDiscoveryService discoveryService, SymlinkOrchestrator orchestrator, IPlatformDetector platformDetector, IGlobResolver globResolver, ISnapshotProvider snapshotProvider, IHookRunner hookRunner, IMachineProfileService machineProfileService, IRegistryProvider registryProvider, IGlobalPackageInstaller globalPackageInstaller, IVscodeExtensionInstaller vscodeExtensionInstaller, IPsModuleInstaller psModuleInstaller, PackageManifestParser packageManifestParser, InstallManifestParser installManifestParser, IInstallResolver installResolver, ISystemPackageInstaller systemPackageInstaller, ITemplateProcessor templateProcessor, IReferenceResolver referenceResolver, IVariableResolver variableResolver, ICleanFilterService cleanFilterService, FontManifestParser fontManifestParser)
+    public DeployService(IModuleDiscoveryService discoveryService, SymlinkOrchestrator orchestrator, IPlatformDetector platformDetector, IGlobResolver globResolver, ISnapshotProvider snapshotProvider, IHookRunner hookRunner, IMachineProfileService machineProfileService, IRegistryProvider registryProvider, IGlobalPackageInstaller globalPackageInstaller, IVscodeExtensionInstaller vscodeExtensionInstaller, IPsModuleInstaller psModuleInstaller, PackageManifestParser packageManifestParser, InstallManifestParser installManifestParser, IInstallResolver installResolver, ISystemPackageInstaller systemPackageInstaller, ITemplateProcessor templateProcessor, IReferenceResolver referenceResolver, IVariableResolver variableResolver, ICleanFilterService cleanFilterService, FontManifestParser fontManifestParser, IPathService pathService)
     {
         _discoveryService = discoveryService;
         _orchestrator = orchestrator;
@@ -56,6 +58,7 @@ public sealed class DeployService : IDeployService
         _variableResolver = variableResolver;
         _cleanFilterService = cleanFilterService;
         _fontManifestParser = fontManifestParser;
+        _pathService = pathService;
     }
 
     public async Task<int> DeployAsync(string configRepoPath, DeployOptions? options = null, CancellationToken cancellationToken = default)
@@ -198,6 +201,7 @@ public sealed class DeployService : IDeployService
         if (includePackages)
         {
             await ProcessModuleGlobalPackagesAsync(module, true, previewProgress, cancellationToken).ConfigureAwait(false);
+            ProcessModulePathEntries(module, currentPlatform, true, previewProgress);
             await ProcessListAsync(module.VscodeExtensions, id => _vscodeExtensionInstaller.InstallAsync(module.DisplayName, id, true, cancellationToken), previewProgress, cancellationToken).ConfigureAwait(false);
             await ProcessListAsync(module.PsModules, name => _psModuleInstaller.InstallAsync(module.DisplayName, name, true, cancellationToken), previewProgress, cancellationToken).ConfigureAwait(false);
         }
@@ -225,6 +229,7 @@ public sealed class DeployService : IDeployService
         {
             moduleHadErrors = true;
         }
+        ProcessModulePathEntries(module, currentPlatform, dryRun, progress);
         if (await ProcessListAsync(module.VscodeExtensions, id => _vscodeExtensionInstaller.InstallAsync(module.DisplayName, id, dryRun, cancellationToken), progress, cancellationToken).ConfigureAwait(false))
         {
             moduleHadErrors = true;
@@ -681,6 +686,50 @@ public sealed class DeployService : IDeployService
                 _registryProvider.SetValue(entry.Key, entry.Name, entry.Value, entry.Kind);
                 progress?.Report(new DeployResult(module.DisplayName, "", $"{entry.Key}\\{entry.Name}",
                     ResultLevel.Ok, $"Set {entry.Name} to {entry.Value}"));
+            }
+        }
+    }
+
+    private void ProcessModulePathEntries(AppModule module, Platform currentPlatform, bool dryRun, IProgress<DeployResult>? progress)
+    {
+        if (module.PathEntries.IsDefaultOrEmpty)
+        {
+            return;
+        }
+
+        foreach (PathEntry entry in module.PathEntries)
+        {
+            string? path = entry.GetPathForPlatform(currentPlatform);
+            if (path == null)
+            {
+                continue;
+            }
+
+            string expandedPath = System.Environment.ExpandEnvironmentVariables(path);
+
+            if (_pathService.Contains(expandedPath))
+            {
+                progress?.Report(new DeployResult(module.DisplayName, "", expandedPath,
+                    ResultLevel.Ok, $"PATH already contains {expandedPath}"));
+                continue;
+            }
+
+            if (dryRun)
+            {
+                progress?.Report(new DeployResult(module.DisplayName, "", expandedPath,
+                    ResultLevel.Ok, $"Would add {expandedPath} to PATH"));
+                continue;
+            }
+
+            if (_pathService.Add(expandedPath))
+            {
+                progress?.Report(new DeployResult(module.DisplayName, "", expandedPath,
+                    ResultLevel.Ok, $"Added {expandedPath} to PATH"));
+            }
+            else
+            {
+                progress?.Report(new DeployResult(module.DisplayName, "", expandedPath,
+                    ResultLevel.Error, $"Failed to add {expandedPath} to PATH"));
             }
         }
     }

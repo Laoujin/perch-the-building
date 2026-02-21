@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using Perch.Core;
 using Perch.Core.Backup;
 using Perch.Core.Deploy;
+using Perch.Core.EnvPath;
 using Perch.Core.Machines;
 using Perch.Core.Modules;
 using Perch.Core.Packages;
@@ -39,6 +40,7 @@ public sealed class DeployServiceTests
     private IVariableResolver _variableResolver = null!;
     private ICleanFilterService _cleanFilterService = null!;
     private IInstallResolver _installResolver = null!;
+    private IPathService _pathService = null!;
     private SymlinkOrchestrator _orchestrator = null!;
     private DeployService _deployService = null!;
     private List<DeployResult> _reported = null!;
@@ -74,7 +76,8 @@ public sealed class DeployServiceTests
         _cleanFilterService.SetupAsync(Arg.Any<string>(), Arg.Any<ImmutableArray<AppModule>>(), Arg.Any<CancellationToken>())
             .Returns(ImmutableArray<CleanFilterResult>.Empty);
         _installResolver = Substitute.For<IInstallResolver>();
-        _deployService = new DeployService(_discoveryService, _orchestrator, _platformDetector, _globResolver, _snapshotProvider, _hookRunner, _machineProfileService, _registryProvider, _globalPackageInstaller, _vscodeExtensionInstaller, _psModuleInstaller, new PackageManifestParser(), new InstallManifestParser(), _installResolver, _systemPackageInstaller, new TemplateProcessor(), _referenceResolver, _variableResolver, _cleanFilterService, new FontManifestParser());
+        _pathService = Substitute.For<IPathService>();
+        _deployService = new DeployService(_discoveryService, _orchestrator, _platformDetector, _globResolver, _snapshotProvider, _hookRunner, _machineProfileService, _registryProvider, _globalPackageInstaller, _vscodeExtensionInstaller, _psModuleInstaller, new PackageManifestParser(), new InstallManifestParser(), _installResolver, _systemPackageInstaller, new TemplateProcessor(), _referenceResolver, _variableResolver, _cleanFilterService, new FontManifestParser(), _pathService);
         _reported = new List<DeployResult>();
         _progress = new SynchronousProgress<DeployResult>(r => _reported.Add(r));
     }

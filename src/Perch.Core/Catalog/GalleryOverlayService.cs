@@ -14,6 +14,7 @@ public sealed class GalleryOverlayService : IGalleryOverlayService
         var vscodeExtensions = MergeExtensions(manifest.VscodeExtensions, gallery.Extensions);
         var platforms = MergePlatforms(manifest.Platforms, gallery.Os);
         string displayName = MergeDisplayName(manifest, gallery);
+        var pathEntries = MergePathEntries(manifest.PathEntries, gallery.Config?.PathEntries ?? ImmutableArray<CatalogPathEntry>.Empty);
 
         return manifest with
         {
@@ -22,6 +23,7 @@ public sealed class GalleryOverlayService : IGalleryOverlayService
             VscodeExtensions = vscodeExtensions,
             Platforms = platforms,
             DisplayName = displayName,
+            PathEntries = pathEntries,
         };
     }
 
@@ -134,5 +136,24 @@ public sealed class GalleryOverlayService : IGalleryOverlayService
         }
 
         return all.Count > 0 ? all.ToImmutableArray() : ImmutableArray<string>.Empty;
+    }
+
+    private static ImmutableArray<PathEntry> MergePathEntries(
+        ImmutableArray<PathEntry> manifestPathEntries,
+        ImmutableArray<CatalogPathEntry> galleryPathEntries)
+    {
+        if (galleryPathEntries.IsDefaultOrEmpty)
+        {
+            return manifestPathEntries;
+        }
+
+        var merged = new List<PathEntry>(manifestPathEntries.IsDefaultOrEmpty ? [] : manifestPathEntries);
+
+        foreach (var gp in galleryPathEntries)
+        {
+            merged.Add(new PathEntry(gp.Paths));
+        }
+
+        return merged.ToImmutableArray();
     }
 }
