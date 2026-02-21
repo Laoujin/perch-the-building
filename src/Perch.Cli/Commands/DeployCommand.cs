@@ -229,7 +229,7 @@ public sealed class DeployCommand : AsyncCommand<DeployCommand.Settings>
                 }
 
                 string choice = _console.Prompt(
-                    new TextPrompt<string>("  Deploy this module? [y]es / [n]o / [a]ll / [q]uit")
+                    new TextPrompt<string>("  Deploy this module? [[y]]es / [[n]]o / [[a]]ll / [[q]]uit")
                         .AddChoice("y").AddChoice("n").AddChoice("a").AddChoice("q")
                         .DefaultValue("y")
                         .InvalidChoiceMessage("[red]Please enter y, n, a, or q.[/]"));
