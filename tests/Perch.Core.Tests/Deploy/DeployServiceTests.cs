@@ -1979,7 +1979,7 @@ public sealed class DeployServiceTests
             int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             Assert.That(exitCode, Is.EqualTo(1));
-            Assert.That(_reported.Any(r => r.Level == ResultLevel.Error && r.ModuleName == "fonts"), Is.True);
+            Assert.That(_reported.Any(r => r.Level == ResultLevel.Error && r.ModuleName == "Fonts"), Is.True);
         }
         finally
         {
@@ -2091,7 +2091,7 @@ public sealed class DeployServiceTests
             Assert.Multiple(() =>
             {
                 Assert.That(exitCode, Is.EqualTo(0));
-                var installResults = _reported.Where(r => r.ModuleName == "system-packages").ToList();
+                var installResults = _reported.Where(r => r.ModuleName == "System Packages").ToList();
                 Assert.That(installResults, Has.Count.EqualTo(2));
             });
         }
@@ -2118,7 +2118,7 @@ public sealed class DeployServiceTests
             Assert.Multiple(() =>
             {
                 Assert.That(exitCode, Is.EqualTo(1));
-                var errorResult = _reported.First(r => r.ModuleName == "system-packages");
+                var errorResult = _reported.First(r => r.ModuleName == "System Packages");
                 Assert.That(errorResult.Level, Is.EqualTo(ResultLevel.Error));
             });
         }
@@ -2149,7 +2149,7 @@ public sealed class DeployServiceTests
             Assert.Multiple(() =>
             {
                 Assert.That(exitCode, Is.EqualTo(1));
-                var errorResult = _reported.First(r => r.ModuleName == "system-packages" && r.Level == ResultLevel.Error);
+                var errorResult = _reported.First(r => r.ModuleName == "System Packages" && r.Level == ResultLevel.Error);
                 Assert.That(errorResult.Message, Does.Contain("unknown-app"));
             });
         }
@@ -2207,7 +2207,7 @@ public sealed class DeployServiceTests
             await _deployService.DeployAsync(tempDir, new DeployOptions { DryRun = true, Progress = _progress });
 
             await _installResolver.Received(1).ResolveAsync(Arg.Any<InstallManifest>(), Arg.Any<string>(), Arg.Any<Platform>(), Arg.Any<CancellationToken>());
-            var installResults = _reported.Where(r => r.ModuleName == "system-packages").ToList();
+            var installResults = _reported.Where(r => r.ModuleName == "System Packages").ToList();
             Assert.That(installResults.All(r => r.TargetPath != "git"), "Should use install.yaml resolver, not packages.yaml direct install");
         }
         finally

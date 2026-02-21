@@ -228,27 +228,59 @@ public sealed class DeployCommand : AsyncCommand<DeployCommand.Settings>
                     _console.MarkupLine("  [grey]No actions to preview.[/]");
                 }
 
-                string choice = _console.Prompt(
-                    new TextPrompt<string>("  Deploy this module? [[y]]es / [[n]]o / [[a]]ll / [[q]]uit")
-                        .AddChoice("y").AddChoice("n").AddChoice("a").AddChoice("q")
-                        .DefaultValue("y")
-                        .InvalidChoiceMessage("[red]Please enter y, n, a, or q.[/]"));
-
-                return Task.FromResult(choice switch
+                return Task.FromResult(PromptForAction(ref autoAll));
+            },
+            BeforeSection = (sectionName, preview) =>
+            {
+                if (autoAll)
                 {
-                    "a" => SetAutoAll(),
-                    "n" => ModuleAction.Skip,
-                    "q" => ModuleAction.Abort,
-                    _ => ModuleAction.Proceed,
-                });
-
-                ModuleAction SetAutoAll()
-                {
-                    autoAll = true;
-                    return ModuleAction.Proceed;
+                    return Task.FromResult(ModuleAction.Proceed);
                 }
+
+                _console.MarkupLine($"[bold]{sectionName.EscapeMarkup()}[/]");
+                if (preview.Count > 0)
+                {
+                    var previewTable = new Table().AddColumn("Action").AddColumn("Package").AddColumn("Details");
+                    foreach (DeployResult r in preview)
+                    {
+                        previewTable.AddRow(
+                            $"[{GetColor(r.Level)}]{r.Level}[/]",
+                            r.ModuleName.EscapeMarkup(),
+                            r.Message.EscapeMarkup());
+                    }
+                    _console.Write(previewTable);
+                }
+                else
+                {
+                    _console.MarkupLine("  [grey]No actions to preview.[/]");
+                }
+
+                return Task.FromResult(PromptForAction(ref autoAll));
             },
         };
+
+        ModuleAction PromptForAction(ref bool auto)
+        {
+            string choice = _console.Prompt(
+                new TextPrompt<string>("  Proceed? [[y]]es / [[n]]o / [[a]]ll / [[q]]uit")
+                    .AddChoice("y").AddChoice("n").AddChoice("a").AddChoice("q")
+                    .DefaultValue("y")
+                    .InvalidChoiceMessage("[red]Please enter y, n, a, or q.[/]"));
+
+            return choice switch
+            {
+                "a" => SetAutoAll(ref auto),
+                "n" => ModuleAction.Skip,
+                "q" => ModuleAction.Abort,
+                _ => ModuleAction.Proceed,
+            };
+        }
+
+        ModuleAction SetAutoAll(ref bool auto)
+        {
+            auto = true;
+            return ModuleAction.Proceed;
+        }
 
         int exitCode = await _deployService.DeployAsync(configPath, options, cancellationToken);
 

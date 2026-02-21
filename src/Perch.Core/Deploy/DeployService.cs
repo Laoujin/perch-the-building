@@ -63,6 +63,7 @@ public sealed class DeployService : IDeployService
         bool dryRun = options?.DryRun ?? false;
         IProgress<DeployResult>? progress = options?.Progress;
         var beforeModule = options?.BeforeModule;
+        var beforeSection = options?.BeforeSection;
 
         DiscoveryResult discovery = await _discoveryService.DiscoverAsync(configRepoPath, cancellationToken).ConfigureAwait(false);
 
@@ -115,12 +116,12 @@ public sealed class DeployService : IDeployService
         }
 
         string machineName = Environment.MachineName;
-        if (await ProcessSystemPackagesAsync(configRepoPath, machineName, currentPlatform, dryRun, progress, cancellationToken).ConfigureAwait(false))
+        if (await ProcessSystemPackagesAsync(configRepoPath, machineName, currentPlatform, dryRun, progress, beforeSection, cancellationToken).ConfigureAwait(false))
         {
             hasErrors = true;
         }
 
-        if (await ProcessFontsAsync(configRepoPath, currentPlatform, dryRun, progress, cancellationToken).ConfigureAwait(false))
+        if (await ProcessFontsAsync(configRepoPath, currentPlatform, dryRun, progress, beforeSection, cancellationToken).ConfigureAwait(false))
         {
             hasErrors = true;
         }
@@ -248,24 +249,24 @@ public sealed class DeployService : IDeployService
         return hasErrors;
     }
 
-    private async Task<bool> ProcessSystemPackagesAsync(string configRepoPath, string machineName, Platform currentPlatform, bool dryRun, IProgress<DeployResult>? progress, CancellationToken cancellationToken)
+    private async Task<bool> ProcessSystemPackagesAsync(string configRepoPath, string machineName, Platform currentPlatform, bool dryRun, IProgress<DeployResult>? progress, Func<string, IReadOnlyList<DeployResult>, Task<ModuleAction>>? beforeSection, CancellationToken cancellationToken)
     {
         string installPath = Path.Combine(configRepoPath, "install.yaml");
         if (File.Exists(installPath))
         {
-            return await ProcessInstallYamlAsync(installPath, machineName, currentPlatform, dryRun, progress, cancellationToken).ConfigureAwait(false);
+            return await ProcessInstallYamlAsync(installPath, machineName, currentPlatform, dryRun, progress, beforeSection, cancellationToken).ConfigureAwait(false);
         }
 
         string packagesPath = Path.Combine(configRepoPath, "packages.yaml");
         if (File.Exists(packagesPath))
         {
-            return await ProcessPackagesYamlAsync(packagesPath, currentPlatform, dryRun, progress, cancellationToken).ConfigureAwait(false);
+            return await ProcessPackagesYamlAsync(packagesPath, currentPlatform, dryRun, progress, beforeSection, cancellationToken).ConfigureAwait(false);
         }
 
         return false;
     }
 
-    private async Task<bool> ProcessFontsAsync(string configRepoPath, Platform currentPlatform, bool dryRun, IProgress<DeployResult>? progress, CancellationToken cancellationToken)
+    private async Task<bool> ProcessFontsAsync(string configRepoPath, Platform currentPlatform, bool dryRun, IProgress<DeployResult>? progress, Func<string, IReadOnlyList<DeployResult>, Task<ModuleAction>>? beforeSection, CancellationToken cancellationToken)
     {
         string fontsPath = Path.Combine(configRepoPath, "fonts.yaml");
         if (!File.Exists(fontsPath))
@@ -278,7 +279,7 @@ public sealed class DeployService : IDeployService
 
         if (!parseResult.IsSuccess)
         {
-            progress?.Report(new DeployResult("fonts", "", "", ResultLevel.Error, parseResult.Error!));
+            progress?.Report(new DeployResult("Fonts", "", "", ResultLevel.Error, parseResult.Error!));
             return true;
         }
 
@@ -289,10 +290,27 @@ public sealed class DeployService : IDeployService
 
         InstallResolution resolution = await _installResolver.ResolveFontsAsync(parseResult.FontIds, currentPlatform, cancellationToken).ConfigureAwait(false);
 
+        if (beforeSection != null)
+        {
+            var preview = await CollectFontsPreviewAsync(resolution, cancellationToken).ConfigureAwait(false);
+            ModuleAction action = await beforeSection("Fonts", preview).ConfigureAwait(false);
+            if (action == ModuleAction.Skip)
+            {
+                progress?.Report(new DeployResult("Fonts", "", "", ResultLevel.Ok, "Skipped (user)", DeployEventType.ModuleSkipped));
+                return false;
+            }
+            if (action == ModuleAction.Abort)
+            {
+                return false;
+            }
+        }
+
+        progress?.Report(new DeployResult("Fonts", "", "", ResultLevel.Ok, "", DeployEventType.ModuleStarted));
+
         bool hasErrors = false;
         foreach (string error in resolution.Errors)
         {
-            progress?.Report(new DeployResult("fonts", "", "", ResultLevel.Error, error));
+            progress?.Report(new DeployResult("Fonts", "", "", ResultLevel.Error, error));
             hasErrors = true;
         }
 
@@ -307,26 +325,65 @@ public sealed class DeployService : IDeployService
             }
         }
 
+        progress?.Report(new DeployResult("Fonts", "", "", hasErrors ? ResultLevel.Error : ResultLevel.Ok, "", DeployEventType.ModuleCompleted));
+
         return hasErrors;
     }
 
-    private async Task<bool> ProcessInstallYamlAsync(string installPath, string machineName, Platform currentPlatform, bool dryRun, IProgress<DeployResult>? progress, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<DeployResult>> CollectFontsPreviewAsync(InstallResolution resolution, CancellationToken cancellationToken)
+    {
+        var results = new List<DeployResult>();
+        foreach (string error in resolution.Errors)
+        {
+            results.Add(new DeployResult("Fonts", "", "", ResultLevel.Error, error));
+        }
+        foreach (PackageDefinition package in resolution.Packages)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            DeployResult result = await _systemPackageInstaller.InstallAsync(package.Name, package.Manager, true, cancellationToken).ConfigureAwait(false);
+            results.Add(result);
+        }
+        return results;
+    }
+
+    private async Task<bool> ProcessInstallYamlAsync(string installPath, string machineName, Platform currentPlatform, bool dryRun, IProgress<DeployResult>? progress, Func<string, IReadOnlyList<DeployResult>, Task<ModuleAction>>? beforeSection, CancellationToken cancellationToken)
     {
         string yaml = await File.ReadAllTextAsync(installPath, cancellationToken).ConfigureAwait(false);
         InstallManifestParseResult parseResult = _installManifestParser.Parse(yaml);
 
         if (!parseResult.IsSuccess)
         {
-            progress?.Report(new DeployResult("system-packages", "", "", ResultLevel.Error, parseResult.Error!));
+            progress?.Report(new DeployResult("System Packages", "", "", ResultLevel.Error, parseResult.Error!));
             return true;
         }
 
         InstallResolution resolution = await _installResolver.ResolveAsync(parseResult.Manifest!, machineName, currentPlatform, cancellationToken).ConfigureAwait(false);
 
+        if (beforeSection != null)
+        {
+            var preview = await CollectInstallPreviewAsync(resolution, cancellationToken).ConfigureAwait(false);
+            if (preview.Count == 0)
+            {
+                return false;
+            }
+            ModuleAction action = await beforeSection("System Packages", preview).ConfigureAwait(false);
+            if (action == ModuleAction.Skip)
+            {
+                progress?.Report(new DeployResult("System Packages", "", "", ResultLevel.Ok, "Skipped (user)", DeployEventType.ModuleSkipped));
+                return false;
+            }
+            if (action == ModuleAction.Abort)
+            {
+                return false;
+            }
+        }
+
+        progress?.Report(new DeployResult("System Packages", "", "", ResultLevel.Ok, "", DeployEventType.ModuleStarted));
+
         bool hasErrors = false;
         foreach (string error in resolution.Errors)
         {
-            progress?.Report(new DeployResult("system-packages", "", "", ResultLevel.Error, error));
+            progress?.Report(new DeployResult("System Packages", "", "", ResultLevel.Error, error));
             hasErrors = true;
         }
 
@@ -341,17 +398,56 @@ public sealed class DeployService : IDeployService
             }
         }
 
+        progress?.Report(new DeployResult("System Packages", "", "", hasErrors ? ResultLevel.Error : ResultLevel.Ok, "", DeployEventType.ModuleCompleted));
+
         return hasErrors;
     }
 
-    private async Task<bool> ProcessPackagesYamlAsync(string packagesPath, Platform currentPlatform, bool dryRun, IProgress<DeployResult>? progress, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<DeployResult>> CollectInstallPreviewAsync(InstallResolution resolution, CancellationToken cancellationToken)
+    {
+        var results = new List<DeployResult>();
+        foreach (string error in resolution.Errors)
+        {
+            results.Add(new DeployResult("System Packages", "", "", ResultLevel.Error, error));
+        }
+        foreach (PackageDefinition package in resolution.Packages)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            DeployResult result = await _systemPackageInstaller.InstallAsync(package.Name, package.Manager, true, cancellationToken).ConfigureAwait(false);
+            results.Add(result);
+        }
+        return results;
+    }
+
+    private async Task<bool> ProcessPackagesYamlAsync(string packagesPath, Platform currentPlatform, bool dryRun, IProgress<DeployResult>? progress, Func<string, IReadOnlyList<DeployResult>, Task<ModuleAction>>? beforeSection, CancellationToken cancellationToken)
     {
         string yaml = await File.ReadAllTextAsync(packagesPath, cancellationToken).ConfigureAwait(false);
         PackageManifestParseResult parseResult = _packageManifestParser.Parse(yaml);
 
+        if (beforeSection != null)
+        {
+            var preview = await CollectPackagesPreviewAsync(parseResult, currentPlatform, cancellationToken).ConfigureAwait(false);
+            if (preview.Count == 0 && parseResult.Errors.Length == 0)
+            {
+                return false;
+            }
+            ModuleAction action = await beforeSection("System Packages", preview).ConfigureAwait(false);
+            if (action == ModuleAction.Skip)
+            {
+                progress?.Report(new DeployResult("System Packages", "", "", ResultLevel.Ok, "Skipped (user)", DeployEventType.ModuleSkipped));
+                return false;
+            }
+            if (action == ModuleAction.Abort)
+            {
+                return false;
+            }
+        }
+
+        progress?.Report(new DeployResult("System Packages", "", "", ResultLevel.Ok, "", DeployEventType.ModuleStarted));
+
         foreach (string error in parseResult.Errors)
         {
-            progress?.Report(new DeployResult("system-packages", "", "", ResultLevel.Error, error));
+            progress?.Report(new DeployResult("System Packages", "", "", ResultLevel.Error, error));
         }
 
         bool hasErrors = parseResult.Errors.Length > 0;
@@ -374,7 +470,29 @@ public sealed class DeployService : IDeployService
             }
         }
 
+        progress?.Report(new DeployResult("System Packages", "", "", hasErrors ? ResultLevel.Error : ResultLevel.Ok, "", DeployEventType.ModuleCompleted));
+
         return hasErrors;
+    }
+
+    private async Task<IReadOnlyList<DeployResult>> CollectPackagesPreviewAsync(PackageManifestParseResult parseResult, Platform currentPlatform, CancellationToken cancellationToken)
+    {
+        var results = new List<DeployResult>();
+        foreach (string error in parseResult.Errors)
+        {
+            results.Add(new DeployResult("System Packages", "", "", ResultLevel.Error, error));
+        }
+        foreach (PackageDefinition package in parseResult.Packages)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!package.Manager.IsPlatformMatch(currentPlatform))
+            {
+                continue;
+            }
+            DeployResult result = await _systemPackageInstaller.InstallAsync(package.Name, package.Manager, true, cancellationToken).ConfigureAwait(false);
+            results.Add(result);
+        }
+        return results;
     }
 
     private async Task<bool> SetupCleanFiltersAsync(string configRepoPath, System.Collections.Immutable.ImmutableArray<AppModule> modules, IProgress<DeployResult>? progress, CancellationToken cancellationToken)
