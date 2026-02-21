@@ -160,9 +160,9 @@ public sealed class GlobalPackageInstallerTests
     [Test]
     public async Task InstallAsync_Bun_AlreadyInstalled_ReturnsAlreadyInstalled()
     {
-        // bun pm ls -g returns package name in output
+        // bun pm ls -g returns tree-formatted output: ├── package@version
         _processRunner.RunAsync("bun", "pm ls -g", null, Arg.Any<CancellationToken>())
-            .Returns(new ProcessRunResult(0, "prettier\ntypescript@5.0.0\neslint", ""));
+            .Returns(new ProcessRunResult(0, "C:\\Users\\test\\.bun\\install\\global (3)\n├── prettier@3.8.1\n├── typescript@5.0.0\n└── eslint@9.0.0", ""));
 
         DeployResult result = await _installer.InstallAsync("mod", GlobalPackageManager.Bun, "typescript", false);
 

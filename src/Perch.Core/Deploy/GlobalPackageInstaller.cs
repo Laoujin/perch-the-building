@@ -73,10 +73,10 @@ public sealed class GlobalPackageInstaller : IGlobalPackageInstaller
 
             if (manager == GlobalPackageManager.Bun)
             {
+                // Output format: ├── package@version or └── package@version
                 string output = result.StandardOutput ?? "";
                 return output.Split('\n', StringSplitOptions.RemoveEmptyEntries)
-                    .Any(line => line.Trim().Equals(packageName, StringComparison.OrdinalIgnoreCase) ||
-                                 line.Trim().StartsWith($"{packageName}@", StringComparison.OrdinalIgnoreCase));
+                    .Any(line => line.Contains($" {packageName}@", StringComparison.OrdinalIgnoreCase));
             }
 
             // npm list returns exit 0 if found
