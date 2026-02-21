@@ -186,13 +186,13 @@ public sealed class DeployService : IDeployService
         if (installedPackages.Contains(wingetId))
             return true;
 
-        // Fallback: check if app name matches (for apps installed outside winget)
-        // e.g., "Git.Git" -> check for "Git" in installed packages
-        int dotIndex = wingetId.IndexOf('.');
-        if (dotIndex > 0)
+        // Fallback: check if any part of the winget ID matches an installed package name
+        // e.g., "Git.Git" -> check for "Git"
+        // e.g., "TimKosse.FileZilla.Client" -> check for "TimKosse", "FileZilla", "Client"
+        string[] parts = wingetId.Split('.');
+        foreach (string part in parts)
         {
-            string appName = wingetId[..dotIndex];
-            if (installedPackages.Contains(appName))
+            if (installedPackages.Any(pkg => pkg.StartsWith(part, StringComparison.OrdinalIgnoreCase)))
                 return true;
         }
 
