@@ -189,10 +189,11 @@ public sealed class DeployService : IDeployService
         // Fallback: check if any part of the winget ID matches an installed package name
         // e.g., "Git.Git" -> check for "Git"
         // e.g., "TimKosse.FileZilla.Client" -> check for "TimKosse", "FileZilla", "Client"
+        // Skip parts shorter than 3 chars to avoid false positives (e.g., "4" in "BeyondCompare.4")
         string[] parts = wingetId.Split('.');
         foreach (string part in parts)
         {
-            if (installedPackages.Any(pkg => pkg.StartsWith(part, StringComparison.OrdinalIgnoreCase)))
+            if (part.Length >= 3 && installedPackages.Any(pkg => pkg.StartsWith(part, StringComparison.OrdinalIgnoreCase)))
                 return true;
         }
 
