@@ -69,8 +69,8 @@ public sealed class DeployServiceTests
         _vscodeExtensionInstaller = Substitute.For<IVscodeExtensionInstaller>();
         _psModuleInstaller = Substitute.For<IPsModuleInstaller>();
         _systemPackageInstaller = Substitute.For<ISystemPackageInstaller>();
-        _systemPackageInstaller.InstallAsync(Arg.Any<string>(), Arg.Any<PackageManager>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
-            .Returns(x => new DeployResult("system-packages", "", x.ArgAt<string>(0), ResultLevel.Ok, $"Installed {x.ArgAt<string>(0)}"));
+        _systemPackageInstaller.InstallAsync(Arg.Any<PackageDefinition>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            .Returns(x => new DeployResult("system-packages", "", x.ArgAt<PackageDefinition>(0).Name, ResultLevel.Ok, $"Installed {x.ArgAt<PackageDefinition>(0).Name}"));
         _referenceResolver = Substitute.For<IReferenceResolver>();
         _variableResolver = Substitute.For<IVariableResolver>();
         _cleanFilterService = Substitute.For<ICleanFilterService>();
@@ -1476,7 +1476,7 @@ public sealed class DeployServiceTests
             int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             Assert.That(exitCode, Is.EqualTo(0));
-            await _systemPackageInstaller.Received(2).InstallAsync(Arg.Any<string>(), PackageManager.Chocolatey, false, Arg.Any<CancellationToken>());
+            await _systemPackageInstaller.Received(2).InstallAsync(Arg.Is<PackageDefinition>(p => p.Manager == PackageManager.Chocolatey), false, Arg.Any<CancellationToken>());
         }
         finally
         {
@@ -1499,7 +1499,7 @@ public sealed class DeployServiceTests
 
             await _deployService.DeployAsync(tempDir, new DeployOptions { DryRun = true, Progress = _progress });
 
-            await _systemPackageInstaller.Received(1).InstallAsync("7zip", PackageManager.Chocolatey, true, Arg.Any<CancellationToken>());
+            await _systemPackageInstaller.Received(1).InstallAsync(Arg.Is<PackageDefinition>(p => p.Name == "7zip" && p.Manager == PackageManager.Chocolatey), true, Arg.Any<CancellationToken>());
         }
         finally
         {
@@ -1521,7 +1521,7 @@ public sealed class DeployServiceTests
             int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             Assert.That(exitCode, Is.EqualTo(0));
-            await _systemPackageInstaller.DidNotReceive().InstallAsync(Arg.Any<string>(), Arg.Any<PackageManager>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
+            await _systemPackageInstaller.DidNotReceive().InstallAsync(Arg.Any<PackageDefinition>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
         }
         finally
         {
@@ -1545,9 +1545,9 @@ public sealed class DeployServiceTests
 
             await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
-            await _systemPackageInstaller.Received(1).InstallAsync("7zip", PackageManager.Chocolatey, false, Arg.Any<CancellationToken>());
-            await _systemPackageInstaller.DidNotReceive().InstallAsync("curl", Arg.Any<PackageManager>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
-            await _systemPackageInstaller.DidNotReceive().InstallAsync("wget", Arg.Any<PackageManager>(), Arg.Any<bool>(), Arg.Any<CancellationToken>());
+            await _systemPackageInstaller.Received(1).InstallAsync(Arg.Is<PackageDefinition>(p => p.Name == "7zip" && p.Manager == PackageManager.Chocolatey), false, Arg.Any<CancellationToken>());
+            await _systemPackageInstaller.DidNotReceive().InstallAsync(Arg.Is<PackageDefinition>(p => p.Name == "curl"), Arg.Any<bool>(), Arg.Any<CancellationToken>());
+            await _systemPackageInstaller.DidNotReceive().InstallAsync(Arg.Is<PackageDefinition>(p => p.Name == "wget"), Arg.Any<bool>(), Arg.Any<CancellationToken>());
         }
         finally
         {
@@ -1974,8 +1974,8 @@ public sealed class DeployServiceTests
             int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
             Assert.That(exitCode, Is.EqualTo(0));
-            await _systemPackageInstaller.Received(1).InstallAsync("nerd-fonts-FiraCode", PackageManager.Chocolatey, false, Arg.Any<CancellationToken>());
-            await _systemPackageInstaller.Received(1).InstallAsync("Microsoft.CascadiaCode", PackageManager.Winget, false, Arg.Any<CancellationToken>());
+            await _systemPackageInstaller.Received(1).InstallAsync(Arg.Is<PackageDefinition>(p => p.Name == "nerd-fonts-FiraCode" && p.Manager == PackageManager.Chocolatey), false, Arg.Any<CancellationToken>());
+            await _systemPackageInstaller.Received(1).InstallAsync(Arg.Is<PackageDefinition>(p => p.Name == "Microsoft.CascadiaCode" && p.Manager == PackageManager.Winget), false, Arg.Any<CancellationToken>());
         }
         finally
         {
@@ -2048,7 +2048,7 @@ public sealed class DeployServiceTests
                 .Returns(new InstallResolution(
                     ImmutableArray.Create(new PackageDefinition("nerd-fonts-FiraCode", PackageManager.Chocolatey)),
                     ImmutableArray<string>.Empty));
-            _systemPackageInstaller.InstallAsync("nerd-fonts-FiraCode", PackageManager.Chocolatey, false, Arg.Any<CancellationToken>())
+            _systemPackageInstaller.InstallAsync(Arg.Is<PackageDefinition>(p => p.Name == "nerd-fonts-FiraCode"), false, Arg.Any<CancellationToken>())
                 .Returns(new DeployResult("fonts", "", "nerd-fonts-FiraCode", ResultLevel.Error, "Installation failed"));
 
             int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
@@ -2079,7 +2079,7 @@ public sealed class DeployServiceTests
 
             await _deployService.DeployAsync(tempDir, new DeployOptions { DryRun = true, Progress = _progress });
 
-            await _systemPackageInstaller.Received(1).InstallAsync("nerd-fonts-FiraCode", PackageManager.Chocolatey, true, Arg.Any<CancellationToken>());
+            await _systemPackageInstaller.Received(1).InstallAsync(Arg.Is<PackageDefinition>(p => p.Name == "nerd-fonts-FiraCode" && p.Manager == PackageManager.Chocolatey), true, Arg.Any<CancellationToken>());
         }
         finally
         {
@@ -2193,7 +2193,7 @@ public sealed class DeployServiceTests
                 .Returns(new InstallResolution(
                     ImmutableArray.Create(new PackageDefinition("Git.Git", PackageManager.Winget)),
                     ImmutableArray<string>.Empty));
-            _systemPackageInstaller.InstallAsync("Git.Git", PackageManager.Winget, Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            _systemPackageInstaller.InstallAsync(Arg.Is<PackageDefinition>(p => p.Name == "Git.Git"), Arg.Any<bool>(), Arg.Any<CancellationToken>())
                 .Returns(new DeployResult("system-packages", "", "Git.Git", ResultLevel.Error, "Install failed"));
 
             int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { DryRun = true, Progress = _progress });
@@ -2446,7 +2446,7 @@ public sealed class DeployServiceTests
 
         try
         {
-            _systemPackageInstaller.InstallAsync("broken-pkg", Arg.Any<PackageManager>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            _systemPackageInstaller.InstallAsync(Arg.Is<PackageDefinition>(p => p.Name == "broken-pkg"), Arg.Any<bool>(), Arg.Any<CancellationToken>())
                 .Returns(new DeployResult("system-packages", "", "broken-pkg", ResultLevel.Error, "Install failed"));
 
             _discoveryService.DiscoverAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())

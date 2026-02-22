@@ -116,14 +116,22 @@ public sealed class InstallResolver : IInstallResolver
     {
         if (platform == Platform.Windows)
         {
+            // Collect all alternative IDs for installed check
+            var allIds = new List<string>();
+            if (!string.IsNullOrWhiteSpace(install.Winget))
+                allIds.Add(install.Winget!);
+            if (!string.IsNullOrWhiteSpace(install.Choco))
+                allIds.Add(install.Choco!);
+
+            // Prefer winget, fallback to choco
             if (!string.IsNullOrWhiteSpace(install.Winget))
             {
-                return new PackageDefinition(install.Winget!, PackageManager.Winget);
+                return new PackageDefinition(install.Winget!, PackageManager.Winget, allIds.ToImmutableArray());
             }
 
             if (!string.IsNullOrWhiteSpace(install.Choco))
             {
-                return new PackageDefinition(install.Choco!, PackageManager.Chocolatey);
+                return new PackageDefinition(install.Choco!, PackageManager.Chocolatey, allIds.ToImmutableArray());
             }
         }
 

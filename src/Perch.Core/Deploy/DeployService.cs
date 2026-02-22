@@ -360,7 +360,7 @@ public sealed class DeployService : IDeployService
         foreach (PackageDefinition package in resolution.Packages)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            DeployResult result = await _systemPackageInstaller.InstallAsync(package.Name, package.Manager, dryRun, cancellationToken).ConfigureAwait(false);
+            DeployResult result = await _systemPackageInstaller.InstallAsync(package, dryRun, cancellationToken).ConfigureAwait(false);
             progress?.Report(result);
             if (result.Level == ResultLevel.Error)
             {
@@ -383,7 +383,7 @@ public sealed class DeployService : IDeployService
         foreach (PackageDefinition package in resolution.Packages)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            DeployResult result = await _systemPackageInstaller.InstallAsync(package.Name, package.Manager, true, cancellationToken).ConfigureAwait(false);
+            DeployResult result = await _systemPackageInstaller.InstallAsync(package, true, cancellationToken).ConfigureAwait(false);
             results.Add(result);
         }
         return results;
@@ -433,7 +433,7 @@ public sealed class DeployService : IDeployService
         foreach (PackageDefinition package in resolution.Packages)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            DeployResult result = await _systemPackageInstaller.InstallAsync(package.Name, package.Manager, dryRun, cancellationToken).ConfigureAwait(false);
+            DeployResult result = await _systemPackageInstaller.InstallAsync(package, dryRun, cancellationToken).ConfigureAwait(false);
             progress?.Report(result);
             if (result.Level == ResultLevel.Error)
             {
@@ -456,7 +456,7 @@ public sealed class DeployService : IDeployService
         foreach (PackageDefinition package in resolution.Packages)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            DeployResult result = await _systemPackageInstaller.InstallAsync(package.Name, package.Manager, true, cancellationToken).ConfigureAwait(false);
+            DeployResult result = await _systemPackageInstaller.InstallAsync(package, true, cancellationToken).ConfigureAwait(false);
             results.Add(result);
         }
         return results;
@@ -504,7 +504,7 @@ public sealed class DeployService : IDeployService
                 continue;
             }
 
-            DeployResult result = await _systemPackageInstaller.InstallAsync(package.Name, package.Manager, dryRun, cancellationToken).ConfigureAwait(false);
+            DeployResult result = await _systemPackageInstaller.InstallAsync(package, dryRun, cancellationToken).ConfigureAwait(false);
             progress?.Report(result);
 
             if (result.Level == ResultLevel.Error)
@@ -532,7 +532,7 @@ public sealed class DeployService : IDeployService
             {
                 continue;
             }
-            DeployResult result = await _systemPackageInstaller.InstallAsync(package.Name, package.Manager, true, cancellationToken).ConfigureAwait(false);
+            DeployResult result = await _systemPackageInstaller.InstallAsync(package, true, cancellationToken).ConfigureAwait(false);
             results.Add(result);
         }
         return results;
