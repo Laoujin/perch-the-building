@@ -186,14 +186,14 @@ public sealed class DeployService : IDeployService
         if (installedPackages.Contains(wingetId))
             return true;
 
-        // Fallback: check if any installed package contains the app name as a whole word
-        // e.g., "FileZilla" matches "FileZilla 3.69.5" (word boundary)
-        // e.g., "BeyondCompare" does NOT match "Beyond Compare 5" (no word boundary)
+        // Fallback: check if any installed package matches the app name with optional version
+        // e.g., "FileZilla" matches "FileZilla" or "FileZilla 3.69.5"
+        // e.g., "Git" matches "Git" or "Git 2.43.0"
         string[] parts = wingetId.Split('.');
         foreach (string part in parts)
         {
             if (part.Length >= 3 && installedPackages.Any(pkg =>
-                System.Text.RegularExpressions.Regex.IsMatch(pkg, $@"\b{System.Text.RegularExpressions.Regex.Escape(part)}\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase)))
+                System.Text.RegularExpressions.Regex.IsMatch(pkg, $@"^{System.Text.RegularExpressions.Regex.Escape(part)}( [0-9.]+)?$", System.Text.RegularExpressions.RegexOptions.IgnoreCase)))
                 return true;
         }
 
