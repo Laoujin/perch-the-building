@@ -87,38 +87,14 @@ public sealed class DeployService : IDeployService
             _snapshotProvider.CreateSnapshot(allTargetPaths, cancellationToken);
         }
 
-        foreach (AppModule module in eligibleModules)
+        var (modulesHadErrors, aborted) = await ProcessModulesAsync(eligibleModules, currentPlatform, variables, configRepoPath, dryRun, progress, beforeModule, cancellationToken).ConfigureAwait(false);
+        if (aborted)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (beforeModule != null)
-            {
-                IReadOnlyList<DeployResult> preview = await CollectModulePreviewAsync(module, currentPlatform, variables, configRepoPath, !dryRun, cancellationToken).ConfigureAwait(false);
-
-                ModuleAction action = await beforeModule(module, preview).ConfigureAwait(false);
-                if (action == ModuleAction.Skip)
-                {
-                    progress?.Report(new DeployResult(module.DisplayName, "", "", ResultLevel.Ok, "Skipped (user)", DeployEventType.ModuleSkipped));
-                    continue;
-                }
-
-                if (action == ModuleAction.Abort)
-                {
-                    return 0;
-                }
-            }
-
-            progress?.Report(new DeployResult(module.DisplayName, "", "", ResultLevel.Ok, "", DeployEventType.ModuleStarted));
-
-            bool moduleHadErrors = await DeployModuleAsync(module, currentPlatform, variables, configRepoPath, dryRun, progress, cancellationToken).ConfigureAwait(false);
-
-            ResultLevel completionLevel = moduleHadErrors ? ResultLevel.Error : ResultLevel.Ok;
-            progress?.Report(new DeployResult(module.DisplayName, "", "", completionLevel, "", DeployEventType.ModuleCompleted));
-
-            if (moduleHadErrors)
-            {
-                hasErrors = true;
-            }
+            return 0;
+        }
+        if (modulesHadErrors)
+        {
+            hasErrors = true;
         }
 
         string machineName = Environment.MachineName;
@@ -244,6 +220,65 @@ public sealed class DeployService : IDeployService
             await ProcessListAsync(module.PsModules, name => _psModuleInstaller.InstallAsync(module.DisplayName, name, true, cancellationToken), previewProgress, cancellationToken).ConfigureAwait(false);
         }
         return results;
+    }
+
+    private static bool IsFullySynced(IReadOnlyList<DeployResult> preview) =>
+        preview.Count > 0 && preview.All(r => r.Level == ResultLevel.Synced || r.Level == ResultLevel.Skipped);
+
+    private async Task<(bool HasErrors, bool Aborted)> ProcessModulesAsync(
+        List<AppModule> modules,
+        Platform currentPlatform,
+        IReadOnlyDictionary<string, string>? variables,
+        string configRepoPath,
+        bool dryRun,
+        IProgress<DeployResult>? progress,
+        Func<AppModule, IReadOnlyList<DeployResult>, Task<ModuleAction>>? beforeModule,
+        CancellationToken cancellationToken)
+    {
+        bool hasErrors = false;
+
+        foreach (AppModule module in modules)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            IReadOnlyList<DeployResult> preview = await CollectModulePreviewAsync(module, currentPlatform, variables, configRepoPath, !dryRun, cancellationToken).ConfigureAwait(false);
+
+            if (beforeModule != null)
+            {
+                ModuleAction action = await beforeModule(module, preview).ConfigureAwait(false);
+                if (action == ModuleAction.Skip)
+                {
+                    progress?.Report(new DeployResult(module.DisplayName, "", "", ResultLevel.Ok, "Skipped (user)", DeployEventType.ModuleSkipped));
+                    continue;
+                }
+
+                if (action == ModuleAction.Abort)
+                {
+                    return (hasErrors, true);
+                }
+            }
+
+            // Skip module if everything is already synced (no changes needed)
+            if (IsFullySynced(preview))
+            {
+                progress?.Report(new DeployResult(module.DisplayName, "", "", ResultLevel.Synced, "Skipped (already synced)", DeployEventType.ModuleSkipped));
+                continue;
+            }
+
+            progress?.Report(new DeployResult(module.DisplayName, "", "", ResultLevel.Ok, "", DeployEventType.ModuleStarted));
+
+            bool moduleHadErrors = await DeployModuleAsync(module, currentPlatform, variables, configRepoPath, dryRun, progress, cancellationToken).ConfigureAwait(false);
+
+            ResultLevel completionLevel = moduleHadErrors ? ResultLevel.Error : ResultLevel.Ok;
+            progress?.Report(new DeployResult(module.DisplayName, "", "", completionLevel, "", DeployEventType.ModuleCompleted));
+
+            if (moduleHadErrors)
+            {
+                hasErrors = true;
+            }
+        }
+
+        return (hasErrors, false);
     }
 
     private async Task<bool> DeployModuleAsync(AppModule module, Platform currentPlatform, IReadOnlyDictionary<string, string>? variables, string configRepoPath, bool dryRun, IProgress<DeployResult>? progress, CancellationToken cancellationToken)

@@ -408,13 +408,13 @@ public sealed class DeployServiceTests
 
             int exitCode = await _deployService.DeployAsync(tempDir, new DeployOptions { Progress = _progress });
 
-            var actions = _reported.Where(r => r.EventType == DeployEventType.Action).ToList();
+            var moduleSkipped = _reported.Where(r => r.EventType == DeployEventType.ModuleSkipped).ToList();
             Assert.Multiple(() =>
             {
                 Assert.That(exitCode, Is.EqualTo(0));
-                Assert.That(actions, Has.Count.EqualTo(1));
-                Assert.That(actions[0].Level, Is.EqualTo(ResultLevel.Skipped));
-                Assert.That(actions[0].Message, Does.Contain("No target for"));
+                Assert.That(moduleSkipped, Has.Count.EqualTo(1));
+                Assert.That(moduleSkipped[0].Level, Is.EqualTo(ResultLevel.Synced));
+                Assert.That(moduleSkipped[0].Message, Does.Contain("already synced"));
             });
             _symlinkProvider.DidNotReceive().CreateSymlink(Arg.Any<string>(), Arg.Any<string>());
         }
