@@ -20,7 +20,7 @@ public sealed class SystemPackageInstaller : ISystemPackageInstaller
 
         if (command.Length == 0)
         {
-            return new DeployResult("system-packages", "", package.Name, ResultLevel.Ok, $"Skipped {package.Name} ({package.Manager} handled elsewhere)");
+            return new DeployResult("system-packages", "", package.Name, ResultLevel.Skipped, $"{package.Name} ({package.Manager} handled elsewhere)");
         }
 
         _installedPackages ??= await _installedAppChecker.GetInstalledPackageIdsAsync(cancellationToken).ConfigureAwait(false);

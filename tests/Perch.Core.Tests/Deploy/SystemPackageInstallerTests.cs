@@ -151,7 +151,7 @@ public sealed class SystemPackageInstallerTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(result.Level, Is.EqualTo(ResultLevel.Ok));
+            Assert.That(result.Level, Is.EqualTo(ResultLevel.Skipped));
             Assert.That(result.Message, Does.Contain("handled elsewhere"));
         });
         await _processRunner.DidNotReceive().RunAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());

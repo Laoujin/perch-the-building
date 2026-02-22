@@ -183,7 +183,8 @@ public sealed class DeployCommand : AsyncCommand<DeployCommand.Settings>
                     string status = result.Level switch
                     {
                         ResultLevel.Synced => "[blue]SYNCED[/]",
-                        ResultLevel.Ok => "[green]OK[/]",
+                        ResultLevel.Ok => "[green]DRIFTED[/]",
+                        ResultLevel.Skipped => "[yellow]SKIP[/]",
                         ResultLevel.Warning => "[yellow]WARN[/]",
                         ResultLevel.Error => "[red]FAIL[/]",
                         _ => "[grey]??[/]",
@@ -333,6 +334,7 @@ public sealed class DeployCommand : AsyncCommand<DeployCommand.Settings>
     {
         ResultLevel.Synced => "blue",
         ResultLevel.Ok => "green",
+        ResultLevel.Skipped => "yellow",
         ResultLevel.Warning => "yellow",
         ResultLevel.Error => "red",
         _ => "grey",

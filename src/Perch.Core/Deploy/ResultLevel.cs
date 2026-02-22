@@ -9,6 +9,9 @@ public enum ResultLevel
     /// <summary>Action completed successfully.</summary>
     Ok,
 
+    /// <summary>Action skipped (not applicable on current platform, handled elsewhere, etc.).</summary>
+    Skipped,
+
     /// <summary>Action completed with warnings.</summary>
     Warning,
 
