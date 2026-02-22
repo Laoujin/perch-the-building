@@ -17,7 +17,7 @@ public sealed class GlobalPackageInstaller : IGlobalPackageInstaller
         bool isInstalled = await IsInstalledAsync(manager, packageName, cancellationToken).ConfigureAwait(false);
         if (isInstalled)
         {
-            return new DeployResult(moduleName, "", packageName, ResultLevel.Ok, $"{packageName} already installed");
+            return new DeployResult(moduleName, "", packageName, ResultLevel.Synced, $"{packageName} already installed");
         }
 
         string command = manager switch

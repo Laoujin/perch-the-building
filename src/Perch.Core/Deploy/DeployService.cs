@@ -744,7 +744,7 @@ public sealed class DeployService : IDeployService
             if (Equals(currentValue, entry.Value))
             {
                 progress?.Report(new DeployResult(module.DisplayName, "", $"{entry.Key}\\{entry.Name}",
-                    ResultLevel.Ok, $"Registry {entry.Name} already set to {entry.Value}"));
+                    ResultLevel.Synced, $"Registry {entry.Name} already set to {entry.Value}"));
                 continue;
             }
 
@@ -783,7 +783,7 @@ public sealed class DeployService : IDeployService
             if (_pathService.Contains(expandedPath))
             {
                 progress?.Report(new DeployResult(module.DisplayName, "", expandedPath,
-                    ResultLevel.Ok, $"PATH already contains {expandedPath}"));
+                    ResultLevel.Synced, $"PATH already contains {expandedPath}"));
                 continue;
             }
 

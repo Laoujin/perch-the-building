@@ -152,7 +152,7 @@ public sealed class GlobalPackageInstallerTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(result.Level, Is.EqualTo(ResultLevel.Ok));
+            Assert.That(result.Level, Is.EqualTo(ResultLevel.Synced));
             Assert.That(result.Message, Is.EqualTo("typescript already installed"));
         });
     }
@@ -168,7 +168,7 @@ public sealed class GlobalPackageInstallerTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(result.Level, Is.EqualTo(ResultLevel.Ok));
+            Assert.That(result.Level, Is.EqualTo(ResultLevel.Synced));
             Assert.That(result.Message, Is.EqualTo("typescript already installed"));
         });
     }
