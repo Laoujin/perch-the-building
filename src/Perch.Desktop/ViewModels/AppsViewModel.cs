@@ -16,21 +16,12 @@ public sealed partial class AppsViewModel : GalleryViewModelBase
     private readonly IAppDetailService _detailService;
     private readonly ISettingsProvider _settingsProvider;
     private readonly IPendingChangesService _pendingChanges;
+    private readonly ICatalogService _catalogService;
 
     private ImmutableArray<AppCardModel> _allApps = [];
     private Dictionary<string, AppCardModel> _allAppsByIdIncludingChildren = new(StringComparer.OrdinalIgnoreCase);
     private HashSet<UserProfile> _activeProfiles = [UserProfile.Developer, UserProfile.PowerUser];
-
-    private static readonly Dictionary<string, string[]> _subcategoryOrder = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["Development"] = ["IDEs", "Editors", "Languages", "Version Control", "Terminals", "CLI Tools", "Containers", "Shells", "Tools", "API Tools", "Databases", "Build Tools", "Diff Tools", ".NET", "Node"],
-        ["Gaming"] = ["Stores", "Launchers", "Streaming", "Controllers", "Performance", "Saves", "Modding", "Emulators"],
-        ["Utilities"] = ["Productivity", "System", "Compression", "Screenshots", "Clipboard", "PDF", "Storage", "Downloads", "Uninstallers", "System Monitors"],
-        ["Media"] = ["Players", "Video", "Audio", "Graphics", "3D"],
-        ["Communication"] = ["Chat", "Video", "Email"],
-        ["Security"] = ["Passwords", "Encryption", "Downloads", "Sandboxing"],
-        ["Networking"] = ["Remote Access", "FTP", "Protocol", "Security"],
-    };
+    private ImmutableDictionary<string, CategoryDefinition> _categories = ImmutableDictionary<string, CategoryDefinition>.Empty;
 
     [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty]
     private int _linkedCount;
@@ -50,12 +41,14 @@ public sealed partial class AppsViewModel : GalleryViewModelBase
         IGalleryDetectionService detectionService,
         IAppDetailService detailService,
         ISettingsProvider settingsProvider,
-        IPendingChangesService pendingChanges)
+        IPendingChangesService pendingChanges,
+        ICatalogService catalogService)
     {
         _detectionService = detectionService;
         _detailService = detailService;
         _settingsProvider = settingsProvider;
         _pendingChanges = pendingChanges;
+        _catalogService = catalogService;
     }
 
     protected override void OnSearchTextUpdated() => RebuildCategories();
@@ -68,6 +61,7 @@ public sealed partial class AppsViewModel : GalleryViewModelBase
 
         try
         {
+            _categories = await _catalogService.GetCategoriesAsync(cancellationToken);
             var profiles = await LoadProfilesAsync(_settingsProvider, cancellationToken);
             _activeProfiles = profiles;
             var result = await _detectionService.DetectAppsAsync(profiles, cancellationToken);
@@ -310,13 +304,15 @@ public sealed partial class AppsViewModel : GalleryViewModelBase
             && ProfileMatcher.Matches(a.CatalogEntry.Profiles, _activeProfiles)) ? 0 : 1;
     }
 
-    private static int GetSubCategoryPriority(string broadCategory, string subCategory)
+    private int GetSubCategoryPriority(string broadCategory, string subCategory)
     {
-        if (!_subcategoryOrder.TryGetValue(broadCategory, out var order))
+        if (!_categories.TryGetValue(broadCategory, out var category))
             return int.MaxValue;
 
-        var index = Array.FindIndex(order, s => string.Equals(s, subCategory, StringComparison.OrdinalIgnoreCase));
-        return index >= 0 ? index : int.MaxValue;
+        if (!category.Children.TryGetValue(subCategory, out var subCat))
+            return int.MaxValue;
+
+        return subCat.Sort;
     }
 
 }

@@ -12,56 +12,17 @@ public sealed class GalleryOverlayService : IGalleryOverlayService
         var links = MergeLinks(manifest.Links, gallery.Config?.Links ?? ImmutableArray<CatalogConfigLink>.Empty);
         var cleanFilter = manifest.CleanFilter ?? ConvertCleanFilter(gallery.Id, gallery.Config?.CleanFilter);
         var vscodeExtensions = MergeExtensions(manifest.VscodeExtensions, gallery.Extensions);
-        var platforms = MergePlatforms(manifest.Platforms, gallery.Os);
-        string displayName = MergeDisplayName(manifest, gallery);
-        var pathEntries = MergePathEntries(manifest.PathEntries, gallery.Config?.PathEntries ?? ImmutableArray<CatalogPathEntry>.Empty);
+        string displayName = manifest.DisplayName == manifest.ModuleName && gallery.DisplayName != null
+            ? gallery.DisplayName
+            : manifest.DisplayName;
 
         return manifest with
         {
             Links = links,
             CleanFilter = cleanFilter,
             VscodeExtensions = vscodeExtensions,
-            Platforms = platforms,
             DisplayName = displayName,
-            PathEntries = pathEntries,
-            Install = gallery.Install,
         };
-    }
-
-    private static ImmutableArray<Platform> MergePlatforms(
-        ImmutableArray<Platform> manifestPlatforms,
-        ImmutableArray<string> galleryOs)
-    {
-        if (!manifestPlatforms.IsDefaultOrEmpty)
-        {
-            return manifestPlatforms;
-        }
-
-        if (galleryOs.IsDefaultOrEmpty)
-        {
-            return ImmutableArray<Platform>.Empty;
-        }
-
-        var platforms = new List<Platform>();
-        foreach (string os in galleryOs)
-        {
-            if (Enum.TryParse<Platform>(os, ignoreCase: true, out var platform))
-            {
-                platforms.Add(platform);
-            }
-        }
-
-        return platforms.ToImmutableArray();
-    }
-
-    private static string MergeDisplayName(AppManifest manifest, CatalogEntry gallery)
-    {
-        if (manifest.DisplayName != manifest.ModuleName)
-        {
-            return manifest.DisplayName;
-        }
-
-        return gallery.DisplayName ?? gallery.Name ?? manifest.DisplayName;
     }
 
     private static ImmutableArray<LinkEntry> MergeLinks(
@@ -137,24 +98,5 @@ public sealed class GalleryOverlayService : IGalleryOverlayService
         }
 
         return all.Count > 0 ? all.ToImmutableArray() : ImmutableArray<string>.Empty;
-    }
-
-    private static ImmutableArray<PathEntry> MergePathEntries(
-        ImmutableArray<PathEntry> manifestPathEntries,
-        ImmutableArray<CatalogPathEntry> galleryPathEntries)
-    {
-        if (galleryPathEntries.IsDefaultOrEmpty)
-        {
-            return manifestPathEntries;
-        }
-
-        var merged = new List<PathEntry>(manifestPathEntries.IsDefaultOrEmpty ? [] : manifestPathEntries);
-
-        foreach (var gp in galleryPathEntries)
-        {
-            merged.Add(new PathEntry(gp.Paths));
-        }
-
-        return merged.ToImmutableArray();
     }
 }

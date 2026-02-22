@@ -12,6 +12,7 @@ public sealed class CatalogService : ICatalogService
     private ImmutableArray<FontCatalogEntry>? _allFonts;
     private ImmutableArray<TweakCatalogEntry>? _allTweaks;
     private IReadOnlyDictionary<string, int>? _gitHubStars;
+    private ImmutableDictionary<string, CategoryDefinition>? _categories;
 
     public CatalogService(ICatalogFetcher fetcher, ICatalogCache cache, CatalogParser parser)
     {
@@ -138,6 +139,25 @@ public sealed class CatalogService : ICatalogService
         return result;
     }
 
+    public async Task<ImmutableDictionary<string, CategoryDefinition>> GetCategoriesAsync(CancellationToken cancellationToken = default)
+    {
+        if (_categories is not null)
+            return _categories;
+
+        try
+        {
+            string content = await FetchWithCacheAsync("categories.yaml", cancellationToken).ConfigureAwait(false);
+            var result = _parser.ParseCategories(content);
+            _categories = result;
+            return result;
+        }
+        catch
+        {
+            _categories = ImmutableDictionary<string, CategoryDefinition>.Empty;
+            return _categories;
+        }
+    }
+
     public async Task<ImmutableArray<CatalogEntry>> GetAllDotfileAppsAsync(CancellationToken cancellationToken = default)
     {
         var allApps = await GetAllAppsAsync(cancellationToken).ConfigureAwait(false);
@@ -161,6 +181,7 @@ public sealed class CatalogService : ICatalogService
         _allFonts = null;
         _allTweaks = null;
         _gitHubStars = null;
+        _categories = null;
         _cache.InvalidateAll();
     }
 

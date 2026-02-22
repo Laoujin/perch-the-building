@@ -37,5 +37,8 @@ public sealed class NoOpCatalogService : ICatalogService
     public Task<IReadOnlyDictionary<string, int>> GetGitHubStarsAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyDictionary<string, int>>(new Dictionary<string, int>());
 
+    public Task<ImmutableDictionary<string, CategoryDefinition>> GetCategoriesAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(ImmutableDictionary<string, CategoryDefinition>.Empty);
+
     public void InvalidateAll() { }
 }

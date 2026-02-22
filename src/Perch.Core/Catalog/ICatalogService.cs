@@ -14,5 +14,6 @@ public interface ICatalogService
     Task<ImmutableArray<CatalogEntry>> GetAllDotfileAppsAsync(CancellationToken cancellationToken = default);
     Task<ImmutableArray<TweakCatalogEntry>> GetAllAppOwnedTweaksAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyDictionary<string, int>> GetGitHubStarsAsync(CancellationToken cancellationToken = default);
+    Task<ImmutableDictionary<string, CategoryDefinition>> GetCategoriesAsync(CancellationToken cancellationToken = default);
     void InvalidateAll();
 }

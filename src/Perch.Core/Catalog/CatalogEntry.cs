@@ -47,11 +47,7 @@ public sealed record InstallDefinition(
 
 public sealed record CatalogConfigDefinition(
     ImmutableArray<CatalogConfigLink> Links,
-    CatalogCleanFilter? CleanFilter = null,
-    ImmutableArray<CatalogPathEntry> PathEntries = default);
-
-public sealed record CatalogPathEntry(
-    ImmutableDictionary<Platform, string> Paths);
+    CatalogCleanFilter? CleanFilter = null);
 
 public sealed record CatalogConfigLink(
     string Source,

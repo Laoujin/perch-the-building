@@ -176,6 +176,40 @@ public sealed class CatalogParser
         return result;
     }
 
+    public ImmutableDictionary<string, CategoryDefinition> ParseCategories(string yaml)
+    {
+        if (string.IsNullOrWhiteSpace(yaml))
+            return ImmutableDictionary<string, CategoryDefinition>.Empty;
+
+        Dictionary<string, CategoryDefinitionYamlModel> model;
+        try
+        {
+            model = Deserializer.Deserialize<Dictionary<string, CategoryDefinitionYamlModel>>(yaml);
+        }
+        catch (YamlException)
+        {
+            return ImmutableDictionary<string, CategoryDefinition>.Empty;
+        }
+
+        return ConvertCategories(model);
+    }
+
+    private static ImmutableDictionary<string, CategoryDefinition> ConvertCategories(
+        Dictionary<string, CategoryDefinitionYamlModel>? model)
+    {
+        if (model == null || model.Count == 0)
+            return ImmutableDictionary<string, CategoryDefinition>.Empty;
+
+        var builder = ImmutableDictionary.CreateBuilder<string, CategoryDefinition>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (name, value) in model)
+        {
+            var children = ConvertCategories(value.Children);
+            builder[name] = new CategoryDefinition(name, value.Sort, value.Pattern, children);
+        }
+
+        return builder.ToImmutable();
+    }
+
     public CatalogParseResult<CatalogIndex> ParseIndex(string json)
     {
         if (string.IsNullOrWhiteSpace(json))
@@ -235,81 +269,43 @@ public sealed class CatalogParser
 
     private static CatalogConfigDefinition? ParseConfig(CatalogConfigYamlModel? model)
     {
-        if (model == null)
+        if (model?.Links == null || model.Links.Count == 0)
         {
             return null;
         }
 
         var links = new List<CatalogConfigLink>();
-        if (model.Links != null)
+        foreach (var link in model.Links)
         {
-            foreach (var link in model.Links)
-            {
-                if (string.IsNullOrWhiteSpace(link.Source) || link.Target == null)
-                {
-                    continue;
-                }
-
-                var targets = new Dictionary<Platform, string>();
-                foreach (var kvp in link.Target)
-                {
-                    if (Enum.TryParse<Platform>(kvp.Key, ignoreCase: true, out var platform))
-                    {
-                        targets[platform] = kvp.Value;
-                    }
-                }
-
-                if (targets.Count > 0)
-                {
-                    var linkType = ParseLinkType(link.LinkType);
-                    var platforms = ParsePlatforms(link.Platforms);
-                    links.Add(new CatalogConfigLink(link.Source, targets.ToImmutableDictionary(), linkType, platforms, link.Template));
-                }
-            }
-        }
-
-        var pathEntries = ParsePathEntries(model.PathEntries);
-        var cleanFilter = ParseCatalogCleanFilter(model.CleanFilter);
-
-        if (links.Count == 0 && pathEntries.IsDefaultOrEmpty && cleanFilter == null)
-        {
-            return null;
-        }
-
-        return new CatalogConfigDefinition(links.ToImmutableArray(), cleanFilter, pathEntries);
-    }
-
-    private static ImmutableArray<CatalogPathEntry> ParsePathEntries(List<CatalogPathEntryYamlModel>? pathEntries)
-    {
-        if (pathEntries == null || pathEntries.Count == 0)
-        {
-            return default;
-        }
-
-        var entries = new List<CatalogPathEntry>();
-        foreach (var entry in pathEntries)
-        {
-            if (entry.Path == null || entry.Path.Count == 0)
+            if (string.IsNullOrWhiteSpace(link.Source) || link.Target == null)
             {
                 continue;
             }
 
-            var paths = new Dictionary<Platform, string>();
-            foreach (var kvp in entry.Path)
+            var targets = new Dictionary<Platform, string>();
+            foreach (var kvp in link.Target)
             {
                 if (Enum.TryParse<Platform>(kvp.Key, ignoreCase: true, out var platform))
                 {
-                    paths[platform] = kvp.Value;
+                    targets[platform] = kvp.Value;
                 }
             }
 
-            if (paths.Count > 0)
+            if (targets.Count > 0)
             {
-                entries.Add(new CatalogPathEntry(paths.ToImmutableDictionary()));
+                var linkType = ParseLinkType(link.LinkType);
+                var platforms = ParsePlatforms(link.Platforms);
+                links.Add(new CatalogConfigLink(link.Source, targets.ToImmutableDictionary(), linkType, platforms, link.Template));
             }
         }
 
-        return entries.ToImmutableArray();
+        if (links.Count == 0)
+        {
+            return null;
+        }
+
+        var cleanFilter = ParseCatalogCleanFilter(model.CleanFilter);
+        return new CatalogConfigDefinition(links.ToImmutableArray(), cleanFilter);
     }
 
     private static LinkType ParseLinkType(string? linkType) =>
