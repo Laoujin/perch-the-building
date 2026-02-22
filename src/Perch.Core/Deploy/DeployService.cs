@@ -186,14 +186,14 @@ public sealed class DeployService : IDeployService
         if (installedPackages.Contains(wingetId))
             return true;
 
-        // Fallback: check if any part of the winget ID exactly matches an installed package name
-        // This handles apps installed outside winget that show up by display name only
-        // e.g., "Git.Git" -> check for "Git" (matches display name "Git")
-        // Using exact match to avoid false positives like BC4 matching installed BC5
+        // Fallback: check if any installed package contains the app name as a whole word
+        // e.g., "FileZilla" matches "FileZilla 3.69.5" (word boundary)
+        // e.g., "BeyondCompare" does NOT match "Beyond Compare 5" (no word boundary)
         string[] parts = wingetId.Split('.');
         foreach (string part in parts)
         {
-            if (part.Length >= 3 && installedPackages.Contains(part))
+            if (part.Length >= 3 && installedPackages.Any(pkg =>
+                System.Text.RegularExpressions.Regex.IsMatch(pkg, $@"\b{System.Text.RegularExpressions.Regex.Escape(part)}\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase)))
                 return true;
         }
 
