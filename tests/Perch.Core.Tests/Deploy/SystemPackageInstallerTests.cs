@@ -37,6 +37,23 @@ public sealed class SystemPackageInstallerTests
     }
 
     [Test]
+    public async Task InstallAsync_FallbackMatch_DetectsInstalledByDisplayName()
+    {
+        // Simulates app installed via choco/direct installer showing as "Git 2.53.0" instead of "Git.Git"
+        _installedAppChecker.GetInstalledPackageIdsAsync(Arg.Any<CancellationToken>())
+            .Returns(new HashSet<string>(["Git 2.53.0"], StringComparer.OrdinalIgnoreCase));
+
+        DeployResult result = await _installer.InstallAsync("Git.Git", PackageManager.Winget, dryRun: false);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Level, Is.EqualTo(ResultLevel.Synced));
+            Assert.That(result.Message, Does.Contain("Already installed"));
+        });
+        await _processRunner.DidNotReceive().RunAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
+    }
+
+    [Test]
     public async Task InstallAsync_DryRun_DoesNotRunProcess()
     {
         DeployResult result = await _installer.InstallAsync("7zip", PackageManager.Chocolatey, dryRun: true);

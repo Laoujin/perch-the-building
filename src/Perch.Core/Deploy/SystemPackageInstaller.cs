@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Perch.Core.Packages;
 
 namespace Perch.Core.Deploy;
@@ -25,7 +26,7 @@ public sealed class SystemPackageInstaller : ISystemPackageInstaller
 
         _installedPackages ??= await _installedAppChecker.GetInstalledPackageIdsAsync(cancellationToken).ConfigureAwait(false);
 
-        if (_installedPackages.Contains(packageName))
+        if (IsInstalled(packageName, _installedPackages))
         {
             return new DeployResult("system-packages", "", packageName, ResultLevel.Synced, $"Already installed: {packageName}");
         }
@@ -55,4 +56,22 @@ public sealed class SystemPackageInstaller : ISystemPackageInstaller
             PackageManager.Brew => ("brew", $"install {packageName}"),
             _ => ("", ""),
         };
+
+    private static bool IsInstalled(string packageId, IReadOnlySet<string> installedPackages)
+    {
+        if (installedPackages.Contains(packageId))
+            return true;
+
+        // Fallback: check if any installed package matches the app name with optional version
+        // e.g., "Git" matches "Git" or "Git 2.53.0" (for apps installed outside winget)
+        string[] parts = packageId.Split('.');
+        foreach (string part in parts)
+        {
+            if (part.Length >= 3 && installedPackages.Any(pkg =>
+                Regex.IsMatch(pkg, $@"^{Regex.Escape(part)}( [0-9.]+)?$", RegexOptions.IgnoreCase)))
+                return true;
+        }
+
+        return false;
+    }
 }
