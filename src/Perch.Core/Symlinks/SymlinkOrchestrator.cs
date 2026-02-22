@@ -40,8 +40,8 @@ public sealed class SymlinkOrchestrator
                 string? existingTarget = _symlinkProvider.GetSymlinkTarget(targetPath);
                 if (string.Equals(existingTarget, sourcePath, StringComparison.OrdinalIgnoreCase))
                 {
-                    return new DeployResult(moduleName, sourcePath, targetPath, ResultLevel.Ok,
-                        "Already linked (skipped)");
+                    return new DeployResult(moduleName, sourcePath, targetPath, ResultLevel.Synced,
+                        "Already linked");
                 }
             }
 

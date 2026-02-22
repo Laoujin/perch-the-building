@@ -75,7 +75,7 @@ public sealed class SymlinkOrchestratorTests
     }
 
     [Test]
-    public void ProcessLink_AlreadyLinkedToSameSource_Skips()
+    public void ProcessLink_AlreadyLinkedToSameSource_ReturnsSynced()
     {
         string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -90,8 +90,8 @@ public sealed class SymlinkOrchestratorTests
 
             Assert.Multiple(() =>
             {
-                Assert.That(result.Level, Is.EqualTo(ResultLevel.Ok));
-                Assert.That(result.Message, Does.Contain("skipped"));
+                Assert.That(result.Level, Is.EqualTo(ResultLevel.Synced));
+                Assert.That(result.Message, Does.Contain("Already linked"));
             });
             _symlinkProvider.DidNotReceive().CreateSymlink(Arg.Any<string>(), Arg.Any<string>());
         }
@@ -287,7 +287,7 @@ public sealed class SymlinkOrchestratorTests
     }
 
     [Test]
-    public void ProcessLink_DryRun_AlreadyLinked_SkipsAsNormal()
+    public void ProcessLink_DryRun_AlreadyLinked_ReturnsSynced()
     {
         string tempDir = Path.Combine(Path.GetTempPath(), $"perch-test-{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -302,8 +302,8 @@ public sealed class SymlinkOrchestratorTests
 
             Assert.Multiple(() =>
             {
-                Assert.That(result.Level, Is.EqualTo(ResultLevel.Ok));
-                Assert.That(result.Message, Does.Contain("skipped"));
+                Assert.That(result.Level, Is.EqualTo(ResultLevel.Synced));
+                Assert.That(result.Message, Does.Contain("Already linked"));
             });
         }
         finally

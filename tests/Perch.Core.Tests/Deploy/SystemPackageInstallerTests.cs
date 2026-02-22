@@ -30,7 +30,7 @@ public sealed class SystemPackageInstallerTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(result.Level, Is.EqualTo(ResultLevel.Ok));
+            Assert.That(result.Level, Is.EqualTo(ResultLevel.Synced));
             Assert.That(result.Message, Does.Contain("Already installed"));
         });
         await _processRunner.DidNotReceive().RunAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());

@@ -27,7 +27,7 @@ public sealed class SystemPackageInstaller : ISystemPackageInstaller
 
         if (_installedPackages.Contains(packageName))
         {
-            return new DeployResult("system-packages", "", packageName, ResultLevel.Ok, $"Already installed: {packageName}");
+            return new DeployResult("system-packages", "", packageName, ResultLevel.Synced, $"Already installed: {packageName}");
         }
 
         if (dryRun)

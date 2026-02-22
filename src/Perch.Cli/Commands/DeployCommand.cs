@@ -182,6 +182,7 @@ public sealed class DeployCommand : AsyncCommand<DeployCommand.Settings>
                 {
                     string status = result.Level switch
                     {
+                        ResultLevel.Synced => "[blue]SYNCED[/]",
                         ResultLevel.Ok => "[green]OK[/]",
                         ResultLevel.Warning => "[yellow]WARN[/]",
                         ResultLevel.Error => "[red]FAIL[/]",
@@ -330,6 +331,7 @@ public sealed class DeployCommand : AsyncCommand<DeployCommand.Settings>
 
     private static string GetColor(ResultLevel level) => level switch
     {
+        ResultLevel.Synced => "blue",
         ResultLevel.Ok => "green",
         ResultLevel.Warning => "yellow",
         ResultLevel.Error => "red",
